@@ -1,0 +1,65 @@
+{
+  "terminal.integrated.cursorStyle": "line",
+  "terminal.integrated.shell.windows": "C:\\WINDOWS\\System32\\cmd.exe",
+  
+  "window.zoomLevel":              0,
+  "editor.fontSize":              14,
+  "terminal.integrated.fontSize": 14,
+  "debug.console.fontSize":       14,
+  
+  "workbench.panel.defaultLocation":  "right",
+  "workbench.sideBar.location":       "right",
+  "window.title":                     "",
+  "workbench.statusBar.visible":      false,
+  "workbench.editor.showTabs":        false,
+  "workbench.activityBar.visible":    false,
+  "workbench.editor.enablePreview":   false,
+  "editor.hideCursorInOverviewRuler": true,
+  "editor.overviewRulerBorder":       false,
+  "editor.minimap.enabled":           false,
+  "editor.glyphMargin":               false,
+  "editor.lineNumbers":               "off",
+
+  "editor.formatOnType":        false,
+  "editor.formatOnSave":        true,
+  "editor.detectIndentation":   false,
+  "editor.tabSize":             2,
+  "editor.insertSpaces":        true,
+  "editor.renderLineHighlight": "all",
+  
+
+  "editor.tokenColorCustomizations": {
+    "textMateRules": [   
+      { "scope": "entity.name.function", "settings": { "foreground": "#e09a3e" } },
+      { "scope": "variable.parameter", "settings":   { "foreground": "#999999" } },
+      { "scope": [ "meta.preprocessor","entity.name.function.preprocessor" ], "settings" : { "foreground": "#9b32b6" } },
+      ]
+    },
+    
+  "editor.defaultFormatter": "ms-vscode.cpptools",
+  "C_Cpp.updateChannel":           "Default",
+  "C_Cpp.autocomplete":            "Default",
+  "C_Cpp.autoAddFileAssociations": false,
+  "C_Cpp.codeFolding":             "Disabled",
+  "C_Cpp.configurationWarnings":   "Disabled",
+  "C_Cpp.formatting":              "vcFormat",
+  "C_Cpp.intelliSenseEngine":      "Tag Parser",
+  "C_Cpp.enhancedColorization":    "Enabled",
+
+  "C_Cpp.vcFormat.space.aroundAssignmentOperator":              "ignore",
+  "C_Cpp.vcFormat.space.aroundBinaryOperator":                  "insert",
+  "C_Cpp.vcFormat.space.withinCastParentheses":                 false,
+  "C_Cpp.vcFormat.space.withinExpressionParentheses":           false,
+  "C_Cpp.vcFormat.space.withinInitializerListBraces":           true,
+  "C_Cpp.vcFormat.space.withinControlFlowStatementParentheses": true,
+  "C_Cpp.vcFormat.space.withinParameterListParentheses":        true,
+  "C_Cpp.vcFormat.space.beforeInitializerListOpenBrace":        true,
+  "C_Cpp.vcFormat.space.afterCastCloseParenthesis":             true,
+  //"C_Cpp.vcFormat.space.insertAfterSemicolon":                true,
+  "C_Cpp.vcFormat.indent.preserveWithinParentheses":            true,
+  "C_Cpp.vcFormat.indent.caseContents":                         true,
+  "C_Cpp.vcFormat.indent.caseLabels":                           true,
+
+
+}
+    
