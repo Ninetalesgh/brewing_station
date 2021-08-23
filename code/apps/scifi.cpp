@@ -290,3 +290,6 @@ void app_receive_udp_packet( PlatformData const& platformData, AppData& appData,
   // platformData.write_file( "test.txt", state.receiverBuffer, size - 1 );
 }
 
+
+#include "vfs.cpp"
+#include "file.cpp"
