@@ -117,7 +117,7 @@ Bitmap8 load_font( u8 const* buffer, s32 size )
   stbtt_InitFont( &font, buffer, stbtt_GetFontOffsetForIndex( buffer, 0 ) );
 
   float s = 128.0f;
-  s32 codepoint = 'N';
+  s32 codepoint = 'h';
   Bitmap8 bmp {};
   bmp.pixel = stbtt_GetCodepointBitmap( &font, 0, stbtt_ScaleForPixelHeight( &font, s ), codepoint, &bmp.width, &bmp.height, 0, 0 );
 
