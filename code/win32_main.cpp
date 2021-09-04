@@ -1130,10 +1130,15 @@ int CALLBACK WinMain( HINSTANCE hInstance,
       platformData.send_tcp      = &debug_SendTCPPacket;
 
       AppData appData = {};
-      appData.staticBufferSize = APP_STATIC_BUFFER_SIZE;
-      appData.staticBuffer = VirtualAlloc( 0, appData.staticBufferSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
-      appData.tempBufferSize = APP_TEMP_BUFFER_SIZE;
-      appData.tempBuffer = VirtualAlloc( 0, appData.tempBufferSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
+
+      {
+        appData.staticBufferSize = APP_STATIC_BUFFER_SIZE;
+        appData.staticBuffer = VirtualAlloc( 0, appData.staticBufferSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
+
+        s64 bufferSize = APP_TEMP_BUFFER_SIZE;
+        void* buffer = VirtualAlloc( 0, bufferSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
+        memory::init_arena( (char*) buffer, bufferSize, appData.generalPurposeArena );
+      }
 
       {
         SOCKET udpSocket;

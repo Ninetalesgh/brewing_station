@@ -1,3 +1,10 @@
 
 LOC count:
+
+extern: 
+stb_truetype.h: 2239
+stb_image.h: 3815
+
+intern:
+
 16.08: 7854

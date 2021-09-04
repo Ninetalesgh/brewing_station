@@ -13,6 +13,7 @@
 #include "net.h"
 #endif
 #include "common/basic_math.h"
+#include "common/memory.h"
 
 constexpr char  APP_FILENAME[]              = "scifi.dll";
 constexpr char  APP_NAME[]                  = "scifi";
@@ -130,9 +131,9 @@ struct AppData
   //REQUIRED:
   //preallocated memory for the application
   void* staticBuffer;
-  void* tempBuffer;
   u32   staticBufferSize;
-  u32   tempBufferSize;
+
+  memory::Arena generalPurposeArena;
 
   u64 currentFrameIndex;
 

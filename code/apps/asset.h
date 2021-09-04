@@ -5,6 +5,18 @@
 
 
 
+#pragma pack(push, 1)
+
+struct AssetFileHeader
+{
+  u32 magicValue; //define this
+  u32 version; //define this
+};
+
+#pragma pack(pop)
+
+
+
 
 struct Asset
 {

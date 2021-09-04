@@ -8,6 +8,7 @@
 #include <common/profile.h>
 #include <common/basic_rasterizer.h>
 
+#include <common/memory.h>
 
 struct Animation
 {

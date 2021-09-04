@@ -125,3 +125,9 @@ Bitmap8 load_font( u8 const* buffer, s32 size )
 }
 
 
+
+Bitmap load_font( memory::Arena arena )
+{
+
+
+}

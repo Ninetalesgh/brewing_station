@@ -3,6 +3,7 @@
 #include <platform.h>
 #include <common/basic_types.h>
 #include <common/string.h>
+#include <common/memory.h>
 
 #pragma pack(push, 1)
 struct BitmapHeader
@@ -46,4 +47,7 @@ Bitmap file_load_bmp( platform::read_file* read_file, char const* filename );
 void file_save_bmp( platform::write_file* write_file, char const* filename, Bitmap const& bitmap );
 
 Bitmap load_image( u8 const* buffer, s32 size );
+
 Bitmap8 load_font( u8 const* buffer, s32 size );
+
+Bitmap load_font( memory::Arena arena );
