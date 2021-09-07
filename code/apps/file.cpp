@@ -111,23 +111,26 @@ Bitmap load_image( u8 const* buffer, s32 size )
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "extern/stb_truetype.h"
 
-Bitmap8 load_font( u8 const* buffer, s32 size )
-{
-  stbtt_fontinfo font;
-  stbtt_InitFont( &font, buffer, stbtt_GetFontOffsetForIndex( buffer, 0 ) );
 
+Bitmap8 load_font( memory::Arena arena, u8 const* ttf_data )
+{
+  stb_truetype::init_memory_arena( &arena );
+
+  u64 profile_fontData;
+  u64 profile_codepoint;
+  stbtt_fontinfo font;
+  {
+    PROFILE_SCOPE( profile_fontData );
+    stbtt_InitFont( &font, ttf_data, stbtt_GetFontOffsetForIndex( ttf_data, 0 ) );
+  }
   float s = 128.0f;
-  s32 codepoint = 'h';
+  s32 codepoint = 'B';
   Bitmap8 bmp {};
-  bmp.pixel = stbtt_GetCodepointBitmap( &font, 0, stbtt_ScaleForPixelHeight( &font, s ), codepoint, &bmp.width, &bmp.height, 0, 0 );
+  {
+    PROFILE_SCOPE( profile_codepoint );
+    bmp.pixel = stbtt_GetCodepointBitmap( &font, 0, stbtt_ScaleForPixelHeight( &font, s ), codepoint, &bmp.width, &bmp.height, 0, 0 );
+  }
+  stb_truetype::deinit_memory_arena();
 
   return bmp;
-}
-
-
-
-Bitmap load_font( memory::Arena arena )
-{
-
-
 }

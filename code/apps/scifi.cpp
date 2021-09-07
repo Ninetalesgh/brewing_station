@@ -139,9 +139,9 @@ namespace debug
 void app_on_load( AppData& appData )
 {
   assert( sizeof( GameState ) <= appData.staticBufferSize );
-  GameState& state = *(GameState*) (appData.staticBuffer);
-  //state.xOffset = 0;
-  //state.yOffset = 0;
+  //  GameState& state = *(GameState*) (appData.staticBuffer);
+    //state.xOffset = 0;
+    //state.yOffset = 0;
 }
 
 void app_tick( PlatformData const& platformData, AppData& appData, BackBuffer& backBuffer )
@@ -187,7 +187,8 @@ void app_tick( PlatformData const& platformData, AppData& appData, BackBuffer& b
     char filename[] = "w:/data/Inconsolata-Regular.ttf";
     platform::ReadFileResult file = platformData.read_file( filename, 0, 0 );
 
-    state.uiState.fontImage = load_font( (u8 const*) file.data, file.size );
+    state.uiState.fontImage = load_font( appData.generalPurposeArena, (u8 const*) file.data );
+    //state.uiState.fontImage = load_font( (u8 const*) file.data, file.size );
   }
 
   if ( (appData.currentFrameIndex % 50) == 0 )

@@ -20,10 +20,10 @@ namespace debug
   };
 };
 
-#define PROFILE_SCOPE(outCycles) debug::ProfilingObject dbg_tmp_profiler_object##outCycles { &outCycles }
+#define PROFILE_SCOPE(outCycles_u64) debug::ProfilingObject dbg_tmp_profiler_object##outCycles_u64 { &outCycles_u64 }
 
 #endif
 
 #else
-#define PROFILE_SCOPE(outCycles)
+#define PROFILE_SCOPE(outCycles_u64)
 #endif

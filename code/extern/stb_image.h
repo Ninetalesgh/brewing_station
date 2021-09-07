@@ -1,27 +1,49 @@
+
+#ifdef STB_IMAGE_IMPLEMENTATION
+
 #define STBI_NO_STDIO
 #define STBI_MAX_DIMENSIONS (1 << 16)
 
-#include <memory>
-
-void* assert_alloc( u64 size )
+#include <common/memory.h>
+namespace stb_image
 {
-  return malloc( size );
-}
+  static memory::Arena* BS_STB_MEMORY_ARENA;
 
-void* assert_realloc( void* p, u64 size )
-{
-  return realloc( p, size );
-}
+  void init_memory_arena( memory::Arena* arena )
+  {
+    BS_STB_MEMORY_ARENA = arena;
+  }
 
-void assert_free( void* p )
-{
-  free( p );
-}
+  void deinit_memory_arena()
+  {
+    BS_STB_MEMORY_ARENA = nullptr;
+  }
 
+  void* bs_alloc( size_t size )
+  {
+    return (void*) BS_STB_MEMORY_ARENA->alloc( (s64) size );
+  }
+
+  void bs_free( void* data )
+  {
+    BS_STB_MEMORY_ARENA->free( (char*) data );
+  }
+
+  void* bs_realloc( void* data, size_t newSize )
+  {
+    s64 size = BS_STB_MEMORY_ARENA->get_size( (char*) data );
+    char* result = BS_STB_MEMORY_ARENA->alloc( (s64) newSize );
+    memory::copy( data, result, size );
+    BS_STB_MEMORY_ARENA->free( (char*) data );
+    return (void*) result;
+  }
+}
 
 #define STBI_MALLOC(sz)           assert_alloc(sz)
 #define STBI_REALLOC(p,newsz)     assert_realloc(p,newsz)
 #define STBI_FREE(p)              assert_free(p)
+
+#endif 
 
 /* stb_image - v2.26 - public domain image loader - http://nothings.org/stb
                                   no warranty implied; use at your own risk

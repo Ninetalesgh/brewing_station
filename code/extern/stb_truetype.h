@@ -1,3 +1,47 @@
+#ifdef STB_TRUETYPE_IMPLEMENTATION
+#include <common/memory.h>
+namespace stb_truetype
+{
+  static memory::Arena* BS_STB_MEMORY_ARENA;
+
+  void init_memory_arena( memory::Arena* arena )
+  {
+    BS_STB_MEMORY_ARENA = arena;
+  }
+
+  void deinit_memory_arena()
+  {
+    BS_STB_MEMORY_ARENA = nullptr;
+  }
+
+  void* bs_alloc( size_t size )
+  {
+    return (void*) BS_STB_MEMORY_ARENA->alloc( (s64) size );
+  }
+
+  void bs_free( void* data )
+  {
+    BS_STB_MEMORY_ARENA->free( (char*) data );
+  }
+}
+
+#define STBTT_malloc(x,u)  ((void)(u),stb_truetype::bs_alloc(x))
+#define STBTT_free(x,u)    ((void)(u),stb_truetype::bs_free(x))
+#define STBTT_assert(x)    assert(x)
+
+#ifndef STBTT_strlen
+#include <string.h>
+#define STBTT_strlen(x)    strlen(x)
+#endif
+
+#ifndef STBTT_memcpy
+#include <string.h>
+#define STBTT_memcpy       memcpy
+#define STBTT_memset       memset
+#endif
+
+#endif
+
 // stb_truetype.h - v1.24 - public domain
 // authored from 2009-2020 by Sean Barrett / RAD Game Tools
 //
