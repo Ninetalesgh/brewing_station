@@ -124,7 +124,7 @@ Bitmap8 load_font( memory::Arena arena, u8 const* ttf_data )
     stbtt_InitFont( &font, ttf_data, stbtt_GetFontOffsetForIndex( ttf_data, 0 ) );
   }
   float s = 128.0f;
-  s32 codepoint = 'B';
+  s32 codepoint = 'h';
   Bitmap8 bmp {};
   {
     PROFILE_SCOPE( profile_codepoint );

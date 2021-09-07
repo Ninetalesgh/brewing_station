@@ -107,7 +107,8 @@ namespace memory
 
     s64 get_size( char* ptr )
     {
-      u32 entryFound = 0;
+      Entry* entry = lastEntry;
+
       while ( entry != (Entry*) bufferEnd )
       {
         if ( entry->begin == ptr )

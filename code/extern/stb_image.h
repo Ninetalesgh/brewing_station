@@ -33,15 +33,15 @@ namespace stb_image
   {
     s64 size = BS_STB_MEMORY_ARENA->get_size( (char*) data );
     char* result = BS_STB_MEMORY_ARENA->alloc( (s64) newSize );
-    memory::copy( data, result, size );
+    memory::copy( (char*) data, result, size );
     BS_STB_MEMORY_ARENA->free( (char*) data );
     return (void*) result;
   }
 }
 
-#define STBI_MALLOC(sz)           assert_alloc(sz)
-#define STBI_REALLOC(p,newsz)     assert_realloc(p,newsz)
-#define STBI_FREE(p)              assert_free(p)
+#define STBI_MALLOC(sz)           stb_image::bs_alloc(sz)
+#define STBI_REALLOC(p,newsz)     stb_image::bs_realloc(p,newsz)
+#define STBI_FREE(p)              stb_image::bs_free(p)
 
 #endif 
 
