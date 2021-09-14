@@ -116,21 +116,36 @@ Bitmap8 load_font( memory::Arena arena, u8 const* ttf_data )
 {
   stb_truetype::init_memory_arena( &arena );
 
-  u64 profile_fontData;
-  u64 profile_codepoint;
-  stbtt_fontinfo font;
+  //u64 profile_fontData;
+  //u64 profile_codepoint;
+  stbtt_fontinfo fontInfo;
   {
-    PROFILE_SCOPE( profile_fontData );
-    stbtt_InitFont( &font, ttf_data, stbtt_GetFontOffsetForIndex( ttf_data, 0 ) );
+    //  PROFILE_SCOPE( profile_fontData );
+    stbtt_InitFont( &fontInfo, ttf_data, stbtt_GetFontOffsetForIndex( ttf_data, 0 ) );
   }
-  float s = 128.0f;
-  s32 codepoint = 'h';
-  Bitmap8 bmp {};
-  {
-    PROFILE_SCOPE( profile_codepoint );
-    bmp.pixel = stbtt_GetCodepointBitmap( &font, 0, stbtt_ScaleForPixelHeight( &font, s ), codepoint, &bmp.width, &bmp.height, 0, 0 );
-  }
-  stb_truetype::deinit_memory_arena();
 
+  float scale = 128.0f;
+  s32 codepoint = 'A';
+  Bitmap8 bmp {};
+
+  {
+    // PROFILE_SCOPE( profile_codepoint );
+    bmp.pixel = stbtt_GetCodepointBitmap( &fontInfo, 0, stbtt_ScaleForPixelHeight( &fontInfo, scale ), codepoint, &bmp.width, &bmp.height, 0, 0 );
+  }
+
+  // float xpos = 2;
+  // int advance, lsb, x0, y0, x1, y1;
+  // float x_shift = xpos - (float) floor( xpos );
+  // stbtt_GetCodepointHMetrics( &fontInfo, codepoint, &advance, &lsb );
+  // stbtt_GetCodepointBitmapBoxSubpixel( &fontInfo, codepoint, scale, scale, x_shift, 0, &x0, &y0, &x1, &y1 );
+   //stbtt_MakeCodepointBitmapSubpixel( &fontInfo, &screen[baseline + y0][(int) xpos + x0], x1 - x0, y1 - y0, 79, scale, scale, x_shift, 0, codepoint );
+
+
+ //  int glyphIndex = stbtt_FindGlyphIndex( fontInfo, codepoint );
+  // bmp.pixel = stbtt_GetGlyphBitmapSubpixel( fontInfo, scale_x, scale_y, shift_x, shift_y, glyphIndex, width, height, xoff, yoff );
+
+
+
+  stb_truetype::deinit_memory_arena();
   return bmp;
 }
