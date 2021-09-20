@@ -1,6 +1,5 @@
 #pragma once
 
-#include <common/bitmap.h>
 #include <common/memory.h>
 
 namespace font
@@ -22,13 +21,18 @@ namespace font
     Glyph glyphs[16];
   };
 
-  struct TrueTypeFont
+  struct RasterizedGlyphCollection
   {
+    enum class ASSET_TYPE : u32
+    {
+      ERROR = 0,
+      STB_TTF = 1,
+      BSA = 2,
+    } asset_type;
   };
 
+  RasterizedGlyphCollection* load_ttf( memory::Arena permanentStorage, u8 const* ttf_data );
+
   GlyphMap load_from_ttf( memory::Arena arena, u8 const* ttf_data, char const* text );
-
-  TrueTypeFont* load_ttf( memory::Arena permanentStorage, u8 const* ttf_data );
-
 
 }

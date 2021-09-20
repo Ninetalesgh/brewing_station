@@ -5,8 +5,7 @@
 
 namespace font
 {
-
-  Glyph make_glyph( memory::Arena* arena, stbtt_fontinfo const* fontInfo, float scale, char c )
+  Glyph make_glyph( memory::Arena arena, stbtt_fontinfo const* fontInfo, float scale, char c )
   {
     Glyph glyph {};
 
@@ -40,14 +39,14 @@ namespace font
 
         if ( gbm.w && gbm.h )
         {
-          gbm.pixels = (unsigned char*) arena->alloc( gbm.w * gbm.h );
+          gbm.pixels = (unsigned char*) STBTT_malloc( gbm.w * gbm.h, fontInfo->userdata );
           if ( gbm.pixels )
           {
             gbm.stride = gbm.w;
 
-            s32 num_verts = stbtt_GetGlyphShapeThreadSafe( arena, fontInfo, glyphIndex, &vertices );
+            s32 num_verts = stbtt_GetGlyphShape( fontInfo, glyphIndex, &vertices );
 
-            stbtt_RasterizeThreadSafe( arena, &gbm, flatnessInPixels, vertices, num_verts, scale_x, scale_y, shift_x, shift_y, ix0, iy0, 1, fontInfo->userdata );
+            stbtt_Rasterize( &gbm, flatnessInPixels, vertices, num_verts, scale_x, scale_y, shift_x, shift_y, ix0, iy0, 1, fontInfo->userdata );
           }
           else
           {
@@ -58,7 +57,7 @@ namespace font
         {
           BREAK;
         }
-        arena->free( vertices );
+        STBTT_free( vertices, fontInfo->userdata );
         glyph.data = gbm.pixels;
       }
       else // !( glyphIndex > 0 )
@@ -87,14 +86,7 @@ namespace font
     {
       result = (RasterizedGlyphCollectionSTB*) permanentStorage.alloc( sizeof( RasterizedGlyphCollectionSTB ) );
       *result = {};
-      if ( stbtt_InitFont( &result->stbFontInfo, ttf_data, 0 ) )
-      {
-        result->asset_type = RasterizedGlyphCollection::ASSET_TYPE::STB_TTF;
-      }
-      else
-      {
-        BREAK;
-      }
+      stbtt_InitFont( &result->stbFontInfo, ttf_data, 0 );
     }
     else
     {
@@ -135,7 +127,7 @@ namespace font
     int writeIndex = 0;
     while ( *reader )
     {
-      glyphMap.glyphs[writeIndex++] = make_glyph( &arena, &fontInfo, scale, *reader );
+      glyphMap.glyphs[writeIndex++] = make_glyph( arena, &fontInfo, scale, *reader );
       ++reader;
     }
 
@@ -187,4 +179,3 @@ namespace font
   }
 
 }
-

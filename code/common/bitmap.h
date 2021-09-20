@@ -1,6 +1,7 @@
 #pragma once
 
 #include <platform.h>
+#include <common/font.h>
 #include <common/basic_math.h>
 #include <common/color.h>
 
@@ -42,6 +43,10 @@ struct Bitmap
   s32 width;
   s32 height;
 };
+
+
+///////// ALL STILL DEBUG MATERIAL
+
 
 void bitmap_draw_no_alpha( Bitmap* target, Bitmap const& source, float2 pos )
 {
@@ -106,5 +111,9 @@ void bitmap_draw( Bitmap* target, Bitmap8 const& source, float2 pos )
       ++read;
     }
   }
+}
+
+void bitmap_draw_text( Bitmap* target, font::RasterizedGlyphCollection* glyphs, char const* text )
+{
 }
 
