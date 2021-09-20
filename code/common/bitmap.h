@@ -43,7 +43,7 @@ struct Bitmap
   s32 height;
 };
 
-INLINE void bitmap_draw_no_alpha( Bitmap* target, Bitmap const& source, float2 pos )
+void bitmap_draw_no_alpha( Bitmap* target, Bitmap const& source, float2 pos )
 {
   int2 start = clamp( int2( pos ), { 0, 0 }, { target->width, target->height } );
   int2 end = clamp( int2 { s32( pos.x ) + source.width, s32( pos.y ) + source.height }, { 0, 0 }, { target->width, target->height } );
@@ -64,7 +64,7 @@ INLINE void bitmap_draw_no_alpha( Bitmap* target, Bitmap const& source, float2 p
   }
 }
 
-INLINE void bitmap_draw( Bitmap* target, Bitmap const& source, float2 pos )
+void bitmap_draw( Bitmap* target, Bitmap const& source, float2 pos )
 {
   int2 start = clamp( int2( pos ), { 0, 0 }, { target->width, target->height } );
   int2 end = clamp( int2 { s32( pos.x ) + source.width, s32( pos.y ) + source.height }, { 0, 0 }, { target->width, target->height } );
@@ -72,7 +72,7 @@ INLINE void bitmap_draw( Bitmap* target, Bitmap const& source, float2 pos )
   s32 row = 0;
   for ( s32 y = start.y; y < end.y; ++y )
   {
-    u32* write = &(((u32*) target->pixel)[y * target->width]);
+    u32* write = &(((u32*) target->pixel)[start.x + y * target->width]);
     u32* read = &(((u32*) source.pixel)[row++ * source.width]);
 
     for ( s32 x = start.x; x < end.x; ++x )
@@ -84,7 +84,7 @@ INLINE void bitmap_draw( Bitmap* target, Bitmap const& source, float2 pos )
   }
 }
 
-INLINE void bitmap_draw( Bitmap* target, Bitmap8 const& source, float2 pos )
+void bitmap_draw( Bitmap* target, Bitmap8 const& source, float2 pos )
 {
   int2 start = clamp( int2( pos ), { 0, 0 }, { target->width, target->height } );
   int2 end = clamp( int2 { s32( pos.x ) + source.width, s32( pos.y ) + source.height }, { 0, 0 }, { target->width, target->height } );
@@ -92,7 +92,7 @@ INLINE void bitmap_draw( Bitmap* target, Bitmap8 const& source, float2 pos )
   s32 row = 0;
   for ( s32 y = start.y; y < end.y; ++y )
   {
-    u32* write = &(((u32*) target->pixel)[y * target->width]);
+    u32* write = &(((u32*) target->pixel)[start.x + y * target->width]);
     u8* read = &(((u8*) source.pixel)[row++ * source.width]);
 
     for ( s32 x = start.x; x < end.x; ++x )
@@ -107,3 +107,4 @@ INLINE void bitmap_draw( Bitmap* target, Bitmap8 const& source, float2 pos )
     }
   }
 }
+

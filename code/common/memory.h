@@ -1,6 +1,7 @@
 #pragma once
 
 #include "preprocessor.h"
+#include "basic_types.h"
 
 struct GeneralArena
 {
@@ -62,21 +63,24 @@ namespace memory
         //TODO compensate for fragmentation a bit?
         //TODO alignment
         //TODO thread safety?
+      char* result = nullptr;
 
       if ( current + size < (char*) (lastEntry - 1) )
       {
-        char* result = current;
+        result = current;
         lastEntry--;
         lastEntry->begin = result;
         lastEntry->size = size;
         lastEntry->flags = ALIVE;
+        ++entryCount;
         current += size;
-        return result;
       }
       else
       {
-        return nullptr;
+        BREAK;
       }
+
+      return result;
     }
 
     //TODO: if realloc is ever needed, finish this
@@ -123,35 +127,43 @@ namespace memory
       return 0;
     }
 
-    void free( char* ptr )
+    void free( void* ptr )
     {
-      Entry* entry = lastEntry;
-
-      //tag entry
-      u32 entryFound = 0;
-      while ( entry != (Entry*) bufferEnd )
+      if ( ptr != nullptr )
       {
-        if ( entry->begin == ptr )
+        Entry* entry = lastEntry;
+
+        //tag entry
+        u32 entryFound = 0;
+        while ( entry != (Entry*) bufferEnd )
         {
-          entry->flags &= ~ALIVE;
-          entryFound = 1;
-          break;
+          if ( entry->begin == (char*) ptr )
+          {
+            entry->flags &= ~ALIVE;
+            entryFound = 1;
+            break;
+          }
+          entry++;
         }
-        entry++;
+
+        assert( entryFound );
+
+        //remove dead entries
+        while ( lastEntry != (Entry*) bufferEnd )
+        {
+          if ( lastEntry->flags & ALIVE )
+          {
+            break;
+          }
+
+          current = lastEntry->begin;
+          ++lastEntry;
+          --entryCount;
+        }
       }
-
-      assert( entryFound );
-
-      //remove dead entries
-      while ( lastEntry != (Entry*) bufferEnd )
+      else
       {
-        if ( lastEntry->flags & ALIVE )
-        {
-          break;
-        }
-
-        current = lastEntry->begin;
-        ++lastEntry;
+        BREAK;
       }
     }
 
@@ -165,6 +177,7 @@ namespace memory
     char* bufferEnd;
     char* current;
     Entry* lastEntry;
+    s32 entryCount;
   };
 
 
@@ -179,6 +192,7 @@ namespace memory
     outArena.bufferEnd = memory + capacity;
     outArena.current = outArena.bufferBegin;
     outArena.lastEntry = (Arena::Entry*) outArena.bufferEnd;
+    outArena.entryCount = 0;
   }
 
   Arena* init_arena_in_place( char* memory, s64 capacity )

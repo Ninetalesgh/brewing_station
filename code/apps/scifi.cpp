@@ -7,6 +7,7 @@
 #include <common/string.h>
 #include <common/profile.h>
 #include <common/basic_rasterizer.h>
+#include <common/font.h>
 
 #include <common/memory.h>
 
@@ -87,9 +88,25 @@ namespace debug
       //   bitmap_draw_no_alpha( target, state.image, { 0, 0 } );
     }
 
-    if ( state.fontImage.pixel )
+    // if ( state.fontImage.pixel )
+    // {
+    //   bitmap_draw( target, state.fontImage, { 0,0 } );
+    // }
+
+    state.currentWriter = 0;
+    for ( int textIndex = 0; textIndex < array_size( state.map.glyphs ); ++textIndex )
     {
-      bitmap_draw( target, state.fontImage, { 0,0 } );
+      Bitmap8 tmp {};
+      font::Glyph& glyph = state.map.glyphs[textIndex];
+      if ( glyph.data == nullptr ) continue;
+      tmp.pixel = glyph.data;
+      tmp.width = glyph.width;
+      tmp.height = glyph.height;
+      int2 glyphPos { state.currentWriter, 100 };
+
+      glyphPos.x += glyph.advance - glyph.width;
+      bitmap_draw( target, tmp, glyphPos );
+      state.currentWriter += glyph.width;
     }
 
     draw_rect( target, button0, colorButton0 );
@@ -187,7 +204,13 @@ void app_tick( PlatformData const& platformData, AppData& appData, BackBuffer& b
     char filename[] = "w:/data/Inconsolata-Regular.ttf";
     platform::ReadFileResult file = platformData.read_file( filename, 0, 0 );
 
-    state.uiState.fontImage = load_font( appData.generalPurposeArena, (u8 const*) file.data );
+
+    //char const* charTable = "!\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+    //state.uiState.fontImage;
+
+    //state.uiState.testText[0];
+    state.uiState.map = font::load_from_ttf( appData.generalPurposeArena, (u8 const*) file.data, "Klara" );
+
     //state.uiState.fontImage = load_font( (u8 const*) file.data, file.size );
   }
 
@@ -295,3 +318,4 @@ void app_receive_udp_packet( PlatformData const& platformData, AppData& appData,
 
 #include "vfs.cpp"
 #include "file.cpp"
+#include <common/font.cpp>

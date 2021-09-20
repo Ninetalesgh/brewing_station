@@ -48,4 +48,3 @@ void file_save_bmp( platform::write_file* write_file, char const* filename, Bitm
 
 Bitmap load_image( u8 const* buffer, s32 size );
 
-Bitmap8 load_font( memory::Arena arena, u8 const* ttf_data );

@@ -11,16 +11,30 @@
 #endif
 
 #if BS_BUILD_DEBUG
+# define BREAK __debugbreak()
+#else
+# define BREAK (void(0))
+#endif
+
+#if BS_BUILD_DEBUG
 # define assert(expression) { if ( !(expression) ) *(s32*) 0=0; }
 #else
 # define assert(expression)
 #endif
+
+
+
+
+
+
+
 
 #define array_size(array) (sizeof(array) / (sizeof((array)[0])))
 
 #define global_variable            static
 #define local_persist              static
 #define constexpr_member constexpr static
+
 
 
 

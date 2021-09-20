@@ -4,6 +4,7 @@ namespace stb_truetype
 {
   static memory::Arena* BS_STB_MEMORY_ARENA;
 
+  //TODO: NOT THREAD SAFE
   void init_memory_arena( memory::Arena* arena )
   {
     BS_STB_MEMORY_ARENA = arena;
@@ -16,11 +17,13 @@ namespace stb_truetype
 
   void* bs_alloc( size_t size )
   {
+    BREAK;
     return (void*) BS_STB_MEMORY_ARENA->alloc( (s64) size );
   }
 
   void bs_free( void* data )
   {
+    BREAK;
     BS_STB_MEMORY_ARENA->free( (char*) data );
   }
 }
@@ -884,6 +887,7 @@ extern "C" {
 
   STBTT_DEF int stbtt_GetCodepointShape( const stbtt_fontinfo* info, int unicode_codepoint, stbtt_vertex** vertices );
   STBTT_DEF int stbtt_GetGlyphShape( const stbtt_fontinfo* info, int glyph_index, stbtt_vertex** vertices );
+  STBTT_DEF int stbtt_GetGlyphShapeThreadSafe( memory::Arena* arena, const stbtt_fontinfo* info, int glyph_index, stbtt_vertex** pvertices );
   // returns # of vertices and fills *vertices with the pointer to them
   //   these are expressed in "unscaled" coordinates
   //
@@ -976,6 +980,19 @@ extern "C" {
                                  int x_off, int y_off,         // another translation applied to input
                                  int invert,                   // if non-zero, vertically flip shape
                                  void* userdata );              // context for to STBTT_MALLOC
+
+  STBTT_DEF void stbtt_RasterizeThreadSafe( memory::Arena* arena,
+                                            stbtt__bitmap* result,
+                                            float flatness_in_pixels,
+                                            stbtt_vertex* vertices,
+                                            int num_verts,
+                                            float scale_x, float scale_y,
+                                            float shift_x, float shift_y,
+                                            int x_off, int y_off,
+                                            int invert,
+                                            void* userdata );
+
+
 
   //////////////////////////////////////////////////////////////////////////////
   //
@@ -1720,7 +1737,15 @@ static int stbtt__close_shape( stbtt_vertex* vertices, int num_vertices, int was
   return num_vertices;
 }
 
-static int stbtt__GetGlyphShapeTT( const stbtt_fontinfo* info, int glyph_index, stbtt_vertex** pvertices )
+struct ShapeExtractor
+{
+  int stbtt__GetGlyphShapeTT( const stbtt_fontinfo* info, int glyph_index, stbtt_vertex** pvertices );
+  int stbtt__GetGlyphShapeT2( const stbtt_fontinfo* info, int glyph_index, stbtt_vertex** pvertices );
+
+  memory::Arena* arena;
+};
+
+int ShapeExtractor::stbtt__GetGlyphShapeTT( const stbtt_fontinfo* info, int glyph_index, stbtt_vertex** pvertices )
 {
   stbtt_int16 numberOfContours;
   stbtt_uint8* endPtsOfContours;
@@ -1747,7 +1772,7 @@ static int stbtt__GetGlyphShapeTT( const stbtt_fontinfo* info, int glyph_index, 
     n = 1 + ttUSHORT( endPtsOfContours + numberOfContours * 2 - 2 );
 
     m = n + 2 * numberOfContours;  // a loose bound on how many vertices we might need
-    vertices = (stbtt_vertex*) STBTT_malloc( m * sizeof( vertices[0] ), info->userdata );
+    vertices = (stbtt_vertex*) arena->alloc( m * sizeof( vertices[0] ) );
     if ( vertices == 0 )
       return 0;
 
@@ -2330,7 +2355,7 @@ static int stbtt__run_charstring( const stbtt_fontinfo* info, int glyph_index, s
   #undef STBTT__CSERR
 }
 
-static int stbtt__GetGlyphShapeT2( const stbtt_fontinfo* info, int glyph_index, stbtt_vertex** pvertices )
+int ShapeExtractor::stbtt__GetGlyphShapeT2( const stbtt_fontinfo* info, int glyph_index, stbtt_vertex** pvertices )
 {
   // runs the charstring twice, once to count and once to output (to avoid realloc)
   stbtt__csctx count_ctx = STBTT__CSCTX_INIT( 1 );
@@ -2360,10 +2385,20 @@ static int stbtt__GetGlyphInfoT2( const stbtt_fontinfo* info, int glyph_index, i
 
 STBTT_DEF int stbtt_GetGlyphShape( const stbtt_fontinfo* info, int glyph_index, stbtt_vertex** pvertices )
 {
+  ShapeExtractor extractor { stb_truetype::BS_STB_MEMORY_ARENA };
   if ( !info->cff.size )
-    return stbtt__GetGlyphShapeTT( info, glyph_index, pvertices );
+    return extractor.stbtt__GetGlyphShapeTT( info, glyph_index, pvertices );
   else
-    return stbtt__GetGlyphShapeT2( info, glyph_index, pvertices );
+    return extractor.stbtt__GetGlyphShapeT2( info, glyph_index, pvertices );
+}
+
+STBTT_DEF int stbtt_GetGlyphShapeThreadSafe( memory::Arena* arena, const stbtt_fontinfo* info, int glyph_index, stbtt_vertex** pvertices )
+{
+  ShapeExtractor extractor { arena };
+  if ( !info->cff.size )
+    return extractor.stbtt__GetGlyphShapeTT( info, glyph_index, pvertices );
+  else
+    return extractor.stbtt__GetGlyphShapeT2( info, glyph_index, pvertices );
 }
 
 STBTT_DEF void stbtt_GetGlyphHMetrics( const stbtt_fontinfo* info, int glyph_index, int* advanceWidth, int* leftSideBearing )
@@ -2852,49 +2887,15 @@ typedef struct stbtt__hheap
   int    num_remaining_in_head_chunk;
 } stbtt__hheap;
 
-static void* stbtt__hheap_alloc( stbtt__hheap* hh, size_t size, void* userdata )
-{
-  if ( hh->first_free ) {
-    void* p = hh->first_free;
-    hh->first_free = *(void**) p;
-    return p;
-  }
-  else {
-    if ( hh->num_remaining_in_head_chunk == 0 ) {
-      int count = (size < 32 ? 2000 : size < 128 ? 800 : 100);
-      stbtt__hheap_chunk* c = (stbtt__hheap_chunk*) STBTT_malloc( sizeof( stbtt__hheap_chunk ) + size * count, userdata );
-      if ( c == NULL )
-        return NULL;
-      c->next = hh->head;
-      hh->head = c;
-      hh->num_remaining_in_head_chunk = count;
-    }
-    --hh->num_remaining_in_head_chunk;
-    return (char*) (hh->head) + sizeof( stbtt__hheap_chunk ) + size * hh->num_remaining_in_head_chunk;
-  }
-}
-
-static void stbtt__hheap_free( stbtt__hheap* hh, void* p )
-{
-  *(void**) p = hh->first_free;
-  hh->first_free = p;
-}
-
-static void stbtt__hheap_cleanup( stbtt__hheap* hh, void* userdata )
-{
-  stbtt__hheap_chunk* c = hh->head;
-  while ( c ) {
-    stbtt__hheap_chunk* n = c->next;
-    STBTT_free( c, userdata );
-    c = n;
-  }
-}
-
 typedef struct stbtt__edge {
   float x0, y0, x1, y1;
   int invert;
 } stbtt__edge;
 
+typedef struct
+{
+  float x, y;
+} stbtt__point;
 
 typedef struct stbtt__active_edge
 {
@@ -2913,12 +2914,66 @@ typedef struct stbtt__active_edge
   #endif
 } stbtt__active_edge;
 
+struct Rasterizer
+{
+  void stbtt__rasterize_sorted_edges( stbtt__bitmap* result, stbtt__edge* e, int n, int vsubsample, int off_x, int off_y, void* userdata );
+  void stbtt__rasterize( stbtt__bitmap* result, stbtt__point* pts, int* wcount, int windings, float scale_x, float scale_y, float shift_x, float shift_y, int off_x, int off_y, int invert, void* userdata );
+
+  stbtt__point* stbtt_FlattenCurves( stbtt_vertex* vertices, int num_verts, float objspace_flatness, int** contour_lengths, int* num_contours, void* userdata );
+
+  stbtt__active_edge* stbtt__new_active( stbtt__hheap* hh, stbtt__edge* e, int off_x, float start_point, void* userdata );
+  void* stbtt__hheap_alloc( stbtt__hheap* hh, size_t size, void* userdata );
+  void stbtt__hheap_free( stbtt__hheap* hh, void* p );
+  void stbtt__hheap_cleanup( stbtt__hheap* hh, void* userdata );
+
+
+  memory::Arena* arena;
+};
+
+void* Rasterizer::stbtt__hheap_alloc( stbtt__hheap* hh, size_t size, void* userdata )
+{
+  if ( hh->first_free ) {
+    void* p = hh->first_free;
+    hh->first_free = *(void**) p;
+    return p;
+  }
+  else {
+    if ( hh->num_remaining_in_head_chunk == 0 ) {
+      int count = (size < 32 ? 2000 : size < 128 ? 800 : 100);
+      stbtt__hheap_chunk* c = (stbtt__hheap_chunk*) arena->alloc( sizeof( stbtt__hheap_chunk ) + size * count );
+      if ( c == NULL )
+        return NULL;
+      c->next = hh->head;
+      hh->head = c;
+      hh->num_remaining_in_head_chunk = count;
+    }
+    --hh->num_remaining_in_head_chunk;
+    return (char*) (hh->head) + sizeof( stbtt__hheap_chunk ) + size * hh->num_remaining_in_head_chunk;
+  }
+}
+
+void Rasterizer::stbtt__hheap_free( stbtt__hheap* hh, void* p )
+{
+  *(void**) p = hh->first_free;
+  hh->first_free = p;
+}
+
+void Rasterizer::stbtt__hheap_cleanup( stbtt__hheap* hh, void* userdata )
+{
+  stbtt__hheap_chunk* c = hh->head;
+  while ( c ) {
+    stbtt__hheap_chunk* n = c->next;
+    arena->free( c );
+    c = n;
+  }
+}
+
 #if STBTT_RASTERIZER_VERSION == 1
 #define STBTT_FIXSHIFT   10
 #define STBTT_FIX        (1 << STBTT_FIXSHIFT)
 #define STBTT_FIXMASK    (STBTT_FIX-1)
 
-static stbtt__active_edge* stbtt__new_active( stbtt__hheap* hh, stbtt__edge* e, int off_x, float start_point, void* userdata )
+stbtt__active_edge* Rasterizer::stbtt__new_active( stbtt__hheap* hh, stbtt__edge* e, int off_x, float start_point, void* userdata )
 {
   stbtt__active_edge* z = (stbtt__active_edge*) stbtt__hheap_alloc( hh, sizeof( *z ), userdata );
   float dxdy = (e->x1 - e->x0) / (e->y1 - e->y0);
@@ -2940,7 +2995,7 @@ static stbtt__active_edge* stbtt__new_active( stbtt__hheap* hh, stbtt__edge* e, 
   return z;
 }
 #elif STBTT_RASTERIZER_VERSION == 2
-static stbtt__active_edge* stbtt__new_active( stbtt__hheap* hh, stbtt__edge* e, int off_x, float start_point, void* userdata )
+stbtt__active_edge* Rasterizer::stbtt__new_active( stbtt__hheap* hh, stbtt__edge* e, int off_x, float start_point, void* userdata )
 {
   stbtt__active_edge* z = (stbtt__active_edge*) stbtt__hheap_alloc( hh, sizeof( *z ), userdata );
   float dxdy = (e->x1 - e->x0) / (e->y1 - e->y0);
@@ -3009,7 +3064,8 @@ static void stbtt__fill_active_edges( unsigned char* scanline, int len, stbtt__a
   }
 }
 
-static void stbtt__rasterize_sorted_edges( stbtt__bitmap* result, stbtt__edge* e, int n, int vsubsample, int off_x, int off_y, void* userdata )
+
+void Rasterizer::stbtt__rasterize_sorted_edges( stbtt__bitmap* result, stbtt__edge* e, int n, int vsubsample, int off_x, int off_y, void* userdata )
 {
   stbtt__hheap hh = { 0, 0, 0 };
   stbtt__active_edge* active = NULL;
@@ -3019,7 +3075,7 @@ static void stbtt__rasterize_sorted_edges( stbtt__bitmap* result, stbtt__edge* e
   unsigned char scanline_data[512], * scanline;
 
   if ( result->w > 512 )
-    scanline = (unsigned char*) STBTT_malloc( result->w, userdata );
+    scanline = (unsigned char*) arena->alloc( result->w );
   else
     scanline = scanline_data;
 
@@ -3108,7 +3164,7 @@ static void stbtt__rasterize_sorted_edges( stbtt__bitmap* result, stbtt__edge* e
   stbtt__hheap_cleanup( &hh, userdata );
 
   if ( scanline != scanline_data )
-    STBTT_free( scanline, userdata );
+    arena->free( scanline );
 }
 
 #elif STBTT_RASTERIZER_VERSION == 2
@@ -3326,7 +3382,7 @@ static void stbtt__fill_active_edges_new( float* scanline, float* scanline_fill,
 }
 
 // directly AA rasterize edges w/o supersampling
-static void stbtt__rasterize_sorted_edges( stbtt__bitmap* result, stbtt__edge* e, int n, int vsubsample, int off_x, int off_y, void* userdata )
+void Rasterizer::stbtt__rasterize_sorted_edges( stbtt__bitmap* result, stbtt__edge* e, int n, int vsubsample, int off_x, int off_y, void* userdata )
 {
   stbtt__hheap hh = { 0, 0, 0 };
   stbtt__active_edge* active = NULL;
@@ -3336,7 +3392,7 @@ static void stbtt__rasterize_sorted_edges( stbtt__bitmap* result, stbtt__edge* e
   STBTT__NOTUSED( vsubsample );
 
   if ( result->w > 64 )
-    scanline = (float*) STBTT_malloc( (result->w * 2 + 1) * sizeof( float ), userdata );
+    scanline = (float*) arena->alloc( (result->w * 2 + 1) * sizeof( float ) );
   else
     scanline = scanline_data;
 
@@ -3421,7 +3477,9 @@ static void stbtt__rasterize_sorted_edges( stbtt__bitmap* result, stbtt__edge* e
   stbtt__hheap_cleanup( &hh, userdata );
 
   if ( scanline != scanline_data )
-    STBTT_free( scanline, userdata );
+  {
+    arena->free( scanline );
+  }
 }
 #else
 #error "Unrecognized value of STBTT_RASTERIZER_VERSION"
@@ -3516,12 +3574,9 @@ static void stbtt__sort_edges( stbtt__edge* p, int n )
   stbtt__sort_edges_ins_sort( p, n );
 }
 
-typedef struct
-{
-  float x, y;
-} stbtt__point;
 
-static void stbtt__rasterize( stbtt__bitmap* result, stbtt__point* pts, int* wcount, int windings, float scale_x, float scale_y, float shift_x, float shift_y, int off_x, int off_y, int invert, void* userdata )
+
+void Rasterizer::stbtt__rasterize( stbtt__bitmap* result, stbtt__point* pts, int* wcount, int windings, float scale_x, float scale_y, float shift_x, float shift_y, int off_x, int off_y, int invert, void* userdata )
 {
   float y_scale_inv = invert ? -scale_y : scale_y;
   stbtt__edge* e;
@@ -3540,7 +3595,7 @@ static void stbtt__rasterize( stbtt__bitmap* result, stbtt__point* pts, int* wco
   for ( i=0; i < windings; ++i )
     n += wcount[i];
 
-  e = (stbtt__edge*) STBTT_malloc( sizeof( *e ) * (n + 1), userdata ); // add an extra one as a sentinel
+  e = (stbtt__edge*) arena->alloc( sizeof( *e ) * (n + 1) ); // add an extra one as a sentinel
   if ( e == 0 ) return;
   n = 0;
 
@@ -3575,7 +3630,7 @@ static void stbtt__rasterize( stbtt__bitmap* result, stbtt__point* pts, int* wco
   // now, traverse the scanlines and find the intersections on each scanline, use xor winding rule
   stbtt__rasterize_sorted_edges( result, e, n, vsubsample, off_x, off_y, userdata );
 
-  STBTT_free( e, userdata );
+  arena->free( e );
 }
 
 static void stbtt__add_point( stbtt__point* points, int n, float x, float y )
@@ -3651,7 +3706,7 @@ static void stbtt__tesselate_cubic( stbtt__point* points, int* num_points, float
 }
 
 // returns number of contours
-static stbtt__point* stbtt_FlattenCurves( stbtt_vertex* vertices, int num_verts, float objspace_flatness, int** contour_lengths, int* num_contours, void* userdata )
+stbtt__point* Rasterizer::stbtt_FlattenCurves( stbtt_vertex* vertices, int num_verts, float objspace_flatness, int** contour_lengths, int* num_contours, void* userdata )
 {
   stbtt__point* points=0;
   int num_points=0;
@@ -3667,7 +3722,7 @@ static stbtt__point* stbtt_FlattenCurves( stbtt_vertex* vertices, int num_verts,
   *num_contours = n;
   if ( n == 0 ) return 0;
 
-  *contour_lengths = (int*) STBTT_malloc( sizeof( **contour_lengths ) * n, userdata );
+  *contour_lengths = (int*) arena->alloc( sizeof( **contour_lengths ) * n );
 
   if ( *contour_lengths == 0 ) {
     *num_contours = 0;
@@ -3678,7 +3733,7 @@ static stbtt__point* stbtt_FlattenCurves( stbtt_vertex* vertices, int num_verts,
   for ( pass=0; pass < 2; ++pass ) {
     float x=0, y=0;
     if ( pass == 1 ) {
-      points = (stbtt__point*) STBTT_malloc( num_points * sizeof( points[0] ), userdata );
+      points = (stbtt__point*) arena->alloc( num_points * sizeof( points[0] ) );
       if ( points == NULL ) goto error;
     }
     num_points = 0;
@@ -3721,8 +3776,8 @@ static stbtt__point* stbtt_FlattenCurves( stbtt_vertex* vertices, int num_verts,
 
   return points;
 error:
-  STBTT_free( points, userdata );
-  STBTT_free( *contour_lengths, userdata );
+  arena->free( points );
+  arena->free( *contour_lengths );
   *contour_lengths = 0;
   *num_contours = 0;
   return NULL;
@@ -3733,11 +3788,28 @@ STBTT_DEF void stbtt_Rasterize( stbtt__bitmap* result, float flatness_in_pixels,
   float scale            = scale_x > scale_y ? scale_y : scale_x;
   int winding_count      = 0;
   int* winding_lengths   = NULL;
-  stbtt__point* windings = stbtt_FlattenCurves( vertices, num_verts, flatness_in_pixels / scale, &winding_lengths, &winding_count, userdata );
+
+  Rasterizer rasterizer { stb_truetype::BS_STB_MEMORY_ARENA };
+  stbtt__point* windings = rasterizer.stbtt_FlattenCurves( vertices, num_verts, flatness_in_pixels / scale, &winding_lengths, &winding_count, userdata );
   if ( windings ) {
-    stbtt__rasterize( result, windings, winding_lengths, winding_count, scale_x, scale_y, shift_x, shift_y, x_off, y_off, invert, userdata );
-    STBTT_free( winding_lengths, userdata );
-    STBTT_free( windings, userdata );
+    rasterizer.stbtt__rasterize( result, windings, winding_lengths, winding_count, scale_x, scale_y, shift_x, shift_y, x_off, y_off, invert, userdata );
+    stb_truetype::BS_STB_MEMORY_ARENA->free( winding_lengths );
+    stb_truetype::BS_STB_MEMORY_ARENA->free( windings );
+  }
+}
+
+STBTT_DEF void stbtt_RasterizeThreadSafe( memory::Arena* arena, stbtt__bitmap* result, float flatness_in_pixels, stbtt_vertex* vertices, int num_verts, float scale_x, float scale_y, float shift_x, float shift_y, int x_off, int y_off, int invert, void* userdata )
+{
+  float scale            = scale_x > scale_y ? scale_y : scale_x;
+  int winding_count      = 0;
+  int* winding_lengths   = NULL;
+
+  Rasterizer rasterizer { arena };
+  stbtt__point* windings = rasterizer.stbtt_FlattenCurves( vertices, num_verts, flatness_in_pixels / scale, &winding_lengths, &winding_count, userdata );
+  if ( windings ) {
+    rasterizer.stbtt__rasterize( result, windings, winding_lengths, winding_count, scale_x, scale_y, shift_x, shift_y, x_off, y_off, invert, userdata );
+    arena->free( winding_lengths );
+    arena->free( windings );
   }
 }
 
