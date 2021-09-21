@@ -12,20 +12,18 @@
 
 #if BS_BUILD_DEBUG
 # define BREAK __debugbreak()
+# define BREAK_DEPRECATED __debugbreak()
 #else
 # define BREAK (void(0))
+# define BREAK_DEPRECATED (void(0))
 #endif
+
 
 #if BS_BUILD_DEBUG
 # define assert(expression) { if ( !(expression) ) *(s32*) 0=0; }
 #else
 # define assert(expression)
 #endif
-
-
-
-
-
 
 
 

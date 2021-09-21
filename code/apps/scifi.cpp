@@ -1,6 +1,5 @@
 #include "scifi.h"
 
-
 #include "file.h"
 
 #include <platform.h>
@@ -105,6 +104,8 @@ namespace debug
       int2 glyphPos { state.currentWriter, 100 };
 
       glyphPos.x += glyph.advance - glyph.width;
+      glyphPos.y += glyph.offsetY;
+
       bitmap_draw( target, tmp, glyphPos );
       state.currentWriter += glyph.width;
     }
@@ -204,11 +205,6 @@ void app_tick( PlatformData const& platformData, AppData& appData, BackBuffer& b
     char filename[] = "w:/data/Inconsolata-Regular.ttf";
     platform::ReadFileResult file = platformData.read_file( filename, 0, 0 );
 
-
-    //char const* charTable = "!\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
-    //state.uiState.fontImage;
-
-    //state.uiState.testText[0];
     state.uiState.map = font::load_from_ttf( appData.generalPurposeArena, (u8 const*) file.data, "Klara" );
 
     //state.uiState.fontImage = load_font( (u8 const*) file.data, file.size );

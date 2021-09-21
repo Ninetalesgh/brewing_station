@@ -108,25 +108,17 @@ namespace font
   {
     GlyphMap glyphMap {};
 
-    RasterizedGlyphCollection* font = load_ttf( arena, ttf_data );
+    RasterizedGlyphCollectionSTB* glyphCollection = (RasterizedGlyphCollectionSTB*) load_ttf( arena, ttf_data );
 
-    stb_truetype::init_memory_arena( &arena );
+    //stb_truetype::init_memory_arena( &arena );
+    //stbtt_fontinfo fontInfo;
 
-    stbtt_fontinfo fontInfo;
-
-
-    if ( stbtt_GetFontOffsetForIndex( ttf_data, 0 ) == 0 )
-    {
-      stbtt_InitFont( &fontInfo, ttf_data, stbtt_GetFontOffsetForIndex( ttf_data, 0 ) );
-    }
-
-    // s32 codepoint = 'A';
-     //Bitmap8 bmp {};
-
+    // if ( stbtt_GetFontOffsetForIndex( ttf_data, 0 ) == 0 )
     // {
-       // PROFILE_SCOPE( profile_codepoint );
+    //   stbtt_InitFont( &fontInfo, ttf_data, stbtt_GetFontOffsetForIndex( ttf_data, 0 ) );
     // }
 
+    stbtt_fontinfo& fontInfo = glyphCollection->stbFontInfo;
 
     float scale = stbtt_ScaleForPixelHeight( &fontInfo, 128.0f );
     Glyph glyph {};
@@ -141,47 +133,7 @@ namespace font
 
 
 
-    // for ( char c = 'a'; c < 128; ++c )
-    // {
-       // s32 glyphIndex = stbtt_FindGlyphIndex( &fontInfo, c );
-
-       // stbtt_GetGlyphHMetrics( &fontInfo, glyphIndex, &glyph.advance, &glyph.lsb );
-       // s32 x0, x1, y0, y1;
-       // stbtt_GetGlyphBitmapBoxSubpixel( &fontInfo, glyphIndex, /*scalex*/ scale, scale, /*shiftx*/ 0,/*shifty*/ 0, &x0, &y0, &x1, &y1 );
-
-       // glyph.width = x1 - x0;
-       // glyph.height = y1 - y0;
-       // glyph.offsetX = x0;
-       // glyph.offsetY = y0;
-       // glyph.data = (u8*) arena.alloc( glyph.width * glyph.height );
-
-       // stbtt_MakeGlyphBitmapSubpixel( &fontInfo, glyph.data, glyph.width, glyph.height, glyph.width, scale, scale, /*shiftx*/ 0,/*shifty*/ 0, glyphIndex );
-       // //stbtt_MakeCodepointBitmapSubpixel( &fontInfo, glyph.data, glyph.width, glyph.height, glyph.width, scale, scale, /*shiftx*/ 0, /*shifty*/ 0, c );
-
-       // break;
-    // }
-
-
-
-     // float xpos = 2;
-     // int advance, lsb, x0, y0, x1, y1;
-     // float x_shift = xpos - (float) floor( xpos );
- //    stbtt_GetCodepointHMetrics( &fontInfo, codepoint, &advance, &lsb );
-     // stbtt_GetCodepointBitmapBoxSubpixel( &fontInfo, codepoint, scale, scale, x_shift, 0, &x0, &y0, &x1, &y1 );
-      //stbtt_MakeCodepointBitmapSubpixel( &fontInfo, &screen[baseline + y0][(int) xpos + x0], x1 - x0, y1 - y0, 79, scale, scale, x_shift, 0, codepoint );
-
-     //Glyph
-
-    // local_persist s32 glyphIndex = 1;
-    // bmp.pixel = stbtt_GetGlyphBitmap( &fontInfo, 0, stbtt_ScaleForPixelHeight( &fontInfo, scale ), glyphIndex++, &bmp.width, &bmp.height, 0, 0 );
-
-
-     // int glyphIndexA = stbtt_FindGlyphIndex( &fontInfo, codepoint );
-     // int glyphIndexB = stbtt_FindGlyphIndex( &fontInfo, 'B' );
-      // bmp.pixel = stbtt_GetGlyphBitmapSubpixel( fontInfo, scale_x, scale_y, shift_x, shift_y, glyphIndex, width, height, xoff, yoff );
-
-
-    stb_truetype::deinit_memory_arena();
+    // stb_truetype::deinit_memory_arena();
 
     return glyphMap;
   }

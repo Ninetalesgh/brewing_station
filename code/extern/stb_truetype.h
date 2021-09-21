@@ -7,23 +7,25 @@ namespace stb_truetype
   //TODO: NOT THREAD SAFE
   void init_memory_arena( memory::Arena* arena )
   {
+    BREAK_DEPRECATED;
     BS_STB_MEMORY_ARENA = arena;
   }
 
   void deinit_memory_arena()
   {
+    BREAK_DEPRECATED;
     BS_STB_MEMORY_ARENA = nullptr;
   }
 
   void* bs_alloc( size_t size )
   {
-    BREAK;
+    BREAK_DEPRECATED;
     return (void*) BS_STB_MEMORY_ARENA->alloc( (s64) size );
   }
 
   void bs_free( void* data )
   {
-    BREAK;
+    BREAK_DEPRECATED;
     BS_STB_MEMORY_ARENA->free( (char*) data );
   }
 }
