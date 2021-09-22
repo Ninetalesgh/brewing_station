@@ -16,23 +16,36 @@ namespace font
     s32 offsetY;
   };
 
-  struct GlyphMap
+  struct GlyphTable
   {
-    Glyph glyphs[16];
-  };
-
-  struct RasterizedGlyphCollection
-  {
+    //TODO maybe this enum isn't needed
     enum class ASSET_TYPE : u32
     {
       ERROR = 0,
       STB_TTF = 1,
       BSA = 2,
     } asset_type;
+
+    INLINE Glyph const* get_glyph( char asciiChar )
+    {
+      assert( asciiChar > 0 );
+
+      Glyph& result = asciiGlyphs[asciiChar];
+      if ( !result.data ) make_glyph( asciiChar );
+      return &result;
+    }
+
+    //TODO variable scale
+    float scale;
+    memory::Arena* arena;
+    void* fontInfo;
+    Glyph asciiGlyphs[128];
+
+  private:
+    void make_glyph( char asciiChar );
+    GlyphTable( GlyphTable const& ) {}
   };
 
-  RasterizedGlyphCollection* load_ttf( memory::Arena permanentStorage, u8 const* ttf_data );
-
-  GlyphMap load_from_ttf( memory::Arena arena, u8 const* ttf_data, char const* text );
+  GlyphTable* load_glyph_table_from_ttf( memory::Arena* arena, u8 const* ttf_data );
 
 }

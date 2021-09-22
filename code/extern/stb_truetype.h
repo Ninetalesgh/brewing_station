@@ -1,3 +1,5 @@
+//EDITED
+
 #ifdef STB_TRUETYPE_IMPLEMENTATION
 #include <common/memory.h>
 namespace stb_truetype
@@ -7,25 +9,25 @@ namespace stb_truetype
   //TODO: NOT THREAD SAFE
   void init_memory_arena( memory::Arena* arena )
   {
-    BREAK_DEPRECATED;
+    DEPRECATED_CODE_BREAK;
     BS_STB_MEMORY_ARENA = arena;
   }
 
   void deinit_memory_arena()
   {
-    BREAK_DEPRECATED;
+    DEPRECATED_CODE_BREAK;
     BS_STB_MEMORY_ARENA = nullptr;
   }
 
   void* bs_alloc( size_t size )
   {
-    BREAK_DEPRECATED;
+    DEPRECATED_CODE_BREAK;
     return (void*) BS_STB_MEMORY_ARENA->alloc( (s64) size );
   }
 
   void bs_free( void* data )
   {
-    BREAK_DEPRECATED;
+    DEPRECATED_CODE_BREAK;
     BS_STB_MEMORY_ARENA->free( (char*) data );
   }
 }
@@ -1943,7 +1945,7 @@ int ShapeExtractor::stbtt__GetGlyphShapeTT( const stbtt_fontinfo* info, int glyp
       n = (float) STBTT_sqrt( mtx[2] * mtx[2] + mtx[3] * mtx[3] );
 
       // Get indexed glyph.
-      comp_num_verts = stbtt_GetGlyphShape( info, gidx, &comp_verts );
+      comp_num_verts = stbtt_GetGlyphShapeThreadSafe( arena, info, gidx, &comp_verts );
       if ( comp_num_verts > 0 ) {
         // Transform vertices.
         for ( i = 0; i < comp_num_verts; ++i ) {
@@ -1957,17 +1959,17 @@ int ShapeExtractor::stbtt__GetGlyphShapeTT( const stbtt_fontinfo* info, int glyp
           v->cy = (stbtt_vertex_type) (n * (mtx[1] * x + mtx[3] * y + mtx[5]));
         }
         // Append vertices.
-        tmp = (stbtt_vertex*) STBTT_malloc( (num_vertices + comp_num_verts) * sizeof( stbtt_vertex ), info->userdata );
+        tmp = (stbtt_vertex*) arena->alloc( (num_vertices + comp_num_verts) * sizeof( stbtt_vertex ) );
         if ( !tmp ) {
-          if ( vertices ) STBTT_free( vertices, info->userdata );
-          if ( comp_verts ) STBTT_free( comp_verts, info->userdata );
+          if ( vertices ) arena->free( vertices );
+          if ( comp_verts ) arena->free( comp_verts );
           return 0;
         }
         if ( num_vertices > 0 ) STBTT_memcpy( tmp, vertices, num_vertices * sizeof( stbtt_vertex ) );
         STBTT_memcpy( tmp + num_vertices, comp_verts, comp_num_verts * sizeof( stbtt_vertex ) );
-        if ( vertices ) STBTT_free( vertices, info->userdata );
+        if ( vertices ) arena->free( vertices );
         vertices = tmp;
-        STBTT_free( comp_verts, info->userdata );
+        arena->free( comp_verts );
         num_vertices += comp_num_verts;
       }
       // More components ?
@@ -3403,7 +3405,8 @@ void Rasterizer::stbtt__rasterize_sorted_edges( stbtt__bitmap* result, stbtt__ed
   y = off_y;
   e[n].y0 = (float) (off_y + result->h) + 1;
 
-  while ( j < result->h ) {
+  while ( j < result->h )
+  {
     // find center of pixel for this scanline
     float scan_y_top    = y + 0.0f;
     float scan_y_bottom = y + 1.0f;

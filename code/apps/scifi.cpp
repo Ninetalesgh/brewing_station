@@ -30,6 +30,37 @@ u32 CheckMouseCollision( float2 mouse, Rect rect )
 #include <math.h>
 namespace debug
 {
+  void bitmap_draw_text( Bitmap* target, font::GlyphTable* glyphTable, float2 pos, char const* text )
+  {
+    if ( glyphTable )
+    {
+      char const* reader = text;
+      float currentX = pos.x;
+      while ( *reader )
+      {
+        font::Glyph const& glyph = *(glyphTable->get_glyph( *reader++ ));
+        Bitmap8 bmp {};
+
+        bmp.pixel = glyph.data;
+        bmp.width = glyph.width;
+        bmp.height = glyph.height;
+
+        float2 currentPos = pos + float2( currentX, (float) glyph.offsetY );
+        currentX += glyph.width;
+
+        //   int2 glyphPos { state.currentWriter, 100 };
+
+        //   glyphPos.x += glyph.advance - glyph.width;
+        //   glyphPos.y += glyph.offsetY;
+
+        //   bitmap_draw( target, tmp, glyphPos );
+        //   state.currentWriter += glyph.width;
+
+        bitmap_draw( target, bmp, currentPos );
+      }
+    }
+  }
+
   void RenderUI( Bitmap* target, u64 currentFrame, UIState& state, float2 mouse )
   {
     s32 height = target->height;
@@ -92,23 +123,24 @@ namespace debug
     //   bitmap_draw( target, state.fontImage, { 0,0 } );
     // }
 
-    state.currentWriter = 0;
-    for ( int textIndex = 0; textIndex < array_size( state.map.glyphs ); ++textIndex )
-    {
-      Bitmap8 tmp {};
-      font::Glyph& glyph = state.map.glyphs[textIndex];
-      if ( glyph.data == nullptr ) continue;
-      tmp.pixel = glyph.data;
-      tmp.width = glyph.width;
-      tmp.height = glyph.height;
-      int2 glyphPos { state.currentWriter, 100 };
+    bitmap_draw_text( target, state.glyphTable, { 50,200 }, "KlaraIHopeYou'redoingwell" );
+    //state.currentWriter = 0;
+    // for ( int textIndex = 0; textIndex < array_size( state.map.glyphs ); ++textIndex )
+    // {
+    //   Bitmap8 tmp {};
+    //   font::Glyph& glyph = state.map.glyphs[textIndex];
+    //   if ( glyph.data == nullptr ) continue;
+    //   tmp.pixel = glyph.data;
+    //   tmp.width = glyph.width;
+    //   tmp.height = glyph.height;
+    //   int2 glyphPos { state.currentWriter, 100 };
 
-      glyphPos.x += glyph.advance - glyph.width;
-      glyphPos.y += glyph.offsetY;
+    //   glyphPos.x += glyph.advance - glyph.width;
+    //   glyphPos.y += glyph.offsetY;
 
-      bitmap_draw( target, tmp, glyphPos );
-      state.currentWriter += glyph.width;
-    }
+    //   bitmap_draw( target, tmp, glyphPos );
+    //   state.currentWriter += glyph.width;
+    // }
 
     draw_rect( target, button0, colorButton0 );
     draw_rect( target, button1, colorButton1 );
@@ -205,7 +237,7 @@ void app_tick( PlatformData const& platformData, AppData& appData, BackBuffer& b
     char filename[] = "w:/data/Inconsolata-Regular.ttf";
     platform::ReadFileResult file = platformData.read_file( filename, 0, 0 );
 
-    state.uiState.map = font::load_from_ttf( appData.generalPurposeArena, (u8 const*) file.data, "Klara" );
+    state.uiState.glyphTable = font::load_glyph_table_from_ttf( &appData.generalPurposeArena, (u8 const*) file.data );
 
     //state.uiState.fontImage = load_font( (u8 const*) file.data, file.size );
   }

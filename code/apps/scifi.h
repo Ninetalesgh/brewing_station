@@ -9,7 +9,7 @@ struct UIState
 {
   Bitmap image;
   //  Bitmap8 fontImage;
-  font::GlyphMap map;
+  font::GlyphTable* glyphTable;
   int currentWriter;
 };
 

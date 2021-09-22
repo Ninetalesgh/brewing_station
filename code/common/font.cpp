@@ -5,10 +5,9 @@
 
 namespace font
 {
-
   Glyph make_glyph( memory::Arena* arena, stbtt_fontinfo const* fontInfo, float scale, char c )
   {
-    Glyph glyph {};
+    Glyph glyph;
 
     if ( scale > 0.0f )
     {
@@ -74,25 +73,29 @@ namespace font
     return glyph;
   }
 
-  struct RasterizedGlyphCollectionSTB : public RasterizedGlyphCollection
+  GlyphTable* load_glyph_table_from_ttf( memory::Arena* arena, u8 const* ttf_data )
   {
-    stbtt_fontinfo stbFontInfo;
-  };
-
-  RasterizedGlyphCollection* load_ttf( memory::Arena permanentStorage, u8 const* ttf_data )
-  {
-    RasterizedGlyphCollectionSTB* result = nullptr;
+    GlyphTable* result = nullptr;
 
     if ( stbtt_GetFontOffsetForIndex( ttf_data, 0 ) == 0 )
     {
-      result = (RasterizedGlyphCollectionSTB*) permanentStorage.alloc( sizeof( RasterizedGlyphCollectionSTB ) );
-      *result = {};
-      if ( stbtt_InitFont( &result->stbFontInfo, ttf_data, 0 ) )
+      result = (GlyphTable*) arena->alloc_set_zero( sizeof( GlyphTable ) );
+
+      stbtt_fontinfo* stbFontInfo = (stbtt_fontinfo*) arena->alloc( sizeof( stbtt_fontinfo ) );
+      *stbFontInfo = {};
+
+      if ( stbtt_InitFont( stbFontInfo, ttf_data, 0 ) )
       {
-        result->asset_type = RasterizedGlyphCollection::ASSET_TYPE::STB_TTF;
+        result->asset_type = GlyphTable::ASSET_TYPE::STB_TTF;
+        result->scale = stbtt_ScaleForPixelHeight( stbFontInfo, 128.0f );
+        result->arena = arena;
+        result->fontInfo = stbFontInfo;
       }
       else
       {
+        arena->free( stbFontInfo );
+        arena->free( result );
+        result = nullptr;
         BREAK;
       }
     }
@@ -104,39 +107,33 @@ namespace font
     return result;
   }
 
-  GlyphMap load_from_ttf( memory::Arena arena, u8 const* ttf_data, char const* text )
+  void GlyphTable::make_glyph( char glyphCharacter )
   {
-    GlyphMap glyphMap {};
-
-    RasterizedGlyphCollectionSTB* glyphCollection = (RasterizedGlyphCollectionSTB*) load_ttf( arena, ttf_data );
-
-    //stb_truetype::init_memory_arena( &arena );
-    //stbtt_fontinfo fontInfo;
-
-    // if ( stbtt_GetFontOffsetForIndex( ttf_data, 0 ) == 0 )
-    // {
-    //   stbtt_InitFont( &fontInfo, ttf_data, stbtt_GetFontOffsetForIndex( ttf_data, 0 ) );
-    // }
-
-    stbtt_fontinfo& fontInfo = glyphCollection->stbFontInfo;
-
-    float scale = stbtt_ScaleForPixelHeight( &fontInfo, 128.0f );
-    Glyph glyph {};
-
-    char const* reader = text;
-    int writeIndex = 0;
-    while ( *reader )
-    {
-      glyphMap.glyphs[writeIndex++] = make_glyph( &arena, &fontInfo, scale, *reader );
-      ++reader;
-    }
-
-
-
-    // stb_truetype::deinit_memory_arena();
-
-    return glyphMap;
+    asciiGlyphs[glyphCharacter] = font::make_glyph( arena, (stbtt_fontinfo*) fontInfo, scale, glyphCharacter );
   }
+
+
+  // GlyphMap load_from_ttf( memory::Arena* arena, u8 const* ttf_data, char const* text )
+  // {
+  //   GlyphMap glyphMap {};
+
+  //   GlyphTable* glyphCollection = load_glyph_table_from_ttf( arena, ttf_data );
+
+  //   stbtt_fontinfo* stbFontInfo = (stbtt_fontinfo*) glyphCollection->fontInfo;
+
+  //   float scale = stbtt_ScaleForPixelHeight( stbFontInfo, 128.0f );
+  //   Glyph glyph {};
+
+  //   char const* reader = text;
+  //   int writeIndex = 0;
+  //   while ( *reader )
+  //   {
+  //     glyphMap.glyphs[writeIndex++] = make_glyph( arena, stbFontInfo, scale, *reader );
+  //     ++reader;
+  //   }
+
+  //   return glyphMap;
+  // }
 
 }
 

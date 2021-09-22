@@ -113,7 +113,4 @@ void bitmap_draw( Bitmap* target, Bitmap8 const& source, float2 pos )
   }
 }
 
-void bitmap_draw_text( Bitmap* target, font::RasterizedGlyphCollection* glyphs, char const* text )
-{
-}
 

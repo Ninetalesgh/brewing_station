@@ -3,42 +3,23 @@
 #include "preprocessor.h"
 #include "basic_types.h"
 
-struct GeneralArena
-{
-
-  u32 capacity;
-};
-
-
-struct FixedArena
-{
-  s32 capacity;
-};
-
-//#include <malloc.h>
-
 namespace memory
 {
-  void copy( char* source, char* destination, s64 size )
+  INLINE void copy( char* destination, char* source, s64 size )
   {
-    char* reader = source;
-    char* writer = destination;
     while ( size-- > 0 )
     {
-      *writer++ = *reader++;
+      *destination++ = *source++;
     }
   }
 
-
-  struct GeneralArena
+  INLINE void set_zero( char* target, s64 size )
   {
-
-  };
-
-  struct FixedArena
-  {
-
-  };
+    while ( size-- > 0 )
+    {
+      *target++ = 0;
+    }
+  }
 
   enum EntryFlags : u64
   {
@@ -57,7 +38,7 @@ namespace memory
       EntryFlags flags;
     };
 
-    char* alloc( s64 size )
+    void* alloc( s64 size, u32 alignment = 4 )
     {
       //  return (char*) malloc( (size_t) size );
         //TODO compensate for fragmentation a bit?
@@ -65,21 +46,33 @@ namespace memory
         //TODO thread safety?
       char* result = nullptr;
 
+      // changing the current pointer permanently shouldn't be an issue, 
+      //arenas shouldn't be used for a lot of small entries
+      //BS_BUILD_64BIT
+      current += ((u64) current) & (alignment - 1);
+
       if ( current + size < (char*) (lastEntry - 1) )
       {
         result = current;
+        current += size;
+        ++entryCount;
         lastEntry--;
         lastEntry->begin = result;
         lastEntry->size = size;
         lastEntry->flags = ALIVE;
-        ++entryCount;
-        current += size;
       }
       else
       {
         BREAK;
       }
 
+      return result;
+    }
+
+    void* alloc_set_zero( s64 size, u32 alignment = 4 )
+    {
+      char* result = (char*) alloc( size, alignment );
+      set_zero( result, size );
       return result;
     }
 
@@ -178,6 +171,17 @@ namespace memory
     char* current;
     Entry* lastEntry;
     s32 entryCount;
+
+  public:
+    Arena()
+      : bufferBegin( nullptr )
+      , bufferEnd( nullptr )
+      , current( nullptr )
+      , lastEntry( nullptr )
+      , entryCount( 0 )
+    {}
+  private:
+    Arena( Arena const& ) {}
   };
 
 
