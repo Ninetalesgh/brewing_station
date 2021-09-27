@@ -26,6 +26,10 @@
 
 #if BS_BUILD_DEBUG
 //# define assert(expression) { if ( !(expression) ) *(s32*) 0=0; }
+#ifdef assert
+# undef assert
+#endif
+
 # define assert(expression) { if ( !(expression) ) BREAK; }
 #else
 # define assert(expression)

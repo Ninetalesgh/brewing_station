@@ -42,14 +42,14 @@ struct win32_DebugTimeMarker
 namespace stub
 {
   void app_sample_sound( AppData&, SoundBuffer& ) {}
-  void app_on_load( AppData& ) {}
+  void app_on_load( PlatformData const&, AppData& ) {}
   void app_tick( PlatformData const&, AppData&, BackBuffer& ) {}
   void app_receive_udp_packet( PlatformData const&, AppData&, net::UDPReceiveParameter const& ) {}
 };
 
 #if !BS_BUILD_RELEASE
 using win32_app_sample_sound = void( AppData&, SoundBuffer& );
-using win32_app_on_load = void( AppData& );
+using win32_app_on_load = void( PlatformData const&, AppData& );
 using win32_app_tick = void( PlatformData const&, AppData&, BackBuffer& );
 using win32_app_receive_udp_packet = void( PlatformData const&, AppData&, net::UDPReceiveParameter const& );
 struct App

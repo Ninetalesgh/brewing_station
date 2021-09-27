@@ -113,4 +113,26 @@ void bitmap_draw( Bitmap* target, Bitmap8 const& source, float2 pos )
   }
 }
 
+void glyph_draw( Bitmap* target, u8* pixel, s32 width, s32 height, float2 pos, u32 color = WHITE )
+{
+  int2 start = clamp( int2( pos ), { 0, 0 }, { target->width, target->height } );
+  int2 end = clamp( int2 { s32( pos.x ) + width, s32( pos.y ) + height }, { 0, 0 }, { target->width, target->height } );
+
+  s32 row = 0;
+  for ( s32 y = start.y; y < end.y; ++y )
+  {
+    u32* write = &(((u32*) target->pixel)[start.x + y * target->width]);
+    u8* read = &(((u8*) pixel)[row++ * width]);
+
+    for ( s32 x = start.x; x < end.x; ++x )
+    {
+      if ( *read )
+      {
+        *write = color;
+      }
+      ++write;
+      ++read;
+    }
+  }
+}
 

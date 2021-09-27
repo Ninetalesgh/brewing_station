@@ -1440,7 +1440,7 @@ int CALLBACK WinMain( HINSTANCE hInstance,
           global::win32Data.guard_oldDllCanBeDiscarded.increment();
           global::win32Data.app = &global::win32Data.app_instances[global::win32Data.guard_currentDllIndex];
 
-          global::win32Data.app->on_load( appData );
+          global::win32Data.app->on_load( platformData, appData );
         }
         #endif
         beginCounter = endCounter;

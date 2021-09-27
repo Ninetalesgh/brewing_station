@@ -87,7 +87,7 @@ namespace platform
 extern "C" void app_sample_sound( AppData & appData, SoundBuffer & soundBuffer ); //TODO if multithreaded const appdata? 
 #endif
 
-extern "C" void app_on_load( AppData & appData );
+extern "C" void app_on_load( PlatformData const& platformData, AppData & appData );
 
 extern "C" void app_tick( PlatformData const& platformData, AppData & appData, BackBuffer & backBuffer );
 

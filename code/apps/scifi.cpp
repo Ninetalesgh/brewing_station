@@ -30,34 +30,41 @@ u32 CheckMouseCollision( float2 mouse, Rect rect )
 #include <math.h>
 namespace debug
 {
-  void bitmap_draw_text( Bitmap* target, font::GlyphTable* glyphTable, float2 pos, char const* text )
+  void bitmap_draw_text( Bitmap* target, font::GlyphTable* glyphTable, float2 pos, u32 color, char const* text )
   {
     if ( glyphTable )
     {
-      char const* reader = text;
+      //char const* reader = text;
       float currentX = pos.x;
-      while ( *reader )
+      font::UnicodeParser parser( text );
+      s32 codepoint = parser.get_next_codepoint();
+      while ( codepoint )
       {
-        font::Glyph const& glyph = *(glyphTable->get_glyph( *reader++ ));
-        Bitmap8 bmp {};
+        font::Glyph const& glyph = *(glyphTable->get_glyph( codepoint ));
 
-        bmp.pixel = glyph.data;
-        bmp.width = glyph.width;
-        bmp.height = glyph.height;
+        float2 currentPos = pos + float2( currentX + glyph.offsetX, (float) glyph.offsetY );
+        currentX += glyph.advance * glyphTable->scale;
 
-        float2 currentPos = pos + float2( currentX, (float) glyph.offsetY );
-        currentX += glyph.width;
+        if ( glyph.data )
+        {
+          glyph_draw( target, glyph.data, glyph.width, glyph.height, currentPos, color );
+        }
 
-        //   int2 glyphPos { state.currentWriter, 100 };
-
-        //   glyphPos.x += glyph.advance - glyph.width;
-        //   glyphPos.y += glyph.offsetY;
-
-        //   bitmap_draw( target, tmp, glyphPos );
-        //   state.currentWriter += glyph.width;
-
-        bitmap_draw( target, bmp, currentPos );
+        codepoint = parser.get_next_codepoint();
       }
+
+      // while ( *reader )
+      // {
+      //   font::Glyph const& glyph = *(glyphTable->get_glyph( *reader++ ));
+
+      //   float2 currentPos = pos + float2( currentX + glyph.offsetX, (float) glyph.offsetY );
+      //   currentX += glyph.advance * glyphTable->scale;
+
+      //   if ( glyph.data )
+      //   {
+      //     glyph_draw( target, glyph.data, glyph.width, glyph.height, currentPos, RED );
+      //   }
+      // }
     }
   }
 
@@ -123,24 +130,9 @@ namespace debug
     //   bitmap_draw( target, state.fontImage, { 0,0 } );
     // }
 
-    bitmap_draw_text( target, state.glyphTable, { 50,200 }, "KlaraIHopeYou'redoingwell" );
-    //state.currentWriter = 0;
-    // for ( int textIndex = 0; textIndex < array_size( state.map.glyphs ); ++textIndex )
-    // {
-    //   Bitmap8 tmp {};
-    //   font::Glyph& glyph = state.map.glyphs[textIndex];
-    //   if ( glyph.data == nullptr ) continue;
-    //   tmp.pixel = glyph.data;
-    //   tmp.width = glyph.width;
-    //   tmp.height = glyph.height;
-    //   int2 glyphPos { state.currentWriter, 100 };
-
-    //   glyphPos.x += glyph.advance - glyph.width;
-    //   glyphPos.y += glyph.offsetY;
-
-    //   bitmap_draw( target, tmp, glyphPos );
-    //   state.currentWriter += glyph.width;
-    // }
+    float2 baseline = { 50, 200 };
+    bitmap_draw_text( target, state.glyphTable, baseline, RED, "Hello Klara" );
+    bitmap_draw_text( target, state.glyphTable, { 50,300 }, BLUE, "How are you? :)" );
 
     draw_rect( target, button0, colorButton0 );
     draw_rect( target, button1, colorButton1 );
@@ -186,12 +178,21 @@ namespace debug
   }
 };
 
-void app_on_load( AppData& appData )
+void app_on_load( PlatformData const& platformData, AppData& appData )
 {
   assert( sizeof( GameState ) <= appData.staticBufferSize );
-  //  GameState& state = *(GameState*) (appData.staticBuffer);
-    //state.xOffset = 0;
-    //state.yOffset = 0;
+  GameState& state = *(GameState*) (appData.staticBuffer);
+
+  font::DEBUG_unicode_codepoints();
+
+  if ( state.uiState.glyphTable )
+  {
+    font::unload_glyph_table( state.uiState.glyphTable );
+  }
+
+  char filename[] = "w:/data/Inconsolata-Regular.ttf";
+  platform::ReadFileResult file = platformData.read_file( filename, 0, 0 );
+  state.uiState.glyphTable = font::load_glyph_table_from_ttf( &appData.generalPurposeArena, (u8 const*) file.data );
 }
 
 void app_tick( PlatformData const& platformData, AppData& appData, BackBuffer& backBuffer )
@@ -234,10 +235,9 @@ void app_tick( PlatformData const& platformData, AppData& appData, BackBuffer& b
 
   if ( input.down[Input::KEY_2] )
   {
-    char filename[] = "w:/data/Inconsolata-Regular.ttf";
-    platform::ReadFileResult file = platformData.read_file( filename, 0, 0 );
-
-    state.uiState.glyphTable = font::load_glyph_table_from_ttf( &appData.generalPurposeArena, (u8 const*) file.data );
+    //char filename[] = "w:/data/Inconsolata-Regular.ttf";
+   // platform::ReadFileResult file = platformData.read_file( filename, 0, 0 );
+   // state.uiState.glyphTable = font::load_glyph_table_from_ttf( &appData.generalPurposeArena, (u8 const*) file.data );
 
     //state.uiState.fontImage = load_font( (u8 const*) file.data, file.size );
   }

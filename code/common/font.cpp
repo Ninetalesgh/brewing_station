@@ -5,13 +5,13 @@
 
 namespace font
 {
-  Glyph make_glyph( memory::Arena* arena, stbtt_fontinfo const* fontInfo, float scale, char c )
+  Glyph make_glyph( memory::Arena* arena, stbtt_fontinfo const* fontInfo, float scale, s32 unicodeCodepoint )
   {
-    Glyph glyph;
+    Glyph glyph {};
 
     if ( scale > 0.0f )
     {
-      s32 glyphIndex = stbtt_FindGlyphIndex( fontInfo, c );
+      s32 glyphIndex = stbtt_FindGlyphIndex( fontInfo, unicodeCodepoint );
 
       if ( glyphIndex > 0 )
       {
@@ -24,7 +24,6 @@ namespace font
         float shift_y = 0;
         float flatnessInPixels = 0.35f;
         stbtt__bitmap gbm;
-        stbtt_vertex* vertices = nullptr;
 
         stbtt_GetGlyphBitmapBoxSubpixel( fontInfo, glyphIndex, scale_x, scale_y, shift_x, shift_y, &ix0, &iy0, &ix1, &iy1 );
 
@@ -32,33 +31,36 @@ namespace font
         gbm.h = (iy1 - iy0);
         gbm.pixels = nullptr;
 
-        glyph.width = gbm.w;
-        glyph.height = gbm.h;
-        glyph.offsetX = ix0;
-        glyph.offsetY = iy0;
-
         if ( gbm.w && gbm.h )
         {
           gbm.pixels = (unsigned char*) arena->alloc( gbm.w * gbm.h );
+
+          glyph.width = gbm.w;
+          glyph.height = gbm.h;
+          glyph.offsetX = ix0;
+          glyph.offsetY = iy0;
+          glyph.data = gbm.pixels;
           if ( gbm.pixels )
           {
             gbm.stride = gbm.w;
-
+            stbtt_vertex* vertices = nullptr;
             s32 num_verts = stbtt_GetGlyphShapeThreadSafe( arena, fontInfo, glyphIndex, &vertices );
-
             stbtt_RasterizeThreadSafe( arena, &gbm, flatnessInPixels, vertices, num_verts, scale_x, scale_y, shift_x, shift_y, ix0, iy0, 1, fontInfo->userdata );
+            arena->free( vertices );
           }
           else
           {
             BREAK;
           }
         }
+        else if ( glyph.advance )
+        {
+          //it's a space
+        }
         else
         {
           BREAK;
         }
-        arena->free( vertices );
-        glyph.data = gbm.pixels;
       }
       else // !( glyphIndex > 0 )
       {
@@ -71,6 +73,12 @@ namespace font
     }
 
     return glyph;
+  }
+
+  void GlyphTable::make_glyph( s32 unicodeCodepoint )
+  {
+    Glyph glyph = font::make_glyph( arena, (stbtt_fontinfo*) fontInfo, scale, unicodeCodepoint );
+    asciiGlyphs[unicodeCodepoint] = glyph;
   }
 
   GlyphTable* load_glyph_table_from_ttf( memory::Arena* arena, u8 const* ttf_data )
@@ -107,10 +115,80 @@ namespace font
     return result;
   }
 
-  void GlyphTable::make_glyph( char glyphCharacter )
+  void unload_glyph_table( GlyphTable* glyphTable )
   {
-    asciiGlyphs[glyphCharacter] = font::make_glyph( arena, (stbtt_fontinfo*) fontInfo, scale, glyphCharacter );
+    memory::Arena* arena = glyphTable->arena;
+
+    for ( s32 i = 0; i < array_size( glyphTable->asciiGlyphs ); ++i )
+    {
+      Glyph& glyph = glyphTable->asciiGlyphs[i];
+      if ( glyph.data )
+      {
+        arena->free( glyph.data );
+      }
+      glyph = {};
+    }
+
+    arena->free( glyphTable->fontInfo );
+    arena->free( glyphTable );
   }
+
+  s32 get_unicode_codepoint( char const* string )
+  {
+    s32 result = 0;
+    u8 const* reader = (u8 const*) string;
+
+    u8 const extraByteCheckMask = 0b10000000;
+    u8 const extraByteValueMask = 0b00111111;
+
+    u8 unicodeMask = 0b11000000;
+    u8 check = 0b00100000;
+
+    s32 extraBytes = 0;
+
+    result = *(u8*) (reader);
+    while ( *string & unicodeMask )
+    {
+      unicodeMask >>= 1;
+      check >>= 1;
+
+      ++reader;
+      if ( *reader & extraByteCheckMask )
+      {
+        result <<= 6;
+        result += (*reader) & extraByteValueMask;
+
+        ++extraBytes;
+      }
+      else
+      {
+        break;
+      }
+    }
+
+    if ( extraBytes )
+    {
+      s32 maskLength = 1 << (5 * extraBytes + 6);
+      result &= (maskLength - 1);
+    }
+
+    return result;
+  }
+
+  void DEBUG_unicode_codepoints()
+  {
+    assert( font::get_unicode_codepoint( "ک" ) == 1705 );
+    assert( font::get_unicode_codepoint( "ক" ) == 2453 );
+    assert( font::get_unicode_codepoint( "߷" ) == 2039 );
+    assert( font::get_unicode_codepoint( "ӂ" ) == 1218 );
+    assert( font::get_unicode_codepoint( "֍" ) == 1421 );
+    assert( font::get_unicode_codepoint( "ཚ" ) == 3930 );
+    assert( font::get_unicode_codepoint( "ጪ" ) == 4906 );
+    assert( font::get_unicode_codepoint( "€" ) == 8364 );
+    assert( font::get_unicode_codepoint( "∑" ) == 8721 );
+    assert( font::get_unicode_codepoint( "✊" ) == 9994 );
+  }
+
 
 
   // GlyphMap load_from_ttf( memory::Arena* arena, u8 const* ttf_data, char const* text )
