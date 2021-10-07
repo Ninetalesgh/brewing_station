@@ -8,7 +8,6 @@
 # define BS_BUILD_SOUND 1
 #endif
 
-
 #if BS_BUILD_NETWORKING
 #include "net.h"
 #endif
@@ -24,8 +23,11 @@ constexpr u32   APP_SERVER_PORT             = 6668;
 constexpr u32   APP_NETWORK_PACKET_SIZE_MAX = 1024;
 constexpr u32   APP_CLIENT_COUNT_MAX        = 24;
 
+constexpr u32   APP_THREAD_COUNT_MAX        = 32;
+
 constexpr u64   APP_STATIC_BUFFER_SIZE      = MegaBytes( 128 );
 constexpr u64   APP_TEMP_BUFFER_SIZE        = MegaBytes( 512 );
+constexpr u64   APP_DEBUG_BUFFER_SIZE       = MegaBytes( 256 );
 constexpr s32   APP_UPDATE_HZ               = 60;
 
 struct FileInfo;
@@ -84,21 +86,55 @@ namespace platform
 
 //platform calls:
 #if BS_BUILD_SOUND
-extern "C" void app_sample_sound( AppData & appData, SoundBuffer & soundBuffer ); //TODO if multithreaded const appdata? 
+struct AppSampleSoundParameter
+{
+  AppData* appData;
+  SoundBuffer* soundBuffer;
+};
+extern "C" void app_sample_sound( AppSampleSoundParameter& ); //TODO if multithreaded const appdata? 
 #endif
 
-extern "C" void app_on_load( PlatformData const& platformData, AppData & appData );
+struct AppOnLoadParameter
+{
+  PlatformData const* platformData;
+  AppData* appData;
+};
+extern "C" void app_on_load( AppOnLoadParameter& );
 
-extern "C" void app_tick( PlatformData const& platformData, AppData & appData, BackBuffer & backBuffer );
+struct AppTickParameter
+{
+  PlatformData const* platformData;
+  AppData* appData;
+  BackBuffer* backBuffer;
+};
+extern "C" void app_tick( AppTickParameter& );
+
+struct AppRenderParameter
+{
+  AppData* appData;
+  BackBuffer* backBuffer;
+};
+extern "C" void app_render( AppRenderParameter& );
 
 #ifdef BS_BUILD_NETWORKING
-extern "C" void app_receive_udp_packet( PlatformData const& platformData, AppData & appData, net::UDPReceiveParameter const& parameter );
+struct AppReceiveUDPPacketParameter
+{
+  PlatformData const* platformData;
+  AppData* appData;
+  net::Connection sender;
+  char const* packet;
+  u32         packetSize;
+  u32         id;
+};
+extern "C" void app_receive_udp_packet( AppReceiveUDPPacketParameter& );
 #endif
 
-//TODO
 struct ThreadInfo
 {
+  //TODO
+  char const* name;
   u32 id;
+  ThreadInfo* parent;
 };
 
 struct FileInfo
@@ -126,21 +162,21 @@ struct SoundBuffer
   s16* samples;
 };
 
+//Data the application changes
 struct AppData
 {
-  //REQUIRED:
-  //preallocated memory for the application
+  //TODO remove non-arena buffers from here
   void* staticBuffer;
   u32   staticBufferSize;
 
   memory::Arena generalPurposeArena;
 
-  u64 currentFrameIndex;
-
   #if !BS_BUILD_RELEASE
-  u32 debug_trigger[10];
-  u64 debug_clockRender;
-  u64 debug_clockInputProcessing;
+  struct
+  {
+    memory::Arena arena;
+    u32 trigger[10];
+  } debug;
   #endif
 };
 
@@ -291,10 +327,14 @@ struct NetworkData
   u32             connectionCount;
 };
 
+//Data the application doesn't change
 struct PlatformData
 {
   Input input;
+  u64 currentFrameIndex;
+
   NetworkData network;
+  ThreadInfo thread[APP_THREAD_COUNT_MAX];
 
   platform::get_file_info* get_file_info;
   platform::read_file* read_file;

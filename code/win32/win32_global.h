@@ -41,23 +41,26 @@ struct win32_DebugTimeMarker
 
 namespace stub
 {
-  void app_sample_sound( AppData&, SoundBuffer& ) {}
-  void app_on_load( PlatformData const&, AppData& ) {}
-  void app_tick( PlatformData const&, AppData&, BackBuffer& ) {}
-  void app_receive_udp_packet( PlatformData const&, AppData&, net::UDPReceiveParameter const& ) {}
+  void app_sample_sound( AppSampleSoundParameter& ) {}
+  void app_on_load( AppOnLoadParameter& ) {}
+  void app_tick( AppTickParameter& ) {}
+  void app_render( AppRenderParameter& ) {}
+  void app_receive_udp_packet( AppReceiveUDPPacketParameter& ) {}
 };
 
 #if !BS_BUILD_RELEASE
-using win32_app_sample_sound = void( AppData&, SoundBuffer& );
-using win32_app_on_load = void( PlatformData const&, AppData& );
-using win32_app_tick = void( PlatformData const&, AppData&, BackBuffer& );
-using win32_app_receive_udp_packet = void( PlatformData const&, AppData&, net::UDPReceiveParameter const& );
+using win32_app_sample_sound = void( AppSampleSoundParameter& );
+using win32_app_on_load = void( AppOnLoadParameter& );
+using win32_app_tick = void( AppTickParameter& );
+using win32_app_render = void( AppRenderParameter& );
+using win32_app_receive_udp_packet = void( AppReceiveUDPPacketParameter& );
 struct App
 {
   HMODULE dll;
   win32_app_sample_sound* sample_sound = stub::app_sample_sound;
   win32_app_on_load* on_load = stub::app_on_load;
   win32_app_tick* tick = stub::app_tick;
+  win32_app_render* render = stub::app_render;
   win32_app_receive_udp_packet* receive_udp_packet = stub::app_receive_udp_packet;
 };
 #endif

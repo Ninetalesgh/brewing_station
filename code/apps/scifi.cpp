@@ -2,13 +2,15 @@
 
 #include "file.h"
 
-#include <platform.h>
+#include <ui/debugui.h>
+
 #include <common/string.h>
 #include <common/profile.h>
 #include <common/basic_rasterizer.h>
 #include <common/font.h>
-
 #include <common/memory.h>
+
+#include <platform.h>
 
 struct Animation
 {
@@ -25,7 +27,6 @@ u32 CheckMouseCollision( float2 mouse, Rect rect )
   return smaller.both() && bigger.both();
 }
 
-
 //TODO remove math :(
 #include <math.h>
 namespace debug
@@ -34,41 +35,57 @@ namespace debug
   {
     if ( glyphTable )
     {
-      //char const* reader = text;
       float currentX = pos.x;
-      font::UnicodeParser parser( text );
+      float currentY = pos.y;
+
+      font::ParserUTF8 parser( text );
+
       s32 codepoint = parser.get_next_codepoint();
       while ( codepoint )
       {
-        font::Glyph const& glyph = *(glyphTable->get_glyph( codepoint ));
-
-        float2 currentPos = pos + float2( currentX + glyph.offsetX, (float) glyph.offsetY );
-        currentX += glyph.advance * glyphTable->scale;
-
-        if ( glyph.data )
+        if ( codepoint == '\n' )
         {
-          glyph_draw( target, glyph.data, glyph.width, glyph.height, currentPos, color );
+          currentX = pos.x;
+          currentY += glyphTable->scale;
         }
+        else
+        {
+          font::Glyph const* glyph = glyphTable->get_glyph( codepoint );
 
+          if ( glyph )
+          {
+            float2 glyphPos = pos + float2( currentX + (float) glyph->offsetX, currentY + (float) glyph->offsetY );
+            currentX += glyph->advance * glyphTable->scaleForPixelHeight;
+
+            if ( glyph->data )
+            {
+              glyph_draw( target, glyph->data, glyph->width, glyph->height, glyphPos, color );
+            }
+          }
+        }
         codepoint = parser.get_next_codepoint();
       }
-
-      // while ( *reader )
-      // {
-      //   font::Glyph const& glyph = *(glyphTable->get_glyph( *reader++ ));
-
-      //   float2 currentPos = pos + float2( currentX + glyph.offsetX, (float) glyph.offsetY );
-      //   currentX += glyph.advance * glyphTable->scale;
-
-      //   if ( glyph.data )
-      //   {
-      //     glyph_draw( target, glyph.data, glyph.width, glyph.height, currentPos, RED );
-      //   }
-      // }
     }
   }
 
   void RenderUI( Bitmap* target, u64 currentFrame, UIState& state, float2 mouse )
+  {
+    memory::debug::ArenaDebugData arenaDebugData;
+    state.debugDisplay->arenaObserver.fetch_debug_data( &arenaDebugData );
+    char uiText[2048];
+    //
+    string_format( uiText,
+    "Arena Memory\n-Size:   ", arenaDebugData.size,
+    "\n-Unused: ", arenaDebugData.capacity - arenaDebugData.size,
+    "\nArena Entries\n-Active:   ", arenaDebugData.totalEntries,
+    "\n-Inactive: ", arenaDebugData.inactiveEntries );
+
+    float2 baseline = { 0.0f, state.glyphTable->scale * 0.5f };
+    bitmap_draw_text( target, state.glyphTable, baseline, color::LIGHT_GRAY, uiText );
+    //bitmap_draw_text( target, state.glyphTable, { 0.0f ,height * 2 }, color::WHITE, "How are you? :)" );
+  }
+
+  void RenderTestScreen( Bitmap* target, u64 currentFrame, UIState& state, float2 mouse )
   {
     s32 height = target->height;
     s32 width = target->width;
@@ -80,8 +97,8 @@ namespace debug
     local_persist u64 endFrame;
     local_persist u32 inAnimation = false;
     constexpr u64 animationDuration = 15;
-    constexpr u32 startColor = LIGHT_GRAY;
-    constexpr u32 endColor = RED;
+    constexpr u32 startColor = color::LIGHT_GRAY;
+    constexpr u32 endColor = color::RED;
     local_persist float t;
     local_persist float step = 1.f / float( animationDuration );
 
@@ -92,14 +109,14 @@ namespace debug
     button1.max = { width,       height / 2 - 10 };
 
     u32 button0collide = CheckMouseCollision( mouse, button0 );
-    u32 colorButton0 = LIGHT_GRAY;
+    u32 colorButton0 = color::LIGHT_GRAY;
 
     if ( button0collide )
     {
       if ( inAnimation )
       {
         t += step;
-        colorButton0 = color_interpolate( t, startColor, endColor );
+        colorButton0 = color::interpolate( t, startColor, endColor );
       }
       else
       {
@@ -116,9 +133,9 @@ namespace debug
 
     u32 button1collide = CheckMouseCollision( mouse, button1 );
 
-    u32 colorButton1 = button1collide ? RED : LIGHT_GRAY;
+    u32 colorButton1 = button1collide ? color::RED : color::LIGHT_GRAY;
 
-    draw_rect( target, { 0, 0 }, { target->width , target->height }, DARK_GRAY );
+    draw_rect( target, { 0, 0 }, { target->width , target->height }, color::DARK_GRAY );
 
     if ( state.image.pixel )
     {
@@ -130,12 +147,9 @@ namespace debug
     //   bitmap_draw( target, state.fontImage, { 0,0 } );
     // }
 
-    float2 baseline = { 50, 200 };
-    bitmap_draw_text( target, state.glyphTable, baseline, RED, "Hello Klara" );
-    bitmap_draw_text( target, state.glyphTable, { 50,300 }, BLUE, "How are you? :)" );
-
     draw_rect( target, button0, colorButton0 );
     draw_rect( target, button1, colorButton1 );
+
   }
 
   void RenderGradient( BackBuffer& buffer, s32 xOffset, s32 yOffset )
@@ -151,7 +165,7 @@ namespace debug
         u8 G = u8( x / 2 + xOffset );
         u8 B = u8( y + yOffset );
 
-        *pixel++ = color_RGBA( R, G, B, 0xff );
+        *pixel++ = color::RGBA( R, G, B, 0xff );
       }
 
       row += buffer.pitch;
@@ -178,27 +192,52 @@ namespace debug
   }
 };
 
-void app_on_load( PlatformData const& platformData, AppData& appData )
+void app_on_load( AppOnLoadParameter& parameter )
 {
+  PlatformData const& platformData = *parameter.platformData;
+  AppData& appData = *parameter.appData;
+
   assert( sizeof( GameState ) <= appData.staticBufferSize );
   GameState& state = *(GameState*) (appData.staticBuffer);
 
-  font::DEBUG_unicode_codepoints();
 
-  if ( state.uiState.glyphTable )
+  #if !BS_BUILD_RELEASE
   {
-    font::unload_glyph_table( state.uiState.glyphTable );
-  }
+    font::DEBUG_unicode_codepoints();
 
-  char filename[] = "w:/data/Inconsolata-Regular.ttf";
-  platform::ReadFileResult file = platformData.read_file( filename, 0, 0 );
-  state.uiState.glyphTable = font::load_glyph_table_from_ttf( &appData.generalPurposeArena, (u8 const*) file.data );
+    if ( !state.uiState.debugDisplay )
+    {
+      state.uiState.debugDisplay = (ui::debug::DebugDisplay*) appData.debug.arena.alloc_set_zero( sizeof( ui::debug::DebugDisplay ) );
+      state.uiState.debugDisplay->arenaObserver.arena = &appData.generalPurposeArena;
+    }
+  }
+  #endif
+
+  {
+    if ( state.uiState.glyphTable )
+    {
+      font::delete_glyph_table( state.uiState.glyphTable );
+    }
+
+    //char filename[] = "w:/data/Inconsolata-Regular.ttf";
+    char filename[] = "w:/data/SourceCodePro/SourceCodePro-Light.ttf";
+    //char filename[] = "w:/data/SourceCodePro/SourceCodePro-LightItalic.ttf";
+    //char filename[] = "w:/data/SourceCodePro/SourceCodePro-SemiBold.ttf";
+    platform::ReadFileResult file = platformData.read_file( filename, 0, 0 );
+    state.uiState.glyphTable = font::init_glyph_table_from_ttf( &appData.generalPurposeArena, (u8 const*) file.data );
+    state.uiState.glyphTable->set_scale( 40.0f );
+  }
 }
 
-void app_tick( PlatformData const& platformData, AppData& appData, BackBuffer& backBuffer )
+void app_tick( AppTickParameter& parameter )
 {
+  PlatformData const& platformData = *parameter.platformData;
+  AppData& appData = *parameter.appData;
+  BackBuffer& backBuffer = *parameter.backBuffer;
+
   assert( sizeof( GameState ) <= appData.staticBufferSize );
   Input const& input = platformData.input;
+
   GameState& state = *(GameState*) (appData.staticBuffer);
 
   {
@@ -222,16 +261,16 @@ void app_tick( PlatformData const& platformData, AppData& appData, BackBuffer& b
   bmp.height = backBuffer.height;
 
   UIState& uiState = state.uiState;
-  appData.debug_trigger[0] = input.down[Input::KEY_0] ? !appData.debug_trigger[0] : appData.debug_trigger[0];
-  appData.debug_trigger[1] = input.down[Input::KEY_1] ? !appData.debug_trigger[1] : appData.debug_trigger[1];
-  appData.debug_trigger[2] = input.down[Input::KEY_2] ? !appData.debug_trigger[2] : appData.debug_trigger[2];
-  appData.debug_trigger[3] = input.down[Input::KEY_3] ? !appData.debug_trigger[3] : appData.debug_trigger[3];
-  appData.debug_trigger[4] = input.down[Input::KEY_4] ? !appData.debug_trigger[4] : appData.debug_trigger[4];
-  appData.debug_trigger[5] = input.down[Input::KEY_5] ? !appData.debug_trigger[5] : appData.debug_trigger[5];
-  appData.debug_trigger[6] = input.down[Input::KEY_6] ? !appData.debug_trigger[6] : appData.debug_trigger[6];
-  appData.debug_trigger[7] = input.down[Input::KEY_7] ? !appData.debug_trigger[7] : appData.debug_trigger[7];
-  appData.debug_trigger[8] = input.down[Input::KEY_8] ? !appData.debug_trigger[8] : appData.debug_trigger[8];
-  appData.debug_trigger[9] = input.down[Input::KEY_9] ? !appData.debug_trigger[9] : appData.debug_trigger[9];
+  appData.debug.trigger[0] = input.down[Input::KEY_0] ? !appData.debug.trigger[0] : appData.debug.trigger[0];
+  appData.debug.trigger[1] = input.down[Input::KEY_1] ? !appData.debug.trigger[1] : appData.debug.trigger[1];
+  appData.debug.trigger[2] = input.down[Input::KEY_2] ? !appData.debug.trigger[2] : appData.debug.trigger[2];
+  appData.debug.trigger[3] = input.down[Input::KEY_3] ? !appData.debug.trigger[3] : appData.debug.trigger[3];
+  appData.debug.trigger[4] = input.down[Input::KEY_4] ? !appData.debug.trigger[4] : appData.debug.trigger[4];
+  appData.debug.trigger[5] = input.down[Input::KEY_5] ? !appData.debug.trigger[5] : appData.debug.trigger[5];
+  appData.debug.trigger[6] = input.down[Input::KEY_6] ? !appData.debug.trigger[6] : appData.debug.trigger[6];
+  appData.debug.trigger[7] = input.down[Input::KEY_7] ? !appData.debug.trigger[7] : appData.debug.trigger[7];
+  appData.debug.trigger[8] = input.down[Input::KEY_8] ? !appData.debug.trigger[8] : appData.debug.trigger[8];
+  appData.debug.trigger[9] = input.down[Input::KEY_9] ? !appData.debug.trigger[9] : appData.debug.trigger[9];
 
   if ( input.down[Input::KEY_2] )
   {
@@ -242,7 +281,7 @@ void app_tick( PlatformData const& platformData, AppData& appData, BackBuffer& b
     //state.uiState.fontImage = load_font( (u8 const*) file.data, file.size );
   }
 
-  if ( (appData.currentFrameIndex % 50) == 0 )
+  if ( (platformData.currentFrameIndex % 50) == 0 )
   {
     char hello[200] = {};
 
@@ -268,7 +307,7 @@ void app_tick( PlatformData const& platformData, AppData& appData, BackBuffer& b
     platformData.send_tcp( tcpSendParameter );
   }
 
-  if ( appData.debug_trigger[0] )
+  if ( appData.debug.trigger[2] )
   {
     debug::RenderGradient( backBuffer, state.xOffset, state.yOffset );
   }
@@ -306,7 +345,12 @@ void app_tick( PlatformData const& platformData, AppData& appData, BackBuffer& b
     //   }
     // }
 
-    debug::RenderUI( &bmp, appData.currentFrameIndex, uiState, float2( input.mousePos[0].end ) );
+    debug::RenderTestScreen( &bmp, platformData.currentFrameIndex, uiState, float2( input.mousePos[0].end ) );
+  }
+
+  if ( !appData.debug.trigger[0] )
+  {
+    debug::RenderUI( &bmp, platformData.currentFrameIndex, uiState, float2( input.mousePos[0].end ) );
   }
 
   if ( input.down[Input::KEY_F1] )
@@ -331,15 +375,23 @@ void app_tick( PlatformData const& platformData, AppData& appData, BackBuffer& b
 
 }
 
-void app_sample_sound( AppData& appData, SoundBuffer& soundBuffer )
+void app_render( AppRenderParameter& parameter )
 {
+
+}
+
+void app_sample_sound( AppSampleSoundParameter& parameter )
+{
+  AppData& appData = *parameter.appData;
+  SoundBuffer& soundBuffer = *parameter.soundBuffer;
+
   GameState& state = *(GameState*) (appData.staticBuffer);
   debug::OutputSound( soundBuffer, state.toneHz );
 }
 
-void app_receive_udp_packet( PlatformData const& platformData, AppData& appData, net::UDPReceiveParameter const& parameter )
+void app_receive_udp_packet( AppReceiveUDPPacketParameter& parameter )
 {
-
+  //PlatformData const& platformData = *parameter.platformData;
   // platformData.write_file( "test.txt", state.receiverBuffer, size - 1 );
 }
 

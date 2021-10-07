@@ -8,7 +8,6 @@ namespace font
   Glyph make_glyph( memory::Arena* arena, stbtt_fontinfo const* fontInfo, float scale, s32 unicodeCodepoint )
   {
     Glyph glyph {};
-
     if ( scale > 0.0f )
     {
       s32 glyphIndex = stbtt_FindGlyphIndex( fontInfo, unicodeCodepoint );
@@ -75,13 +74,19 @@ namespace font
     return glyph;
   }
 
+  void GlyphTable::set_scale( float _scale )
+  {
+    scale = _scale;
+    scaleForPixelHeight = stbtt_ScaleForPixelHeight( (stbtt_fontinfo*) fontInfo, _scale );
+  }
+
   void GlyphTable::make_glyph( s32 unicodeCodepoint )
   {
-    Glyph glyph = font::make_glyph( arena, (stbtt_fontinfo*) fontInfo, scale, unicodeCodepoint );
+    Glyph glyph = font::make_glyph( arena, (stbtt_fontinfo*) fontInfo, scaleForPixelHeight, unicodeCodepoint );
     asciiGlyphs[unicodeCodepoint] = glyph;
   }
 
-  GlyphTable* load_glyph_table_from_ttf( memory::Arena* arena, u8 const* ttf_data )
+  GlyphTable* init_glyph_table_from_ttf( memory::Arena* arena, u8 const* ttf_data )
   {
     GlyphTable* result = nullptr;
 
@@ -94,10 +99,10 @@ namespace font
 
       if ( stbtt_InitFont( stbFontInfo, ttf_data, 0 ) )
       {
-        result->asset_type = GlyphTable::ASSET_TYPE::STB_TTF;
-        result->scale = stbtt_ScaleForPixelHeight( stbFontInfo, 128.0f );
-        result->arena = arena;
         result->fontInfo = stbFontInfo;
+        result->asset_type = GlyphTable::ASSET_TYPE::STB_TTF;
+        result->set_scale( 64.0f );
+        result->arena = arena;
       }
       else
       {
@@ -115,7 +120,7 @@ namespace font
     return result;
   }
 
-  void unload_glyph_table( GlyphTable* glyphTable )
+  void delete_glyph_table( GlyphTable* glyphTable )
   {
     memory::Arena* arena = glyphTable->arena;
 
@@ -133,11 +138,10 @@ namespace font
     arena->free( glyphTable );
   }
 
-  s32 get_unicode_codepoint( char const* string )
+  s32 get_unicode_codepoint( char const* string, s32* out_extraBytes /*= nullptr*/ )
   {
     s32 result = 0;
     u8 const* reader = (u8 const*) string;
-
     u8 const extraByteCheckMask = 0b10000000;
     u8 const extraByteValueMask = 0b00111111;
 
@@ -145,7 +149,6 @@ namespace font
     u8 check = 0b00100000;
 
     s32 extraBytes = 0;
-
     result = *(u8*) (reader);
     while ( *string & unicodeMask )
     {
@@ -171,7 +174,12 @@ namespace font
       s32 maskLength = 1 << (5 * extraBytes + 6);
       result &= (maskLength - 1);
     }
+    else
+    {
+      //TODO maybe check whether it's a valid 1 byte character? aka: < 128
+    }
 
+    if ( out_extraBytes ) *out_extraBytes = extraBytes;
     return result;
   }
 

@@ -31,7 +31,7 @@ namespace stb_image
 
   void* bs_realloc( void* data, size_t newSize )
   {
-    s64 size = BS_STB_MEMORY_ARENA->get_size( (char*) data );
+    s64 size = BS_STB_MEMORY_ARENA->get_entry_size( (char*) data );
     char* result = (char*) BS_STB_MEMORY_ARENA->alloc( (s64) newSize );
     memory::copy( result, (char*) data, size );
     BS_STB_MEMORY_ARENA->free( (char*) data );

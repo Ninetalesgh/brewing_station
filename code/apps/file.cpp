@@ -100,7 +100,7 @@ Bitmap load_image( u8 const* buffer, s32 size )
     {
       for ( s32 y = 0; y < result.height;++y )
       {
-        *writer = color_RGBAtoBGRA( *writer );
+        *writer = color::RGBAtoBGRA( *writer );
         ++writer;
       }
     }

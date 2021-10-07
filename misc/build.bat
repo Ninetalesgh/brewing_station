@@ -11,7 +11,7 @@ set codepath=..\..\code
 set compiler_options=/I %codepath% /GR- /EHa- /FC /MT /nologo /W4 /wd4068 /wd4100 /wd4201 /wd4701
 set linker_options=/link /opt:ref /incremental:no
 
-set scifi_exports=/EXPORT:app_sample_sound /EXPORT:app_tick /EXPORT:app_receive_udp_packet /EXPORT:app_on_load
+set scifi_exports=/EXPORT:app_sample_sound /EXPORT:app_tick /EXPORT:app_receive_udp_packet /EXPORT:app_on_load /EXPORT:app_render
 
 
 IF %build_mode%=="debug" goto build_debug

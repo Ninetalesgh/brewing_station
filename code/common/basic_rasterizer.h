@@ -18,7 +18,7 @@ enum struct RasterizeMode : u32
 };
 
 
-void draw_rect( Bitmap* target, Rect rect, u32 color = RED, RasterizeMode mode = RasterizeMode::FILL )
+void draw_rect( Bitmap* target, Rect rect, u32 color = color::RED, RasterizeMode mode = RasterizeMode::FILL )
 {
   assert( mode == RasterizeMode::FILL );//TODO
 
@@ -36,4 +36,4 @@ void draw_rect( Bitmap* target, Rect rect, u32 color = RED, RasterizeMode mode =
   }
 }
 
-void draw_rect( Bitmap* target, float2 start, float2 end, u32 color = RED, RasterizeMode mode = RasterizeMode::FILL ) { draw_rect( target, { min( start, end ), max( start, end ) }, color ); }
+void draw_rect( Bitmap* target, float2 start, float2 end, u32 color = color::RED, RasterizeMode mode = RasterizeMode::FILL ) { draw_rect( target, { min( start, end ), max( start, end ) }, color ); }

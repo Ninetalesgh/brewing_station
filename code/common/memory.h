@@ -5,6 +5,256 @@
 
 namespace memory
 {
+  struct Arena;
+  struct ArenaEntry;
+
+  namespace debug
+  {
+    struct ArenaDebugData
+    {
+      s64 size;
+      s64 capacity;
+      s32 totalEntries;
+      s32 inactiveEntries;
+    };
+
+    struct ArenaObserver
+    {
+      void fetch_debug_data( ArenaDebugData* out_DebugData );
+      memory::Arena const* arena;
+    };
+  };
+
+  // best used LIFO, some unordered deallocation OK, will result in fragmentation though.
+  struct Arena
+  {
+    void* alloc( s64 size, u32 alignment = 4 );
+    void* alloc_set_zero( s64 size, u32 alignment = 4 );
+    s64 get_entry_size( char* ptr );
+    void free( void* ptr );
+    void clear();
+
+    char* bufferBegin;
+    char* bufferEnd;
+    char* current;
+    ArenaEntry* lastEntry;
+    s32 entryCount;
+
+  public:
+    Arena();
+  private:
+    Arena( Arena const& ) {}
+  };
+
+  INLINE void copy( char* destination, char* source, s64 size );
+  INLINE void set_zero( char* target, s64 size );
+
+  void init_arena( char* memory, s64 capacity, Arena* out_Arena );
+  Arena* init_arena_in_place( char* memory, s64 capacity );
+
+};
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////cpp/////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////cpp/////////////////////////////////////////////////////////////////////
+////////////////////////cpp/////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////cpp/////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+namespace memory
+{
+
+  enum EntryFlags : u64
+  {
+    ALIVE = 0x1,
+
+  };
+  DEFINE_ENUM_OPERATORS_U64( EntryFlags );
+
+  struct ArenaEntry
+  {
+    char* begin;
+    s64   size;
+    EntryFlags flags;
+  };
+
+  namespace debug
+  {
+    void ArenaObserver::fetch_debug_data( ArenaDebugData* out_DebugData )
+    {
+      if ( out_DebugData )
+      {
+        s32 inactiveEntries = 0;
+        memory::ArenaEntry const* entry = arena->lastEntry;
+
+        while ( entry != (memory::ArenaEntry*) arena->bufferEnd )
+        {
+          if ( !(entry->flags & ALIVE) )
+          {
+            ++inactiveEntries;
+          }
+          ++entry;
+        }
+
+        out_DebugData->size = arena->current - arena->bufferBegin;
+        out_DebugData->capacity = arena->bufferEnd - arena->bufferBegin;
+        out_DebugData->totalEntries = arena->entryCount;
+        out_DebugData->inactiveEntries = inactiveEntries;
+      }
+      else
+      {
+        BREAK;
+      }
+    }
+  };
+
+
+
+
+  Arena::Arena()
+    : bufferBegin( nullptr )
+    , bufferEnd( nullptr )
+    , current( nullptr )
+    , lastEntry( nullptr )
+    , entryCount( 0 )
+  {}
+
+  void* Arena::alloc( s64 size, u32 alignment /*= 4*/ )
+  {
+    //  return (char*) malloc( (size_t) size );
+      //TODO compensate for fragmentation a bit?
+      //TODO alignment
+      //TODO thread safety?
+    char* result = nullptr;
+
+    // changing the current pointer permanently shouldn't be an issue, 
+    //arenas shouldn't be used for a lot of small entries
+    //BS_BUILD_64BIT
+    current += ((u64) current) & (alignment - 1);
+
+    if ( current + size < (char*) (lastEntry - 1) )
+    {
+      result = current;
+      current += size;
+      ++entryCount;
+      lastEntry--;
+      lastEntry->begin = result;
+      lastEntry->size = size;
+      lastEntry->flags = ALIVE;
+    }
+    else
+    {
+      BREAK;
+    }
+
+    return result;
+  }
+
+  void* Arena::alloc_set_zero( s64 size, u32 alignment /*= 4*/ )
+  {
+    char* result = (char*) alloc( size, alignment );
+    set_zero( result, size );
+    return result;
+  }
+
+  s64 Arena::get_entry_size( char* ptr )
+  {
+    ArenaEntry* entry = lastEntry;
+
+    while ( entry != (ArenaEntry*) bufferEnd )
+    {
+      if ( entry->begin == ptr )
+      {
+        return entry->size;
+      }
+      ++entry;
+    }
+
+    //TODO: ptr is not in arena
+    assert( 0 );
+    return 0;
+  }
+
+  void Arena::free( void* ptr )
+  {
+    if ( ptr != nullptr )
+    {
+      ArenaEntry* entry = lastEntry;
+
+      //tag entry
+      u32 entryFound = 0;
+      while ( entry != (ArenaEntry*) bufferEnd )
+      {
+        if ( entry->begin == (char*) ptr )
+        {
+          entry->flags &= ~ALIVE;
+          entryFound = 1;
+          break;
+        }
+        entry++;
+      }
+
+      assert( entryFound );
+
+      //remove dead entries
+      while ( lastEntry != (ArenaEntry*) bufferEnd )
+      {
+        if ( lastEntry->flags & ALIVE )
+        {
+          break;
+        }
+
+        current = lastEntry->begin;
+        ++lastEntry;
+        --entryCount;
+      }
+    }
+    else
+    {
+      BREAK;
+    }
+  }
+
+  void Arena::clear()
+  {
+    current = bufferBegin;
+    lastEntry = (ArenaEntry*) bufferEnd;
+  }
+
+  void init_arena( char* memory, s64 capacity, Arena* out_Arena )
+  {
+    //out of bounds check:
+    #if !BS_BUILD_RELEASE
+    * (memory + capacity - 1) = 0;
+    #endif
+    if ( out_Arena )
+    {
+      out_Arena->bufferBegin = memory;
+      out_Arena->bufferEnd = memory + capacity;
+      out_Arena->current = out_Arena->bufferBegin;
+      out_Arena->lastEntry = (ArenaEntry*) out_Arena->bufferEnd;
+      out_Arena->entryCount = 0;
+    }
+    else
+    {
+      BREAK;
+    }
+  }
+
+  Arena* init_arena_in_place( char* memory, s64 capacity )
+  {
+    char* writer = memory;
+    Arena* result = (Arena*) writer;
+    writer += sizeof( Arena );
+    init_arena( writer, capacity - sizeof( Arena ), result );
+
+    return result;
+  }
+
   INLINE void copy( char* destination, char* source, s64 size )
   {
     while ( size-- > 0 )
@@ -21,194 +271,5 @@ namespace memory
     }
   }
 
-  enum EntryFlags : u64
-  {
-    ALIVE = 0x1,
-
-  };
-  DEFINE_ENUM_OPERATORS_U64( EntryFlags );
-
-  // best used LIFO, some unordered deallocation OK, will result in fragmentation though.
-  struct Arena
-  {
-    struct Entry
-    {
-      char* begin;
-      s64   size;
-      EntryFlags flags;
-    };
-
-    void* alloc( s64 size, u32 alignment = 4 )
-    {
-      //  return (char*) malloc( (size_t) size );
-        //TODO compensate for fragmentation a bit?
-        //TODO alignment
-        //TODO thread safety?
-      char* result = nullptr;
-
-      // changing the current pointer permanently shouldn't be an issue, 
-      //arenas shouldn't be used for a lot of small entries
-      //BS_BUILD_64BIT
-      current += ((u64) current) & (alignment - 1);
-
-      if ( current + size < (char*) (lastEntry - 1) )
-      {
-        result = current;
-        current += size;
-        ++entryCount;
-        lastEntry--;
-        lastEntry->begin = result;
-        lastEntry->size = size;
-        lastEntry->flags = ALIVE;
-      }
-      else
-      {
-        BREAK;
-      }
-
-      return result;
-    }
-
-    void* alloc_set_zero( s64 size, u32 alignment = 4 )
-    {
-      char* result = (char*) alloc( size, alignment );
-      set_zero( result, size );
-      return result;
-    }
-
-    //TODO: if realloc is ever needed, finish this
-
-    // char* realloc( char* ptr, s64 newSize )
-    // {
-    //   Entry* entry = lastEntry;
-    //   //tag entry
-    //   u32 entryFound = 0;
-    //   while ( entry != (Entry*) bufferEnd )
-    //   {
-    //     if ( entry->begin == ptr )
-    //     {
-    //       entry->flags &= ~ALIVE;
-    //       entryFound = 1;
-    //       break;
-    //     }
-    //     ++entry;
-    //   }
-    //   assert( entryFound );
-    //   if ( entry == lastEntry )
-    //   {
-    //     if ( current + (newSize - entry.size) < (char*) (lastEntry - 1) )
-    //     {
-    //     }
-    //   }
-    // }
-
-    s64 get_size( char* ptr )
-    {
-      Entry* entry = lastEntry;
-
-      while ( entry != (Entry*) bufferEnd )
-      {
-        if ( entry->begin == ptr )
-        {
-          return entry->size;
-        }
-        ++entry;
-      }
-
-      //TODO: ptr is not in arena
-      assert( 0 );
-      return 0;
-    }
-
-    void free( void* ptr )
-    {
-      if ( ptr != nullptr )
-      {
-        Entry* entry = lastEntry;
-
-        //tag entry
-        u32 entryFound = 0;
-        while ( entry != (Entry*) bufferEnd )
-        {
-          if ( entry->begin == (char*) ptr )
-          {
-            entry->flags &= ~ALIVE;
-            entryFound = 1;
-            break;
-          }
-          entry++;
-        }
-
-        assert( entryFound );
-
-        //remove dead entries
-        while ( lastEntry != (Entry*) bufferEnd )
-        {
-          if ( lastEntry->flags & ALIVE )
-          {
-            break;
-          }
-
-          current = lastEntry->begin;
-          ++lastEntry;
-          --entryCount;
-        }
-      }
-      else
-      {
-        BREAK;
-      }
-    }
-
-    void clear()
-    {
-      current = bufferBegin;
-      lastEntry = (Entry*) bufferEnd;
-    }
-
-    char* bufferBegin;
-    char* bufferEnd;
-    char* current;
-    Entry* lastEntry;
-    s32 entryCount;
-
-  public:
-    Arena()
-      : bufferBegin( nullptr )
-      , bufferEnd( nullptr )
-      , current( nullptr )
-      , lastEntry( nullptr )
-      , entryCount( 0 )
-    {}
-  private:
-    Arena( Arena const& ) {}
-  };
-
-
-  void init_arena( char* memory, s64 capacity, Arena& outArena )
-  {
-    //out of bounds check:
-    #if !BS_BUILD_RELEASE
-    * (memory + capacity - 1) = 0;
-    #endif
-
-    outArena.bufferBegin = memory;
-    outArena.bufferEnd = memory + capacity;
-    outArena.current = outArena.bufferBegin;
-    outArena.lastEntry = (Arena::Entry*) outArena.bufferEnd;
-    outArena.entryCount = 0;
-  }
-
-  Arena* init_arena_in_place( char* memory, s64 capacity )
-  {
-    char* writer = memory;
-    Arena* result = (Arena*) writer;
-    writer += sizeof( Arena );
-    init_arena( writer, capacity - sizeof( Arena ), *result );
-
-    return result;
-  }
-
-
-}
+};
 
