@@ -68,7 +68,7 @@ namespace debug
     }
   }
 
-  void RenderUI( Bitmap* target, u64 currentFrame, UIState& state, float2 mouse )
+  void RenderUI( Bitmap* target, u64 currentFrame, UIState& state )
   {
     memory::debug::ArenaDebugData arenaDebugData;
     state.debugDisplay->arenaObserver.fetch_debug_data( &arenaDebugData );
@@ -80,9 +80,9 @@ namespace debug
     "\nArena Entries\n-Active:   ", arenaDebugData.totalEntries,
     "\n-Inactive: ", arenaDebugData.inactiveEntries );
 
-    float2 baseline = { 0.0f, state.glyphTable->scale * 0.5f };
+    float2 baseline = { 0.0f, state.glyphTable->scale };
     bitmap_draw_text( target, state.glyphTable, baseline, color::LIGHT_GRAY, uiText );
-    //bitmap_draw_text( target, state.glyphTable, { 0.0f ,height * 2 }, color::WHITE, "How are you? :)" );
+    bitmap_draw_text( target, state.glyphTable, { 200.0f, baseline.y }, color::RED, "haha;;lol?" );
   }
 
   void RenderTestScreen( Bitmap* target, u64 currentFrame, UIState& state, float2 mouse )
@@ -220,8 +220,8 @@ void app_on_load( AppOnLoadParameter& parameter )
     }
 
     //char filename[] = "w:/data/Inconsolata-Regular.ttf";
-    char filename[] = "w:/data/SourceCodePro/SourceCodePro-Light.ttf";
-    //char filename[] = "w:/data/SourceCodePro/SourceCodePro-LightItalic.ttf";
+    //char filename[] = "w:/data/SourceCodePro/SourceCodePro-Light.ttf";
+    char filename[] = "w:/data/SourceCodePro/SourceCodePro-LightItalic.ttf";
     //char filename[] = "w:/data/SourceCodePro/SourceCodePro-SemiBold.ttf";
     platform::ReadFileResult file = platformData.read_file( filename, 0, 0 );
     state.uiState.glyphTable = font::init_glyph_table_from_ttf( &appData.generalPurposeArena, (u8 const*) file.data );
@@ -260,7 +260,7 @@ void app_tick( AppTickParameter& parameter )
   bmp.width = backBuffer.width;
   bmp.height = backBuffer.height;
 
-  UIState& uiState = state.uiState;
+  //UIState& uiState = state.uiState;
   appData.debug.trigger[0] = input.down[Input::KEY_0] ? !appData.debug.trigger[0] : appData.debug.trigger[0];
   appData.debug.trigger[1] = input.down[Input::KEY_1] ? !appData.debug.trigger[1] : appData.debug.trigger[1];
   appData.debug.trigger[2] = input.down[Input::KEY_2] ? !appData.debug.trigger[2] : appData.debug.trigger[2];
@@ -307,6 +307,48 @@ void app_tick( AppTickParameter& parameter )
     platformData.send_tcp( tcpSendParameter );
   }
 
+  if ( !appData.debug.trigger[0] )
+  {
+    //  debug::RenderUI( &bmp, platformData.currentFrameIndex, uiState );
+  }
+
+  if ( input.down[Input::KEY_F1] )
+  {
+    char screenshotfilename[] = "w:/data/test2.bmp";
+    file_save_bmp( platformData.write_file, screenshotfilename, bmp );
+  }
+
+  if ( input.down[Input::KEY_3] )
+  {
+    char filename[] = "w:/data/test.bmp";
+    char filename2[] = "w:/data/test2.bmp";
+    Bitmap bitmp = file_load_bmp( platformData.read_file, filename );
+
+    Bitmap bmpsave = {};
+    bmpsave.pixel = (u32*) backBuffer.data;
+    bmpsave.width = 1;
+    bmpsave.height = 1;
+    file_save_bmp( platformData.write_file, filename2, bmp );
+  }
+  #endif
+
+}
+
+void app_render( AppRenderParameter& parameter )
+{
+  PlatformData const& platformData = *parameter.platformData;
+  AppData& appData = *parameter.appData;
+
+  GameState& state = *(GameState*) (appData.staticBuffer);
+
+  BackBuffer& backBuffer = *parameter.backBuffer;
+  Bitmap bmp = {};
+  {
+    bmp.pixel = (u32*) backBuffer.data;
+    bmp.width = backBuffer.width;
+    bmp.height = backBuffer.height;
+  }
+
   if ( appData.debug.trigger[2] )
   {
     debug::RenderGradient( backBuffer, state.xOffset, state.yOffset );
@@ -344,39 +386,14 @@ void app_tick( AppTickParameter& parameter )
     //     state.uiState.image = load_image( (u8 const*) readResult.data, readResult.size );
     //   }
     // }
-
-    debug::RenderTestScreen( &bmp, platformData.currentFrameIndex, uiState, float2( input.mousePos[0].end ) );
+    Input const& input = platformData.input;
+    debug::RenderTestScreen( &bmp, platformData.currentFrameIndex, state.uiState, float2( input.mousePos[0].end ) );
   }
 
-  if ( !appData.debug.trigger[0] )
+  if ( appData.debug.trigger[0] )
   {
-    debug::RenderUI( &bmp, platformData.currentFrameIndex, uiState, float2( input.mousePos[0].end ) );
+    debug::RenderUI( &bmp, platformData.currentFrameIndex, state.uiState );
   }
-
-  if ( input.down[Input::KEY_F1] )
-  {
-    char screenshotfilename[] = "w:/data/test2.bmp";
-    file_save_bmp( platformData.write_file, screenshotfilename, bmp );
-  }
-
-  if ( input.down[Input::KEY_3] )
-  {
-    char filename[] = "w:/data/test.bmp";
-    char filename2[] = "w:/data/test2.bmp";
-    Bitmap bitmp = file_load_bmp( platformData.read_file, filename );
-
-    Bitmap bmpsave = {};
-    bmpsave.pixel = (u32*) backBuffer.data;
-    bmpsave.width = 1;
-    bmpsave.height = 1;
-    file_save_bmp( platformData.write_file, filename2, bmp );
-  }
-  #endif
-
-}
-
-void app_render( AppRenderParameter& parameter )
-{
 
 }
 

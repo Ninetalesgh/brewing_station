@@ -1,12 +1,13 @@
 #pragma once
 
+#include "win32/win32_global.h"
 #include <common/basic_math.h>
 #include <windows.h>
 #include <gl/gl.h>
 
 namespace win32
 {
-  struct OpenGLThreadParameter
+  struct ThreadOpenGLParameter
   {
     ThreadInfo threadInfo;
     HWND window;
@@ -50,7 +51,7 @@ namespace win32
 
   DWORD thread_OpenGL( void* voidParameter )
   {
-    OpenGLThreadParameter& parameter = *(OpenGLThreadParameter*) voidParameter;
+    ThreadOpenGLParameter& parameter = *(ThreadOpenGLParameter*) voidParameter;
     //ThreadInfo& threadInfo = parameter.threadInfo;
     int2& resolution = parameter.resolution;
 
@@ -63,10 +64,95 @@ namespace win32
 
     glViewport( 0, 0, resolution.x, resolution.y );
     glClearColor( 1.0f, 0.0f, 1.0f, 0.0f );
+
+    GLuint textureHandle = 0;
+    glGenTextures( 1, &textureHandle );
+
     while ( 1 )
     {
-      glClear( GL_COLOR_BUFFER_BIT );
-      SwapBuffers( windowDeviceContext );
+      if ( 1 )
+      {
+        BackBuffer backBuffer {};
+        {
+          backBuffer.data          = global::win32Data.backBuffer.bmpBuffer;
+          backBuffer.width         = global::win32Data.backBuffer.bmpWidth;
+          backBuffer.height        = global::win32Data.backBuffer.bmpHeight;
+          backBuffer.pitch         = global::win32Data.backBuffer.pitch;
+          backBuffer.bytesPerPixel = global::win32Data.backBuffer.bytesPerPixel;
+        }
+
+        {
+          AppRenderParameter renderParameter {};
+          renderParameter.platformData = &global::win32Data.platformData;
+          renderParameter.appData      = &global::win32Data.appData;
+          renderParameter.backBuffer   = &backBuffer;
+          global::win32Data.app_instances[global::win32Data.guard_currentDllIndex].render( renderParameter );
+        }
+
+
+
+        glBindTexture( GL_TEXTURE_2D, textureHandle );
+        glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, resolution.x, resolution.y, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, backBuffer.data );
+
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
+
+        glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+
+        glEnable( GL_TEXTURE_2D );
+
+        glClear( GL_COLOR_BUFFER_BIT );
+        glBegin( GL_TRIANGLES );
+
+        glMatrixMode( GL_TEXTURE );
+        glLoadIdentity();
+
+        glMatrixMode( GL_MODELVIEW );
+        glLoadIdentity();
+
+        glMatrixMode( GL_PROJECTION );
+        glLoadIdentity();
+
+        float p = 1.0f;
+
+        glTexCoord2f( 0, 1 );
+        glVertex2f( -p, -p );
+
+        glTexCoord2f( 1, 1 );
+        glVertex2f( p, -p );
+
+        glTexCoord2f( 1, 0 );
+        glVertex2f( p, p );
+
+        glTexCoord2f( 0, 1 );
+        glVertex2f( -p, -p );
+
+        glTexCoord2f( 1, 0 );
+        glVertex2f( p, p );
+
+        glTexCoord2f( 0, 0 );
+        glVertex2f( -p, p );
+
+        // float p = 0.9f;
+        // glColor3f( 1, 0, 0 );
+        // glVertex2f( -p, -p );
+        // glColor3f( 0, 1, 0 );
+        // glVertex2f( p, -p );
+        // glColor3f( 0, 0, 1 );
+        // glVertex2f( p, p );
+        // glColor3f( 1, 0, 0 );
+        // glVertex2f( -p, -p );
+        // glColor3f( 0, 1, 0 );
+        // glVertex2f( p, p );
+        // glColor3f( 0, 0, 1 );
+        // glVertex2f( -p, p );
+
+        glEnd();
+        SwapBuffers( windowDeviceContext );
+      }
     }
     return 0;
   }

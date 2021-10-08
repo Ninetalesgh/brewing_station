@@ -1,3 +1,4 @@
+#pragma once
 #include "platform.h"
 
 #include "common/basic_types.h"
@@ -48,12 +49,12 @@ namespace stub
   void app_receive_udp_packet( AppReceiveUDPPacketParameter& ) {}
 };
 
-#if !BS_BUILD_RELEASE
 using win32_app_sample_sound = void( AppSampleSoundParameter& );
 using win32_app_on_load = void( AppOnLoadParameter& );
 using win32_app_tick = void( AppTickParameter& );
 using win32_app_render = void( AppRenderParameter& );
 using win32_app_receive_udp_packet = void( AppReceiveUDPPacketParameter& );
+
 struct App
 {
   HMODULE dll;
@@ -63,7 +64,7 @@ struct App
   win32_app_render* render = stub::app_render;
   win32_app_receive_udp_packet* receive_udp_packet = stub::app_receive_udp_packet;
 };
-#endif
+
 
 enum APP_FLAG : u32
 {
@@ -86,10 +87,12 @@ namespace win32
     u32                 running;
     APP_FLAG            frame_flags;
 
+    App                 app_instances[2];
+    AppData             appData;
+    PlatformData        platformData;
+
     #if !BS_BUILD_RELEASE
     HANDLE              debugLogHandle;
-    App  app_instances[2];
-    App* app = &app_instances[0];
     atomic32 guard_currentDllIndex;
     atomic32 guard_oldDllCanBeDiscarded;
     #endif
@@ -105,6 +108,12 @@ namespace win32
     atomic32        connectionCount;
     atomic32        guard_connections;
   };
+};
+
+namespace global
+{
+  global_variable win32::GlobalData win32Data;
+  global_variable win32::GlobalNetworkData netData;
 };
 
 #if !BS_BUILD_RELEASE

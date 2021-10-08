@@ -34,6 +34,7 @@ namespace font
     INLINE Glyph const* get_glyph( s32 unicodeCodepoint )
     {
       //assert( unicodeCodepoint > 0 && unicodeCodepoint < 128 );
+      //TODO still broken, need hash table
 
       Glyph& result = asciiGlyphs[unicodeCodepoint];
       if ( !result.advance ) make_glyph( unicodeCodepoint );

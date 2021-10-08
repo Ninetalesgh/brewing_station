@@ -146,17 +146,15 @@ namespace font
     u8 const extraByteValueMask = 0b00111111;
 
     u8 unicodeMask = 0b11000000;
-    u8 check = 0b00100000;
 
     s32 extraBytes = 0;
     result = *(u8*) (reader);
     while ( *string & unicodeMask )
     {
       unicodeMask >>= 1;
-      check >>= 1;
-
       ++reader;
-      if ( *reader & extraByteCheckMask )
+      if ( (*reader & ~extraByteValueMask) == extraByteCheckMask )
+        //if ( *reader & extraByteCheckMask && !(*reader & (extraByteCheckMask >> 1)) )
       {
         result <<= 6;
         result += (*reader) & extraByteValueMask;

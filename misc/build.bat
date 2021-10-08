@@ -11,7 +11,7 @@ set codepath=..\..\code
 set compiler_options=/I %codepath% /GR- /EHa- /FC /MT /nologo /W4 /wd4068 /wd4100 /wd4201 /wd4701
 set linker_options=/link /opt:ref /incremental:no
 
-set scifi_exports=/EXPORT:app_sample_sound /EXPORT:app_tick /EXPORT:app_receive_udp_packet /EXPORT:app_on_load /EXPORT:app_render
+set app_exports=/EXPORT:app_sample_sound /EXPORT:app_tick /EXPORT:app_receive_udp_packet /EXPORT:app_on_load /EXPORT:app_render
 
 
 IF %build_mode%=="debug" goto build_debug
@@ -28,7 +28,7 @@ IF %build_mode%=="release" goto build_release
 
   set compiler_options_debug=%compiler_options% /Z7 /Od /DBS_BUILD_DEBUG=1 /DBS_BUILD_DEVELOP=0 /DBS_BUILD_RELEASE=0 
   
-  cl /LD %codepath%\apps\scifi.cpp %compiler_options_debug% /Fmscifi.map %linker_options% %scifi_exports% /PDB:scifi_%random%.pdb 
+  cl /LD %codepath%\apps\scifi.cpp %compiler_options_debug% /Fmscifi.map %linker_options% %app_exports% /PDB:scifi_%random%.pdb 
   cl     %codepath%\win32_main.cpp  /Fe:scifi_debug.exe %compiler_options_debug% %linker_options% 
   cl     %codepath%\win32_server.cpp /Fe:server_debug.exe %compiler_options_debug% %linker_options% 
 
@@ -44,7 +44,7 @@ IF %build_mode%=="release" goto build_release
 
   set compiler_options_develop=%compiler_options% /Ox /DBS_BUILD_DEBUG=0 /DBS_BUILD_DEVELOP=1 /DBS_BUILD_RELEASE=0
 
-  cl /LD %codepath%\apps\scifi.cpp %compiler_options_develop% %linker_options% %scifi_exports%
+  cl /LD %codepath%\apps\scifi.cpp %compiler_options_develop% %linker_options% %app_exports%
   cl     %codepath%\win32_main.cpp  /Fe:scifi_develop.exe %compiler_options_develop% %linker_options% 
   cl     %codepath%\win32_server.cpp /Fe:server_develop.exe %compiler_options_develop% %linker_options% 
 

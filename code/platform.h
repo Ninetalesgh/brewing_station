@@ -111,6 +111,7 @@ extern "C" void app_tick( AppTickParameter& );
 
 struct AppRenderParameter
 {
+  PlatformData const* platformData;
   AppData* appData;
   BackBuffer* backBuffer;
 };

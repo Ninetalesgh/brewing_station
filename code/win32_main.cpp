@@ -34,7 +34,7 @@ char global_debugUsername[] = "release_xamilla";
 # define DEBUG_LOG_CLOCK_MISSED_FRAME        1
 # define DEBUG_DRAW_SOUND                    0
 # define DEBUG_LOG_APP_ACTIVATED_DEACTIVATED 0
-# define DEBUG_RENDER_CPU                    1
+# define DEBUG_RENDER_CPU                    0
 #endif
 
 #include "common/profile.h"
@@ -64,8 +64,8 @@ char global_debugUsername[] = "release_xamilla";
 #include <dsound.h>
 #include <Xinput.h>
 
-#include <windows.h>
 #include "opengl.h"
+#include <windows.h>
 
 #ifdef min
 # undef min
@@ -75,12 +75,6 @@ char global_debugUsername[] = "release_xamilla";
 #endif
 
 constexpr float APP_TARGET_SPF = 1.0f / float( APP_UPDATE_HZ );
-
-namespace global
-{
-  global_variable win32::GlobalData win32Data;
-  global_variable win32::GlobalNetworkData netData;
-};
 
 namespace win32
 {
@@ -439,13 +433,13 @@ void debug_SendTCPPacket( net::TCPSendParameter const& parameter )
 namespace win32
 {
   #if !BS_BUILD_RELEASE
-  struct DllLoadingParameter
+  struct ThreadDllLoadingParameter
   {
     ThreadInfo threadInfo;
   };
   DWORD thread_DllLoading( void* void_parameter )
   {
-    DllLoadingParameter& parameter = *(DllLoadingParameter*) void_parameter;
+    ThreadDllLoadingParameter& parameter = *(ThreadDllLoadingParameter*) void_parameter;
 
     log_info( "[WIN32_THREAD] Thread: ", parameter.threadInfo.name, "id: ", parameter.threadInfo.id, ".\n" );
     constexpr u32 THREAD_SLEEP_DURATION = 500;
@@ -549,7 +543,7 @@ namespace win32
   }
 
 
-  struct UDPListenerParameter
+  struct ThreadUDPListenerParameter
   {
     ThreadInfo    threadInfo;
     SOCKET        udpSocket;
@@ -558,7 +552,7 @@ namespace win32
   };
   DWORD thread_UDPListener( void* void_parameter )
   {
-    UDPListenerParameter& parameter = *(UDPListenerParameter*) void_parameter;
+    ThreadUDPListenerParameter& parameter = *(ThreadUDPListenerParameter*) void_parameter;
     parameter.threadInfo.name = "UDPListener";
     log_info( "[WIN32_THREAD] UDPListener launching; thread id: ", parameter.threadInfo.id, ".\n" );
     AppData* appData = parameter.appData;
@@ -1088,7 +1082,7 @@ int CALLBACK WinMain( HINSTANCE hInstance,
   u32 debug_inputTrigger           = 0;
   u64 debug_CyclesForFrame         = 0;
   u64 debug_CyclesForAppTick       = 0;
-  u64 debug_CyclesForDisplay       = 0;
+  //u64 debug_CyclesForDisplay       = 0;
   u64 debug_CyclesForInput         = 0;
   u64 debug_CyclesForSoundSampling = 0;
   u64 debug_CyclesSleep            = 0;
@@ -1134,7 +1128,8 @@ int CALLBACK WinMain( HINSTANCE hInstance,
 
       s16* samples = (s16*) VirtualAlloc( 0, soundOutput.soundBufferSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
 
-      PlatformData platformData = {};
+
+      PlatformData& platformData = global::win32Data.platformData;
       {
         platformData.get_file_info = &debug_GetFileInfo;
         platformData.read_file     = &debug_ReadFile;
@@ -1144,41 +1139,46 @@ int CALLBACK WinMain( HINSTANCE hInstance,
         platformData.send_tcp      = &debug_SendTCPPacket;
       }
 
-
-      AppData appData = {};
+      AppData& appData = global::win32Data.appData;
       {
         appData.staticBufferSize = APP_STATIC_BUFFER_SIZE;
         appData.staticBuffer = VirtualAlloc( 0, appData.staticBufferSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
-
         s64 bufferSize = APP_TEMP_BUFFER_SIZE;
         void* buffer = VirtualAlloc( 0, bufferSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
         memory::init_arena( (char*) buffer, bufferSize, &appData.generalPurposeArena );
-
         #if !BS_BUILD_RELEASE
         bufferSize = APP_DEBUG_BUFFER_SIZE;
         void* debugBuffer = VirtualAlloc( 0, bufferSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
         memory::init_arena( (char*) debugBuffer, bufferSize, &appData.debug.arena );
         #endif
-
       }
 
+      App* app = &global::win32Data.app_instances[0];
       #if !BS_BUILD_RELEASE 
       {
-        win32::DllLoadingParameter dllParameter = {};
+        win32::ThreadDllLoadingParameter dllParameter = {};
         dllParameter.threadInfo.name = "thread_DllLoading";
         dllParameter.threadInfo.parent = &mainThread;
         CloseHandle( CreateThread( 0, 0, win32::thread_DllLoading, &dllParameter, 0, (LPDWORD) &dllParameter.threadInfo.id ) );
       }
+      #elif
+      {
+        app.sample_sound = &app_sample_sound;
+        app.on_load = &app_on_load;
+        app.tick = &app_tick;
+        app.render = &app_render;
+        app.receive_udp_packet = &app_receive_udp_packet;
+      }
       #endif
 
-      // {
-      //   win32::OpenGLThreadParameter openglParameter {};
-      //   openglParameter.window = window;
-      //   openglParameter.resolution = WINDOW_RESOLUTION;
-      //   openglParameter.threadInfo.name = "thread_OpenGL";
-      //   openglParameter.threadInfo.parent = &mainThread;
-      //   CloseHandle( CreateThread( 0, 0, win32::thread_OpenGL, &openglParameter, 0, (LPDWORD) &openglParameter.threadInfo.id ) );
-      // }
+      {
+        win32::ThreadOpenGLParameter openglParameter {};
+        openglParameter.window = window;
+        openglParameter.resolution = WINDOW_RESOLUTION;
+        openglParameter.threadInfo.name = "thread_OpenGL";
+        openglParameter.threadInfo.parent = &mainThread;
+        CloseHandle( CreateThread( 0, 0, win32::thread_OpenGL, &openglParameter, 0, (LPDWORD) &openglParameter.threadInfo.id ) );
+      }
 
       {
         SOCKET udpSocket;
@@ -1197,10 +1197,11 @@ int CALLBACK WinMain( HINSTANCE hInstance,
 
           win32::ServerHandshake( udpSocket, global::netData.server, global_debugUsername );
 
-          win32::UDPListenerParameter udpListenerParameter = {};
+          win32::ThreadUDPListenerParameter udpListenerParameter = {};
           udpListenerParameter.platformData = &platformData;
           udpListenerParameter.appData = &appData;
           udpListenerParameter.udpSocket = udpSocket;
+          //udpListenerParameter.receive_udp_packet = ;
           udpListenerParameter.threadInfo.name = "thread_UDPListener";
           udpListenerParameter.threadInfo.parent = &mainThread;
           CloseHandle( CreateThread( 0, 0, win32::thread_UDPListener, &udpListenerParameter, 0, (LPDWORD) &udpListenerParameter.threadInfo.id ) );
@@ -1212,7 +1213,7 @@ int CALLBACK WinMain( HINSTANCE hInstance,
         }
       }
 
-      Input& input               = platformData.input;
+      Input& input = platformData.input;
 
       u32 sleepAllowed = (timeBeginPeriod( 1 ) == TIMERR_NOERROR);
       float sleepMsSubtraction = 0.f;
@@ -1332,12 +1333,7 @@ int CALLBACK WinMain( HINSTANCE hInstance,
               appTickParameter.platformData = &platformData;
               appTickParameter.appData = &appData;
               appTickParameter.backBuffer = &backBuffer;
-              #if BS_BUILD_RELEASE
-
-              app_tick( appTickParameter );
-              #else
-              global::win32Data.app->tick( appTickParameter );
-              #endif
+              app->tick( appTickParameter );
             }
           } // PROFILE_SCOPE( debug_CyclesForAppTick );
 
@@ -1391,12 +1387,8 @@ int CALLBACK WinMain( HINSTANCE hInstance,
                 AppSampleSoundParameter sampleSoundParameter;
                 sampleSoundParameter.appData = &appData;
                 sampleSoundParameter.soundBuffer = &soundBuffer;
-                #if BS_BUILD_RELEASE
-                app_sample_sound( { sampleSoundParameter );
-                #else
-                global::win32Data.app->sample_sound( sampleSoundParameter );
-                #endif
-                }
+                app->sample_sound( sampleSoundParameter );
+              }
               #if DEBUG_DRAW_SOUND
               win32_DebugTimeMarker& marker = dbg_Markers[dbg_iMarker];
               marker.outputPlayCursor = playCursor;
@@ -1411,12 +1403,12 @@ int CALLBACK WinMain( HINSTANCE hInstance,
                                                     ", PC:", (u32) playCursor,
                                                     ", WC:", (u32) safeWriteCursor, "\n" );
               win32::FillSoundBuffer( soundOutput, byteToLock, bytesToWrite, soundBuffer );
-              }
+            }
             else
             {
               soundIsValid = false;
             }
-            } // PROFILE_SCOPE( debug_CyclesForSoundSampling );
+          } // PROFILE_SCOPE( debug_CyclesForSoundSampling );
 
           #if DEBUG_DRAW_SOUND
           {
@@ -1436,6 +1428,7 @@ int CALLBACK WinMain( HINSTANCE hInstance,
             win32::DisplayBufferInWindow( deviceContext, global::win32Data.backBuffer, dimensions.width, dimensions.height );
           }
           #endif
+
           //fixed timestamp
           LARGE_INTEGER checkTimer = win32::GetTimer();
           float secondsElapsed = win32::GetSecondsElapsed( beginCounter, checkTimer );
@@ -1472,7 +1465,7 @@ int CALLBACK WinMain( HINSTANCE hInstance,
                                                     "   fps: ", float( 1.f / secondsElapsed ), "\n" );
             }
           } // PROFILE_SCOPE( debug_CyclesSleep );
-          } // PROFILE_SCOPE( debug_CyclesForFrame );
+        } // PROFILE_SCOPE( debug_CyclesForFrame );
         LARGE_INTEGER endCounter = win32::GetTimer();
 
         #if DEBUG_LOG_CLOCK_FPS
@@ -1491,17 +1484,17 @@ int CALLBACK WinMain( HINSTANCE hInstance,
                                         "\n- - - - - - - Sleep: ", debug_CyclesSleep, "\n" );
 
         #if !BS_BUILD_RELEASE
-        if ( global::win32Data.app != &global::win32Data.app_instances[global::win32Data.guard_currentDllIndex] )
+        if ( app != &global::win32Data.app_instances[global::win32Data.guard_currentDllIndex] )
         {
           assert( !global::win32Data.guard_oldDllCanBeDiscarded );
           //discard before switching app, p2p listener depends on it
           global::win32Data.guard_oldDllCanBeDiscarded.increment();
-          global::win32Data.app = &global::win32Data.app_instances[global::win32Data.guard_currentDllIndex];
+          app = &global::win32Data.app_instances[global::win32Data.guard_currentDllIndex];
 
           AppOnLoadParameter appOnLoadParameter;
           appOnLoadParameter.platformData = &platformData;
           appOnLoadParameter.appData =  &appData;
-          global::win32Data.app->on_load( appOnLoadParameter );
+          app->on_load( appOnLoadParameter );
         }
         #endif
         beginCounter = endCounter;
@@ -1537,15 +1530,15 @@ int CALLBACK WinMain( HINSTANCE hInstance,
           }
         }
         #endif
-        }
       }
+    }
     else
     {
       assert( 0 ); // TODO: window creation failed ERROR
     }
-    }
+  }
 
   WSACleanup();
   CoUninitialize();
   return 0;
-  }
+}
