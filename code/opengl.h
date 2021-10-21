@@ -9,7 +9,7 @@ namespace win32
 {
   struct ThreadOpenGLParameter
   {
-    ThreadInfo threadInfo;
+    threading::ThreadInfo threadInfo;
     HWND window;
     int2 resolution;
   };
@@ -70,6 +70,8 @@ namespace win32
 
     while ( 1 )
     {
+      threading::wait_if_requested( &parameter.threadInfo );
+
       if ( 1 )
       {
         BackBuffer backBuffer {};
@@ -89,13 +91,11 @@ namespace win32
           global::win32Data.app_instances[global::win32Data.guard_currentDllIndex].render( renderParameter );
         }
 
-
-
         glBindTexture( GL_TEXTURE_2D, textureHandle );
         glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, resolution.x, resolution.y, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, backBuffer.data );
 
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 
         glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
         glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
@@ -115,6 +115,9 @@ namespace win32
 
         glMatrixMode( GL_PROJECTION );
         glLoadIdentity();
+
+        glEnable( GL_BLEND );
+        glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 
         float p = 1.0f;
 

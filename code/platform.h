@@ -11,8 +11,9 @@
 #if BS_BUILD_NETWORKING
 #include "net.h"
 #endif
-#include "common/basic_math.h"
-#include "common/memory.h"
+#include <common/threading.h>
+#include <common/basic_math.h>
+#include <common/memory.h>
 
 constexpr char  APP_FILENAME[]              = "scifi.dll";
 constexpr char  APP_NAME[]                  = "scifi";
@@ -58,30 +59,52 @@ namespace platform
     };
   };
 
-  using get_file_info = s32( char const*, FileInfo* );
-  using     read_file = ReadFileResult( char const*, u32, void* ); //TODO
-  using     free_file = void( void* );
-  using    write_file = u32( char const*, void* const*, s32 const*, s32 );
+  /*
+    returns 0 if no file was found
+    returns 1 if file was found and fileinfo was successfully written to
+  */
+  using get_file_info = u32( char const* filename, FileInfo* out_FileInfo );
+
+  /*
+    TODO NOT HAVE READ FILE ALLOCATE ITS OWN MEMORY
+  */
+  using read_file = ReadFileResult( char const* filename, u32 maxSize, void* out_data );
+
+  /*
+    TODO THIS IS ONLY NECESSARY WITH READFILE ALLOCATING ITS OWN MEMORY
+  */
+  using free_file = void( void* filename );
+
+  /*
+    TODO give this a proper parameter. this is horrible
+  */
+  using write_file = u32( char const* filename, void* const* data, s32 const* size, s32 count );
+
+  /*
+    returns 1 if thread was successfully created and threadInfo was written to
+    returns 0 on error
+  */
+  using thread_call = void( threading::ThreadInfo* threadInfo, void* parameter );
+  using create_thread = threading::ThreadInfo* (thread_call* entryFunction, void* parameter);
+
 
   #ifdef BS_BUILD_NETWORKING
   using      send_udp = void( net::UDPSendParameter const& );
   using      send_tcp = void( net::TCPSendParameter const& );
   #endif
 
-  namespace stub
-  {
-    s32        get_file_info( char const*, FileInfo* out_fileInfo ) { return 0; }
-    ReadFileResult read_file( char const*, u32, void* ) { return {}; }
-    void           free_file( void* ) {}
-    u32           write_file( char const* filename, void* const* data, s32 const* size, s32 count ) { return 0; }
-
-
-
-    #ifdef BS_BUILD_NETWORKING
-    void            send_udp( net::UDPSendParameter const& parameter ) {}
-    void            send_tcp( net::TCPSendParameter const& parameter ) {}
-    #endif
-  };
+  //   namespace stub
+  //   {
+  //     s32        get_file_info( char const*, FileInfo* out_fileInfo ) { return 0; }
+  //     ReadFileResult read_file( char const*, u32, void* ) { return {}; }
+  //     void           free_file( void* ) {}
+  //     u32           write_file( char const* filename, void* const* data, s32 const* size, s32 count ) { return 0; }
+  //     ThreadInfo create_thread()
+  //     #ifdef BS_BUILD_NETWORKING
+  //     void            send_udp( net::UDPSendParameter const& parameter ) {}
+  //     void            send_tcp( net::TCPSendParameter const& parameter ) {}
+  //     #endif
+  //   };
 };
 
 //platform calls:
@@ -129,14 +152,6 @@ struct AppReceiveUDPPacketParameter
 };
 extern "C" void app_receive_udp_packet( AppReceiveUDPPacketParameter& );
 #endif
-
-struct ThreadInfo
-{
-  //TODO
-  char const* name;
-  u32 id;
-  ThreadInfo* parent;
-};
 
 struct FileInfo
 {
@@ -320,6 +335,7 @@ struct Input
   u8 held[STATE_COUNT];
 };
 
+//TODO
 struct NetworkData
 {
   net::Connection self;
@@ -335,12 +351,13 @@ struct PlatformData
   u64 currentFrameIndex;
 
   NetworkData network;
-  ThreadInfo thread[APP_THREAD_COUNT_MAX];
+  threading::ThreadInfo threads[APP_THREAD_COUNT_MAX];
 
   platform::get_file_info* get_file_info;
   platform::read_file* read_file;
   platform::write_file* write_file;
   platform::free_file* free_file;
+  platform::create_thread* create_thread;
 
   #if BS_BUILD_NETWORKING
   platform::send_udp* send_udp;

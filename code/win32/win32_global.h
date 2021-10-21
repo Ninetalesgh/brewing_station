@@ -93,8 +93,8 @@ namespace win32
 
     #if !BS_BUILD_RELEASE
     HANDLE              debugLogHandle;
-    atomic32 guard_currentDllIndex;
-    atomic32 guard_oldDllCanBeDiscarded;
+    threading::atomic32 guard_currentDllIndex;
+    threading::atomic32 guard_oldDllCanBeDiscarded;
     #endif
   };
 
@@ -104,9 +104,9 @@ namespace win32
     net::Connection     self;
     net::Connection     server;
 
-    net::Connection connections[APP_CLIENT_COUNT_MAX];
-    atomic32        connectionCount;
-    atomic32        guard_connections;
+    net::Connection     connections[APP_CLIENT_COUNT_MAX];
+    threading::atomic32 connectionCount;
+    threading::atomic32 guard_connections;
   };
 };
 

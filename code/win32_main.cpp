@@ -28,7 +28,7 @@ char global_debugUsername[] = "release_xamilla";
 # define DEBUG_LOG_SOUND                     0
 # define DEBUG_LOG_INPUT                     0
 # define DEBUG_LOG_DLL_FREE                  0
-# define DEBUG_LOG_CLOCK_FPS                 0
+# define DEBUG_LOG_CLOCK_FPS                 1
 # define DEBUG_LOG_CLOCK_CYCLES              0
 # define DEBUG_LOG_CLOCK_SLEEP_DELTA         0
 # define DEBUG_LOG_CLOCK_MISSED_FRAME        1
@@ -38,7 +38,7 @@ char global_debugUsername[] = "release_xamilla";
 #endif
 
 #include "common/profile.h"
-#include "common/atomic.h"
+#include "common/threading.h"
 #include "common/basic_rasterizer.h"
 
 #define BS_STRING_IMPLEMENTATION
@@ -63,6 +63,8 @@ char global_debugUsername[] = "release_xamilla";
 
 #include <dsound.h>
 #include <Xinput.h>
+
+#include "win32/win32_platform_callbacks.h"
 
 #include "opengl.h"
 #include <windows.h>
@@ -91,119 +93,6 @@ namespace win32
   }
 };
 
-s32 debug_GetFileInfo( char const* filename, FileInfo* out_fileInfo )
-{
-  _WIN32_FIND_DATAA findData;
-  HANDLE findHandle = FindFirstFileA( APP_FILENAME, &findData );
-  if ( findHandle != INVALID_HANDLE_VALUE )
-  {
-    FindClose( findHandle );
-    out_fileInfo->size = u64( findData.nFileSizeLow ) + (u64( findData.nFileSizeHigh ) << 32);
-    return 1;
-  }
-
-  return 0;
-}
-
-void debug_FreeFile( void* data )
-{
-  VirtualFree( data, 0, MEM_RELEASE );
-}
-
-platform::ReadFileResult debug_ReadFile( char const* filename, u32 maxSize, void* out_data )
-{
-  //TODO
-  platform::ReadFileResult result = {};
-
-  HANDLE fileHandle = CreateFileA( filename,
-                                   GENERIC_READ,
-                                   FILE_SHARE_READ, 0,
-                                   OPEN_EXISTING,
-                                   FILE_ATTRIBUTE_NORMAL, 0 );
-
-  if ( fileHandle != INVALID_HANDLE_VALUE )
-  {
-    LARGE_INTEGER fileSize;
-    if ( GetFileSizeEx( fileHandle, &fileSize ) )
-    {
-      result.data = VirtualAlloc( 0, fileSize.QuadPart, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
-      assert( fileSize.QuadPart <= 0xFFFFFFFF );
-
-      u32 fileSize32 = (u32) fileSize.QuadPart;
-
-      DWORD bytesRead;
-      if ( ReadFile( fileHandle, result.data, fileSize32, &bytesRead, 0 )
-        && (fileSize32 == bytesRead) )
-      {
-        result.size = fileSize32;
-      }
-      else
-      {
-        debug_FreeFile( result.data );
-        result = {};
-      }
-    }
-
-    CloseHandle( fileHandle );
-  }
-
-  return result;
-}
-
-u32 debug_WriteFile( char const* filename, void* const* data, s32 const* size, s32 count )
-{
-  u32 result = 1;
-
-
-  // HANDLE result = CreateFileA( filename,
-  //                              GENERIC_WRITE,
-  //                              FILE_SHARE_READ,
-  //                              0,
-  //                              CREATE_ALWAYS,
-  //                              FILE_ATTRIBUTE_NORMAL,
-  //                              0 );
-
-  HANDLE fileHandle = CreateFileA( filename,
-                                   GENERIC_WRITE,
-                                   0, 0,
-                                   CREATE_ALWAYS,
-                                   FILE_ATTRIBUTE_NORMAL,
-                                   0 );
-
-  if ( fileHandle != INVALID_HANDLE_VALUE )
-  {
-    for ( s32 i = 0; i < count; ++i )
-    {
-      DWORD bytesWritten;
-      u8* reader = (u8*) data[i];
-      s32 sizeLeft = size[i];
-      constexpr_member s32 MAX_WRITE = 4096;
-
-      while ( sizeLeft > 0 )
-      {
-        if ( WriteFile( fileHandle, reader, min( MAX_WRITE, sizeLeft ), &bytesWritten, 0 ) )
-        {
-          sizeLeft -= (s32) bytesWritten;
-          reader += bytesWritten;
-        }
-        else
-        {
-          result = 0;
-          log_error( "[WIN32_FILE] ERROR - couldn't write data to file: ", filename );
-          break;
-        }
-      }
-    }
-  }
-  else
-  {
-    result = 0;
-  }
-
-  CloseHandle( fileHandle );
-
-  return result;
-}
 
 void OpenPeerConnection( net::Connection connection )
 {
@@ -234,7 +123,7 @@ void ClosePeerConnection( net::Connection connection )
 
 struct TCPFileTransferReceiverParameter
 {
-  ThreadInfo       threadInfo;
+  threading::ThreadInfo threadInfo;
   net::Connection  connection;
   HANDLE           fileHandle;
 };
@@ -251,6 +140,8 @@ DWORD thread_TCPFileTransferReceiver( void* void_parameter )
     auto beginTimer = win32::GetTimer();
     while ( win32::GetSecondsElapsed( beginTimer, win32::GetTimer() ) < WAIT_FOR_TCP_SECONDS_MAX )
     {
+      threading::wait_if_requested( &parameter.threadInfo );
+
       if ( win32::tcp_connect( receiverSocket, parameter.connection ) )
       {
         log_info( "WIN32_NET] TCP connection established with: ", parameter.connection );
@@ -295,7 +186,7 @@ DWORD thread_TCPFileTransferReceiver( void* void_parameter )
       else
       {
         log_info( "[WIN32_NET] ERROR - connecting to tcp sender. WSA Code: ", WSAGetLastError(), ", Attempting again.\n" );
-        Sleep( 10 );
+        threading::sleep( 10 );
       }
     }
   }
@@ -313,7 +204,7 @@ DWORD thread_TCPFileTransferReceiver( void* void_parameter )
 
 struct TCPFileTransferSenderParameter
 {
-  ThreadInfo      threadInfo;
+  threading::ThreadInfo threadInfo;
   net::Connection connection;
   char const* data;
   s32         size;
@@ -435,13 +326,15 @@ namespace win32
   #if !BS_BUILD_RELEASE
   struct ThreadDllLoadingParameter
   {
-    ThreadInfo threadInfo;
+    //threading::ThreadInfo threadInfo;
   };
-  DWORD thread_DllLoading( void* void_parameter )
-  {
-    ThreadDllLoadingParameter& parameter = *(ThreadDllLoadingParameter*) void_parameter;
 
-    log_info( "[WIN32_THREAD] Thread: ", parameter.threadInfo.name, "id: ", parameter.threadInfo.id, ".\n" );
+  void thread_DllLoading( threading::ThreadInfo* threadInfo, void* void_parameter )
+  {
+    threadInfo->name = "thread_DllLoading";
+    //    ThreadDllLoadingParameter& parameter = *(ThreadDllLoadingParameter*) void_parameter;
+
+    log_info( "[WIN32_THREAD] Thread: ", threadInfo->name, "id: ", threadInfo->id, ".\n" );
     constexpr u32 THREAD_SLEEP_DURATION = 500;
     char const* TMP_APP_CODE_FILENAME[2] = { "tmp_app_code0.dll", "tmp_app_code1.dll" };
 
@@ -450,6 +343,8 @@ namespace win32
 
     while ( true )
     {
+      threading::wait_if_requested( threadInfo );
+
       if ( newApp == &global::win32Data.app_instances[global::win32Data.guard_currentDllIndex] && global::win32Data.guard_oldDllCanBeDiscarded )
       {
         newApp = &global::win32Data.app_instances[!global::win32Data.guard_currentDllIndex];
@@ -517,11 +412,10 @@ namespace win32
         }
       }
 
-      Sleep( THREAD_SLEEP_DURATION );
+      threading::sleep( THREAD_SLEEP_DURATION );
     }
 
-    log_info( "[WIN32_THREAD] DllLoading closing; thread id: ", parameter.threadInfo.id, ".\n" );
-    return 0;
+    log_info( "[WIN32_THREAD] DllLoading closing; thread id: ", threadInfo->id, ".\n" );
   }
   #endif // !BS_BUILD_RELEASE
 
@@ -545,7 +439,7 @@ namespace win32
 
   struct ThreadUDPListenerParameter
   {
-    ThreadInfo    threadInfo;
+    threading::ThreadInfo    threadInfo;
     SOCKET        udpSocket;
     PlatformData* platformData;
     AppData* appData;
@@ -561,6 +455,8 @@ namespace win32
     char receiveBuffer[APP_NETWORK_PACKET_SIZE_MAX + 1] = {};
     for ( ;; )
     {
+      threading::wait_if_requested( &parameter.threadInfo );
+
       s32 bytesReceived;
       net::Connection sender;
       if ( win32::udp_receive( udpSocket, receiveBuffer, &sender, &bytesReceived ) )
@@ -1109,7 +1005,7 @@ int CALLBACK WinMain( HINSTANCE hInstance,
                                  0, 0, hInstance, 0 );
     if ( window )
     {
-      ThreadInfo mainThread {};
+      threading::ThreadInfo mainThread {};
       mainThread.id = GetCurrentThreadId();
       mainThread.name = "thread_Main";
       mainThread.parent = nullptr;
@@ -1131,10 +1027,12 @@ int CALLBACK WinMain( HINSTANCE hInstance,
 
       PlatformData& platformData = global::win32Data.platformData;
       {
-        platformData.get_file_info = &debug_GetFileInfo;
-        platformData.read_file     = &debug_ReadFile;
-        platformData.write_file    = &debug_WriteFile;
-        platformData.free_file     = &debug_FreeFile;
+        platformData.get_file_info = &win32::debug_GetFileInfo;
+        platformData.read_file     = &win32::debug_ReadFile;
+        platformData.write_file    = &win32::debug_WriteFile;
+        platformData.free_file     = &win32::debug_FreeFile;
+        platformData.create_thread = &win32::create_thread;
+
         platformData.send_udp      = &debug_SendUDPPacket;
         platformData.send_tcp      = &debug_SendTCPPacket;
       }
@@ -1157,9 +1055,10 @@ int CALLBACK WinMain( HINSTANCE hInstance,
       #if !BS_BUILD_RELEASE 
       {
         win32::ThreadDllLoadingParameter dllParameter = {};
-        dllParameter.threadInfo.name = "thread_DllLoading";
-        dllParameter.threadInfo.parent = &mainThread;
-        CloseHandle( CreateThread( 0, 0, win32::thread_DllLoading, &dllParameter, 0, (LPDWORD) &dllParameter.threadInfo.id ) );
+        //dllParameter.threadInfo.parent = &mainThread;
+        //CloseHandle( CreateThread( 0, 0, win32::thread_DllLoading, &dllParameter, 0, (LPDWORD) &dllParameter.threadInfo.id ) );
+
+        win32::create_thread( win32::thread_DllLoading, &dllParameter );
       }
       #elif
       {
@@ -1201,7 +1100,6 @@ int CALLBACK WinMain( HINSTANCE hInstance,
           udpListenerParameter.platformData = &platformData;
           udpListenerParameter.appData = &appData;
           udpListenerParameter.udpSocket = udpSocket;
-          //udpListenerParameter.receive_udp_packet = ;
           udpListenerParameter.threadInfo.name = "thread_UDPListener";
           udpListenerParameter.threadInfo.parent = &mainThread;
           CloseHandle( CreateThread( 0, 0, win32::thread_UDPListener, &udpListenerParameter, 0, (LPDWORD) &udpListenerParameter.threadInfo.id ) );
@@ -1221,7 +1119,7 @@ int CALLBACK WinMain( HINSTANCE hInstance,
       LARGE_INTEGER beginCounter = win32::GetTimer();
       while ( global::win32Data.running )
       {
-        // continue;
+        threading::wait_if_requested( &mainThread );
 
         {
           PROFILE_SCOPE( debug_CyclesForFrame );
@@ -1443,7 +1341,7 @@ int CALLBACK WinMain( HINSTANCE hInstance,
               )
               {
                 float const msSleep = ((APP_TARGET_SPF - secondsElapsed) * 1000.f) + sleepMsSubtraction;
-                Sleep( s32( max( msSleep, 0.0f ) ) );
+                threading::sleep( s32( max( msSleep, 0.0f ) ) );
                 float secondsElapsedIncludingSleep =  win32::GetSecondsElapsed( beginCounter, win32::GetTimer() );
                 float const msTarget = 1000.f * APP_TARGET_SPF;
                 float const delta = msTarget - 1000.0f * secondsElapsedIncludingSleep;

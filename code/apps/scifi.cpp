@@ -82,7 +82,7 @@ namespace debug
 
     float2 baseline = { 0.0f, state.glyphTable->scale };
     bitmap_draw_text( target, state.glyphTable, baseline, color::LIGHT_GRAY, uiText );
-    bitmap_draw_text( target, state.glyphTable, { 200.0f, baseline.y }, color::RED, "haha;;lol?" );
+    bitmap_draw_text( target, state.glyphTable, { 200.0f, baseline.y }, color::RED, "hahalol?" );
   }
 
   void RenderTestScreen( Bitmap* target, u64 currentFrame, UIState& state, float2 mouse )
@@ -220,8 +220,8 @@ void app_on_load( AppOnLoadParameter& parameter )
     }
 
     //char filename[] = "w:/data/Inconsolata-Regular.ttf";
-    //char filename[] = "w:/data/SourceCodePro/SourceCodePro-Light.ttf";
-    char filename[] = "w:/data/SourceCodePro/SourceCodePro-LightItalic.ttf";
+    char filename[] = "w:/data/SourceCodePro/SourceCodePro-Light.ttf";
+    //char filename[] = "w:/data/SourceCodePro/SourceCodePro-LightItalic.ttf";
     //char filename[] = "w:/data/SourceCodePro/SourceCodePro-SemiBold.ttf";
     platform::ReadFileResult file = platformData.read_file( filename, 0, 0 );
     state.uiState.glyphTable = font::init_glyph_table_from_ttf( &appData.generalPurposeArena, (u8 const*) file.data );
