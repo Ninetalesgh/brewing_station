@@ -219,8 +219,8 @@ void app_on_load( AppOnLoadParameter& parameter )
       font::delete_glyph_table( state.uiState.glyphTable );
     }
 
-    //char filename[] = "w:/data/Inconsolata-Regular.ttf";
-    char filename[] = "w:/data/SourceCodePro/SourceCodePro-Light.ttf";
+    char filename[] = "w:/data/Inconsolata-Regular.ttf";
+    //char filename[] = "w:/data/SourceCodePro/SourceCodePro-Light.ttf";
     //char filename[] = "w:/data/SourceCodePro/SourceCodePro-LightItalic.ttf";
     //char filename[] = "w:/data/SourceCodePro/SourceCodePro-SemiBold.ttf";
     platform::ReadFileResult file = platformData.read_file( filename, 0, 0 );

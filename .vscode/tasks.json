@@ -3,16 +3,16 @@
     // for the documentation about the tasks.json format
     "version": "2.0.0",
     "tasks": [
-        {
-            "label": "brewing_station build",
-            "type": "shell",
-            "command": "w:/misc/vscode_build.bat",
-            "isBackground": true,
-            "problemMatcher": [],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            }
+      {
+        "label": "brewing_station build",
+        "type": "shell",
+        "command": "w:/misc/vscode_build.bat",
+        "isBackground": true,
+        "problemMatcher": [],
+        "group": {
+          "kind": "build",
+          "isDefault": true
         }
+      }
     ]
 }

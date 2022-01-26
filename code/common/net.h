@@ -1,6 +1,7 @@
 #pragma once
-#include "common/basic_types.h"
-#include "common/string.h"
+
+#include <common/string.h>
+#include <common/basic_types.h>
 
 namespace net
 {
@@ -42,40 +43,14 @@ namespace net
     constexpr_member u16 PORT_INVALID = U16_MAX;
   };
   INLINE u32 is_valid_connection( Connection connection ) { return connection.port != U16_MAX && connection.ipv4_address != U32_MAX; }
-
-  struct TCPSendParameter
-  { //currently only file transfer? 
-    net::Connection to;
-    char const* fileData;
-    u32         fileSize;
-    char const* filename;
-  };
-
-  struct UDPSendParameter
-  {
-    net::Connection to;
-    char const* packet;
-    u32         packetSize;
-  };
-
-  struct UDPReceiveParameter
-  {
-    net::Connection sender;
-    char const* packet;
-    u32         packetSize;
-    u32         id;
-  };
 };
-template<> INLINE s32 string_format<true, net::Connection>( char* to, net::Connection connection );
 
-#if defined (BS_STRING_IMPLEMENTATION)
 template<> INLINE s32 string_format<true, net::Connection>( char* to, net::Connection connection )
 {
   return string_format( to, connection.ipv4_u8_address0, ".", connection.ipv4_u8_address1, ".",
                             connection.ipv4_u8_address2, ".", connection.ipv4_u8_address3,
                             ":", connection.port ) - 1;
 }
-#endif
 
 u32 parse_ipv4( char const* from )
 {

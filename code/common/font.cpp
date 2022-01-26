@@ -154,7 +154,6 @@ namespace font
       unicodeMask >>= 1;
       ++reader;
       if ( (*reader & ~extraByteValueMask) == extraByteCheckMask )
-        //if ( *reader & extraByteCheckMask && !(*reader & (extraByteCheckMask >> 1)) )
       {
         result <<= 6;
         result += (*reader) & extraByteValueMask;

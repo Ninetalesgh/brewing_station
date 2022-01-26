@@ -1,6 +1,5 @@
 #pragma once
 #include "basic_types.h"
-#define BS_STRING_IMPLEMENTATION
 
 struct string
 {
@@ -83,8 +82,6 @@ template<typename Arg> INLINE s32 string_format( char* to, Arg value )
   return bytesWritten + 1;
 }
 
-
-#ifdef BS_STRING_IMPLEMENTATION
 INLINE void string_copy( char* to, char const* from, s32 const size )
 {
   for ( s32 i = 0; i < size; ++i )
@@ -575,5 +572,3 @@ template<> INLINE s32 string_format<true, Binary8>( char* to, Binary8 value )
   }
   return max( 3, result );
 }
-
-#endif
