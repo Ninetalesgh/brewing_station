@@ -6,26 +6,7 @@
 
 #include "common/basic_types.h"
 
-#include <windows.h>
-#ifdef min
-# undef min
-#endif
-#ifdef max
-# undef max
-#endif
 
-//winsock
-#pragma comment(lib,"ws2_32.lib")
-//WinMain
-#pragma comment(lib,"user32.lib")
-//StretchDIBits
-//#pragma comment(lib,"Gdi32.lib")
-//time?
-#pragma comment(lib,"winmm.lib")
-//CoInitialize
-//#pragma comment(lib,"Ole32.lib")
-//openGL
-//#pragma comment(lib,"opengl32.lib")
 
 namespace win32
 {
@@ -48,11 +29,33 @@ int main()
 //FILE: main brewing station entry .cpp
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
 #include "app_common/platform.h"
 
 #include "win32_util.h"
 
 #include <common/string.h>
+
+#include <windows.h>
+#ifdef min
+# undef min
+#endif
+#ifdef max
+# undef max
+#endif
+
+//winsock
+#pragma comment(lib,"ws2_32.lib")
+//WinMain
+#pragma comment(lib,"user32.lib")
+//StretchDIBits
+//#pragma comment(lib,"Gdi32.lib")
+//time?
+#pragma comment(lib,"winmm.lib")
+//CoInitialize
+//#pragma comment(lib,"Ole32.lib")
+//openGL
+//#pragma comment(lib,"opengl32.lib")
 
 namespace win32
 {
