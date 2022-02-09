@@ -91,15 +91,14 @@ namespace win32
           global::win32Data.app_instances[global::win32Data.guard_currentDllIndex].render( renderParameter );
         }
 
+        GLuint textureHandle = 0;
+        glGenTextures( 1, &textureHandle );
         glBindTexture( GL_TEXTURE_2D, textureHandle );
         glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, resolution.x, resolution.y, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, backBuffer.data );
-
         glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
         glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-
         glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
         glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
-
         glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
 
         glEnable( GL_TEXTURE_2D );

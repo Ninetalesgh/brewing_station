@@ -1,7 +1,7 @@
 #pragma once
 
 #include <app_common/platform.h>
-#include <common/basic_types.h>
+#include <common/bscommon.h>
 #include <windows.h>
 
 namespace win32
@@ -32,13 +32,16 @@ namespace win32
   }
 
   #include <Xinput.h>
-  using win32_xInputGetState = DWORD WINAPI( DWORD, XINPUT_STATE* );
-  DWORD WINAPI win32_stub_xInputGetState( DWORD, XINPUT_STATE* ) { return ERROR_DEVICE_NOT_CONNECTED; }
+  using xInputGetState = DWORD WINAPI( DWORD, XINPUT_STATE* );
+  using xInputSetState = DWORD WINAPI( DWORD, XINPUT_VIBRATION* );
 
-  using win32_xInputSetState = DWORD WINAPI( DWORD, XINPUT_VIBRATION* );
-  DWORD WINAPI win32_stub_xInputSetState( DWORD, XINPUT_VIBRATION* ) { return ERROR_DEVICE_NOT_CONNECTED; }
+  namespace stub
+  {
+    DWORD WINAPI xInputGetState( DWORD, XINPUT_STATE* ) { return ERROR_DEVICE_NOT_CONNECTED; }
+    DWORD WINAPI xInputSetState( DWORD, XINPUT_VIBRATION* ) { return ERROR_DEVICE_NOT_CONNECTED; }
+  };
 
-  void load_xInput( win32_xInputGetState** xInputGetState, win32_xInputSetState** xInputSetState )
+  void load_xInput( xInputGetState** _xInputGetState, xInputSetState** _xInputSetState )
   {
     HMODULE module = LoadLibraryA( "xinput1_4.dll" );
 
@@ -49,8 +52,8 @@ namespace win32
 
     if ( module )
     {
-      *xInputGetState = (win32_xInputGetState*) GetProcAddress( module, "XInputGetState" );
-      *xInputSetState = (win32_xInputSetState*) GetProcAddress( module, "XInputSetState" );
+      *_xInputGetState = (xInputGetState*) GetProcAddress( module, "XInputGetState" );
+      *_xInputSetState = (xInputSetState*) GetProcAddress( module, "XInputSetState" );
 
       #if DEBUG_LOG_INPUT
       OutputDebugStringA( "[WIN32_INPUT] Controller input initialized.\n" );
@@ -60,8 +63,8 @@ namespace win32
     else
     {
       OutputDebugStringA( "[WIN32_INPUT] ERROR - neither xinput1_4.dll or xinput1_3.dll found.\n" );
-      *xInputGetState = win32_stub_xInputGetState;
-      *xInputSetState = win32_stub_xInputSetState;
+      *_xInputGetState = stub::xInputGetState;
+      *_xInputSetState = stub::xInputSetState;
     }
   }
 

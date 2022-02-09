@@ -4,7 +4,7 @@
 #include "platform_input.h"
 #include "platform_file.h"
 
-#include <common/memory.h>
+#include <core/memory.h>
 
 namespace bs
 {

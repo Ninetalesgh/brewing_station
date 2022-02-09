@@ -1,6 +1,6 @@
 #pragma once
 
-#include <common/basic_types.h>
+#include <common/bscommon.h>
 
 namespace bs
 {

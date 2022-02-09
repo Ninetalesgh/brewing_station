@@ -1,7 +1,6 @@
 #pragma once
 
-#include "preprocessor.h"
-#include "basic_types.h"
+#include <common/bscommon.h>
 
 namespace memory
 {

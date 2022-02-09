@@ -1010,7 +1010,6 @@ int CALLBACK WinMain( HINSTANCE hInstance,
       mainThread.name = "thread_Main";
       mainThread.parent = nullptr;
 
-
       win32_SoundOutput soundOutput = {};
       soundOutput.samplesPerSecond = 48000;
       soundOutput.bytesPerSample = sizeof( s16 ) * 2;
@@ -1023,7 +1022,6 @@ int CALLBACK WinMain( HINSTANCE hInstance,
       DWORD lastPlayCursor = 0;
 
       s16* samples = (s16*) VirtualAlloc( 0, soundOutput.soundBufferSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
-
 
       PlatformData& platformData = global::win32Data.platformData;
       {

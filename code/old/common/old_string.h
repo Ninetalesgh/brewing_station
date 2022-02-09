@@ -1,6 +1,7 @@
 #pragma once
 #include "basic_types.h"
 
+
 struct string
 {
   string() {}
@@ -15,6 +16,10 @@ INLINE u32 string_match( char const* a, char const* b );
 INLINE s32 string_first( char const* begin, s32 size, char const find );
 INLINE s32 string_last( char const* begin, s32 size, char const find );
 INLINE s32 string_length( char const* begin );
+
+//TODO
+// end of line: \n, \r
+// whitespace: ' ', \t, \v, \f, end of line
 
 
 //naive UNSAFE string formatting 

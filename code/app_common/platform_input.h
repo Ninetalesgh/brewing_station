@@ -1,9 +1,8 @@
 #pragma once
-#include <common/basic_math.h>
+#include <common/bsmath.h>
 
 namespace bs
 {
-
   struct ButtonState
   {
     s32 halfTransitionCount;
@@ -42,7 +41,6 @@ namespace bs
 
   struct Input
   {
-    constexpr_member s32 STATE_COUNT = 0xff;
     enum : u8
     {
       MOUSE_PRIMARY            = 1,
@@ -130,7 +128,8 @@ namespace bs
       KEY_SQUARE_BRACKET_OPEN  = 219,
       KEY_SQUARE_BRACKET_CLOSE = 221,
       KEY_BACKSLASH            = 220,
-      KEY_QUOTE                = 222
+      KEY_QUOTE                = 222,
+      STATE_COUNT              = 0xff
     };
 
     ControllerInput controller[4];
@@ -142,4 +141,4 @@ namespace bs
     u8 held[STATE_COUNT];
   };
 
-}
+};
