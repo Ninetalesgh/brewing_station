@@ -3,24 +3,26 @@
 namespace bs
 {
 
-  void app_sample_sound( AppSampleSoundParameter& )
+  void app_sample_sound( AppSampleSoundParameter prm )
   {
     BREAK;
   }
-  void app_on_load( AppOnLoadParameter& )
+
+  void app_on_load( AppOnLoadParameter prm )
   {
     BREAK;
   }
-  void app_tick( AppTickParameter& )
+
+  void app_tick( AppTickParameter prm )
   {
     BREAK;
 
   }
-  void app_render( AppRenderParameter& )
+  void app_render( AppRenderParameter prm )
   {
     BREAK;
   }
-  void app_receive_udp_packet( AppReceiveUDPPacketParameter& )
+  void app_receive_udp_packet( AppReceiveUDPPacketParameter prm )
   {
     BREAK;
   }

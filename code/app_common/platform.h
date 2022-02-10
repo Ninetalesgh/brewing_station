@@ -3,8 +3,9 @@
 #include "platform_net.h"
 #include "platform_input.h"
 #include "platform_file.h"
+#include "platform_debug.h"
 
-#include <core/memory.h>
+#include <core/bsmemory.h>
 
 namespace bs
 {
@@ -16,12 +17,12 @@ namespace bs
     Input input;
     NetworkData network;
 
-    fn_get_file_info* get_file_info;
-    fn_read_file* read_file;
-    fn_write_file* write_file;
-    fn_free_file* free_file;
-    fn_send_udp* send_udp;
-    fn_send_tcp* send_tcp;
+    platform::get_file_info* get_file_info;
+    platform::read_file* read_file;
+    platform::write_file* write_file;
+    platform::free_file* free_file;
+    platform::send_udp* send_udp;
+    platform::send_tcp* send_tcp;
   };
 
   struct AppSampleSoundParameter
@@ -29,14 +30,14 @@ namespace bs
     AppData* appData;
     //SoundBuffer* soundBuffer;
   };
-  extern "C" void app_sample_sound( AppSampleSoundParameter& );
+  extern "C" void app_sample_sound( AppSampleSoundParameter );
 
   struct AppOnLoadParameter
   {
     //PlatformData const* platformData;
     AppData* appData;
   };
-  extern "C" void app_on_load( AppOnLoadParameter& );
+  extern "C" void app_on_load( AppOnLoadParameter );
 
   struct AppTickParameter
   {
@@ -44,7 +45,7 @@ namespace bs
     AppData* appData;
     //BackBuffer* backBuffer;
   };
-  extern "C" void app_tick( AppTickParameter& );
+  extern "C" void app_tick( AppTickParameter );
 
   struct AppRenderParameter
   {
@@ -52,7 +53,7 @@ namespace bs
     AppData* appData;
     //BackBuffer* backBuffer;
   };
-  extern "C" void app_render( AppRenderParameter& );
+  extern "C" void app_render( AppRenderParameter );
 
   struct AppReceiveUDPPacketParameter
   {
@@ -63,6 +64,6 @@ namespace bs
     u32         packetSize;
     u32         id;
   };
-  extern "C" void app_receive_udp_packet( AppReceiveUDPPacketParameter& );
+  extern "C" void app_receive_udp_packet( AppReceiveUDPPacketParameter );
 
 };

@@ -48,7 +48,7 @@ namespace bs
     INLINE u32 is_valid_connection( Connection connection ) { return connection.port != U16_MAX && connection.ipv4_address != U32_MAX; }
   };
 
-  template<> INLINE s32 string_format<true, net::Connection>( string to, net::Connection connection )
+  template<> INLINE s32 string_format<true, net::Connection>( String to, net::Connection connection )
   {
     return string_format( to, connection.ipv4_u8_address0, ".", connection.ipv4_u8_address1, ".",
                               connection.ipv4_u8_address2, ".", connection.ipv4_u8_address3,

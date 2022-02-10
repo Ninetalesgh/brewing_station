@@ -60,11 +60,42 @@ LRESULT CALLBACK brewing_station_main_window_callback( HWND window, UINT message
   return result;
 }
 
+void debug_log( platform::debug::DebugLogFlags flags, char const* string, s32 size )
+{
+  wchar_t wideChars[platform::debug::MAX_DEBUG_MESSAGE_LENGTH / 2];
+
+  int wideCharCount = MultiByteToWideChar( CP_UTF8, 0, string, -1, NULL, 0 );
+
+  if ( wideCharCount < platform::debug::MAX_DEBUG_MESSAGE_LENGTH )
+  {
+    MultiByteToWideChar( CP_UTF8, 0, string, -1, wideChars, wideCharCount );
+  }
+
+  OutputDebugStringW( wideChars );
+  if ( flags & platform::debug::DebugLogFlags::WRITE_TO_DEBUG_LOG_FILE )
+  {
+    static HANDLE debug_log_file = CreateFileW( L"debug.log", GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0 );
+
+    s32 bytesWritten {};
+    WriteFile( debug_log_file, string, size, (LPDWORD) &bytesWritten, 0 );
+  }
+  if ( flags & platform::debug::DebugLogFlags::SEND_TO_SERVER )
+  {
+
+  }
+};
+
+
 
 s32 brewing_station_init()
 {
-  s32 result = 1;
+  #ifdef BS_DEBUG
+  platform::debug::global::ptr_debug_log = &debug_log;
+  #endif
 
+  log_info( "[WIN32]", "ĹĿŌ" );
+
+  s32 result = 1;
   HINSTANCE hInstance = GetModuleHandle( NULL );
 
   result &= QueryPerformanceFrequency( (LARGE_INTEGER*) &global::performanceCounterFrequency );

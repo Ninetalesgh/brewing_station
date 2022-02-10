@@ -3,43 +3,43 @@
 
 namespace bs
 {
-  struct string
+  struct String
   {
-    string() {}
-    string( string const& other ) : data( other.data ), capacity( other.capacity ) {}
-    string( char* data, s32 capacity ) : data( data ), capacity( capacity ) {}
+    String() {}
+    String( String const& other ) : data( other.data ), capacity( other.capacity ) {}
+    String( char* data, s32 capacity ) : data( data ), capacity( capacity ) {}
     char* data;
     s32 capacity;
   };
 
-  template<bool internal, typename Arg> INLINE s32 string_format( string to, Arg value );
+  template<bool internal, typename Arg> INLINE s32 string_format( String to, Arg value );
   template<typename Arg, typename... Args>
-  INLINE s32 string_format( string to, Arg arg, Args... args )
+  INLINE s32 string_format( String to, Arg arg, Args... args )
   {
     s32 bytesWritten = string_format<true, Arg>( to, arg );
-    bytesWritten += string_format<Args...>( string { to.data + bytesWritten, to.capacity - bytesWritten }, args... );
+    bytesWritten += string_format<Args...>( String { to.data + bytesWritten, to.capacity - bytesWritten }, args... );
 
     return bytesWritten;
   }
 
-  template<> INLINE s32 string_format<true, char const*>( string to, char const* value );
-  template<> INLINE s32 string_format<true, char*>( string to, char* value );
-  template<> INLINE s32 string_format<true, string>( string to, string value );
-  template<> INLINE s32 string_format<true, u64>( string to, u64 value );
-  template<> INLINE s32 string_format<true, u32>( string to, u32 value );
-  template<> INLINE s32 string_format<true, u16>( string to, u16 value );
-  template<> INLINE s32 string_format<true, u8>( string to, u8 value );
-  template<> INLINE s32 string_format<true, s64>( string to, s64 value );
-  template<> INLINE s32 string_format<true, s32>( string to, s32 value );
-  template<> INLINE s32 string_format<true, s16>( string to, s16 value );
-  template<> INLINE s32 string_format<true, s8>( string to, s8 value );
+  template<> INLINE s32 string_format<true, char const*>( String to, char const* value );
+  template<> INLINE s32 string_format<true, char*>( String to, char* value );
+  template<> INLINE s32 string_format<true, String>( String to, String value );
+  template<> INLINE s32 string_format<true, u64>( String to, u64 value );
+  template<> INLINE s32 string_format<true, u32>( String to, u32 value );
+  template<> INLINE s32 string_format<true, u16>( String to, u16 value );
+  template<> INLINE s32 string_format<true, u8>( String to, u8 value );
+  template<> INLINE s32 string_format<true, s64>( String to, s64 value );
+  template<> INLINE s32 string_format<true, s32>( String to, s32 value );
+  template<> INLINE s32 string_format<true, s16>( String to, s16 value );
+  template<> INLINE s32 string_format<true, s8>( String to, s8 value );
 
-  s32 string_format_float( string to, float value, s32 const postPeriodDigits );
-  template<> INLINE s32 string_format<true, float>( string to, float value ) { return string_format_float( to, value, 4 ); }
+  s32 string_format_float( String to, float value, s32 const postPeriodDigits );
+  template<> INLINE s32 string_format<true, float>( String to, float value ) { return string_format_float( to, value, 4 ); }
 
-  template<bool internal, typename Arg> INLINE s32 string_format( string to, Arg value ) { static_assert(0); } //type doesn't exist for formatting yet, sorry :(
+  template<bool internal, typename Arg> INLINE s32 string_format( String to, Arg value ) { static_assert(0); } //type doesn't exist for formatting yet, sorry :(
 
-  template<typename Arg> INLINE s32 string_format( string to, Arg value )
+  template<typename Arg> INLINE s32 string_format( String to, Arg value )
   {
     s32 bytesWritten = string_format<true, Arg>( to, value );
     if ( to.capacity > bytesWritten )
@@ -57,7 +57,7 @@ namespace bs
 
 namespace bs
 {
-  template<> INLINE s32 string_format<true, char const*>( string to, char const* value )
+  template<> INLINE s32 string_format<true, char const*>( String to, char const* value )
   {
     s32 result = 0;
     if ( value )
@@ -71,12 +71,12 @@ namespace bs
     return result;
   }
 
-  template<> INLINE s32 string_format<true, char*>( string to, char* value )
+  template<> INLINE s32 string_format<true, char*>( String to, char* value )
   {
     return string_format<true, char const*>( to, (char const*) value );
   }
 
-  template<> INLINE s32 string_format<true, u64>( string to, u64 value )
+  template<> INLINE s32 string_format<true, u64>( String to, u64 value )
   {
     s32 result = 0;
     if ( to.capacity )
@@ -105,7 +105,7 @@ namespace bs
     return result;
   }
 
-  template<> INLINE s32 string_format<true, u32>( string to, u32 value )
+  template<> INLINE s32 string_format<true, u32>( String to, u32 value )
   {
     s32 result = 0;
     if ( to.capacity )
@@ -134,7 +134,7 @@ namespace bs
     return result;
   }
 
-  template<> INLINE s32 string_format<true, u16>( string to, u16 value )
+  template<> INLINE s32 string_format<true, u16>( String to, u16 value )
   {
     s32 result = 0;
     if ( to.capacity )
@@ -164,7 +164,7 @@ namespace bs
   }
 
 
-  template<> INLINE s32 string_format<true, u8>( string to, u8 value )
+  template<> INLINE s32 string_format<true, u8>( String to, u8 value )
   {
     s32 result = 0;
     if ( to.capacity )
@@ -193,7 +193,7 @@ namespace bs
     return result;
   }
 
-  template<> INLINE s32 string_format<true, s64>( string to, s64 value )
+  template<> INLINE s32 string_format<true, s64>( String to, s64 value )
   {
     s32 result = 0;
     if ( value >> ((sizeof( s64 ) * 8) - 1) && to.capacity >= 0 )
@@ -205,7 +205,7 @@ namespace bs
     return result + string_format<true, u64>( { to.data, to.capacity - result }, u64( value ) );
   }
 
-  template<> INLINE s32 string_format<true, s32>( string to, s32 value )
+  template<> INLINE s32 string_format<true, s32>( String to, s32 value )
   {
     s32 result = 0;
     if ( value >> ((sizeof( s32 ) * 8) - 1) && to.capacity >= 0 )
@@ -217,7 +217,7 @@ namespace bs
     return result + string_format<true, u32>( { to.data, to.capacity - result }, u32( value ) );
   }
 
-  template<> INLINE s32 string_format<true, s16>( string to, s16 value )
+  template<> INLINE s32 string_format<true, s16>( String to, s16 value )
   {
     s32 result = 0;
     if ( value >> ((sizeof( s16 ) * 8) - 1) && to.capacity >= 0 )
@@ -229,7 +229,7 @@ namespace bs
     return result + string_format<true, u16>( { to.data, to.capacity - result }, u16( value ) );
   }
 
-  template<> INLINE s32 string_format<true, s8>( string to, s8 value )
+  template<> INLINE s32 string_format<true, s8>( String to, s8 value )
   {
     s32 result = 0;
     if ( value >> ((sizeof( s8 ) * 8) - 1) && to.capacity >= 0 )
@@ -241,7 +241,7 @@ namespace bs
     return result + string_format<true, u8>( { to.data, to.capacity - result }, u8( value ) );
   }
 
-  s32 string_format_float( string to, float value, s32 const postPeriodDigits )
+  s32 string_format_float( String to, float value, s32 const postPeriodDigits )
   {
     constexpr u32 MASK_FIRST_BIT = 0b10000000000000000000000000000000;
     constexpr u32 MASK_EXPONENT  = 0b01111111100000000000000000000000;
