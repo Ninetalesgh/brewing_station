@@ -1,6 +1,6 @@
 #pragma once
 
-#include <app_common/platform.h>
+#include <platform/platform.h>
 #include <common/bscommon.h>
 #include <windows.h>
 
@@ -70,18 +70,20 @@ namespace win32
 
   namespace stub
   {
-    void app_sample_sound( bs::AppSampleSoundParameter& ) {}
-    void app_on_load( bs::AppOnLoadParameter& ) {}
-    void app_tick( bs::AppTickParameter& ) {}
-    void app_render( bs::AppRenderParameter& ) {}
-    void app_receive_udp_packet( bs::AppReceiveUDPPacketParameter& ) {}
+    void app_sample_sound( bs::PrmAppSampleSound ) {}
+    void app_on_load( bs::PrmAppOnLoad ) {}
+    void app_tick( bs::PrmAppTick ) {}
+    void app_render( bs::PrmAppRender ) {}
+    void app_receive_udp_packet( bs::PrmAppReceiveUDPPacket ) {}
+    void app_register_debug_callbacks( platform::debug::PrmRegisterDebugCallbacks ) {}
   };
 
-  using win32_app_sample_sound = void( bs::AppSampleSoundParameter& );
-  using win32_app_on_load = void( bs::AppOnLoadParameter& );
-  using win32_app_tick = void( bs::AppTickParameter& );
-  using win32_app_render = void( bs::AppRenderParameter& );
-  using win32_app_receive_udp_packet = void( bs::AppReceiveUDPPacketParameter& );
+  using  win32_app_sample_sound = void( bs::PrmAppSampleSound );
+  using  win32_app_on_load = void( bs::PrmAppOnLoad );
+  using  win32_app_tick = void( bs::PrmAppTick );
+  using  win32_app_render = void( bs::PrmAppRender );
+  using  win32_app_receive_udp_packet = void( bs::PrmAppReceiveUDPPacket );
+  using  win32_app_register_debug_callbacks = void( platform::debug::PrmRegisterDebugCallbacks );
 
   struct AppDll
   {
@@ -91,6 +93,7 @@ namespace win32
     win32_app_tick* tick = stub::app_tick;
     win32_app_render* render = stub::app_render;
     win32_app_receive_udp_packet* receive_udp_packet = stub::app_receive_udp_packet;
+    win32_app_register_debug_callbacks* register_debug_callbacks = stub::app_register_debug_callbacks;
   };
 
 

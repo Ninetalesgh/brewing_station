@@ -1,9 +1,10 @@
 
 
 #include "win32_util.h"
+#include "win32_app_dll_loader.h"
 #include <win32/win32_opengl.h>
 
-#include <app_common/platform.h>
+#include <platform/platform.h>
 #include <common/bsstring.h>
 
 #include <windows.h>
@@ -25,7 +26,8 @@
 //#pragma comment(lib,"Ole32.lib")
 
 
-
+constexpr u32 THREAD_COUNT_MAX = 32;
+constexpr u64 APP_MEMORY_SIZE = GigaBytes( 1 );
 namespace global
 {
   static s64 performanceCounterFrequency;
@@ -36,8 +38,46 @@ namespace global
   static bs::AppData           appData;
 
   static u32                   running;
+
+  static thread::ThreadInfo appThreads[THREAD_COUNT_MAX];
+  static u32                   threadCount;
 };
 
+void pause_all_app_threads()
+{
+  for ( s32 i = 0; i < THREAD_COUNT_MAX; ++i )
+  {
+    if ( global::appThreads[i].id )
+    {
+      thread::request_pause( &global::appThreads[i] );
+    }
+  }
+}
+
+void wait_for_all_app_threads_to_pause()
+{
+  for ( s32 i = 0; i < THREAD_COUNT_MAX; ++i )
+  {
+    if ( global::appThreads[i].id )
+    {
+      while ( !global::appThreads[i].isPaused )
+      {
+        thread::sleep( 1 );
+      }
+    }
+  }
+}
+
+void resume_all_app_threads()
+{
+  for ( s32 i = 0; i < THREAD_COUNT_MAX; ++i )
+  {
+    if ( global::appThreads[i].id )
+    {
+      thread::request_unpause( &global::appThreads[i] );
+    }
+  }
+}
 
 LRESULT CALLBACK brewing_station_main_window_callback( HWND window, UINT message, WPARAM wParam, LPARAM lParam )
 {
@@ -85,27 +125,34 @@ void debug_log( platform::debug::DebugLogFlags flags, char const* string, s32 si
   }
 };
 
+void brewing_station_loop()
+{
 
 
-s32 brewing_station_init()
+  // while ( global::running )
+  // {
+
+  // }
+}
+
+
+void brewing_station_main()
 {
   #ifdef BS_DEBUG
   platform::debug::global::ptr_debug_log = &debug_log;
   #endif
 
-  log_info( "[WIN32]", "ĹĿŌ" );
-
   s32 result = 1;
   HINSTANCE hInstance = GetModuleHandle( NULL );
 
-  result &= QueryPerformanceFrequency( (LARGE_INTEGER*) &global::performanceCounterFrequency );
+  result = QueryPerformanceFrequency( (LARGE_INTEGER*) &global::performanceCounterFrequency );
   assert( result );
 
   {
     WSADATA wsaData;
-    result ^= WSAStartup( MAKEWORD( 2, 2 ), &wsaData );
+    result = WSAStartup( MAKEWORD( 2, 2 ), &wsaData );
+    assert( result == 0 );
   }
-  assert( result );
 
   //init debug logging here TODO
 
@@ -122,7 +169,7 @@ s32 brewing_station_init()
     //parameter.wndClass.cbWndExtra    =;
     parameter.wndClass.hInstance     = hInstance;
     //parameter.wndClass.hIcon         =;
-    parameter.wndClass.hCursor       =LoadCursor( (HINSTANCE) NULL, IDC_ARROW );
+    parameter.wndClass.hCursor       = LoadCursor( (HINSTANCE) NULL, IDC_ARROW );
     //parameter.wndClass.hbrBackground =(HBRUSH) (COLOR_APPWORKSPACE + 1);
     //parameter.wndClass.lpszMenuName  =MAKEINTRESOURCE(IDR_GUIED_MAIN);
     parameter.wndClass.lpszClassName = L"bswnd";
@@ -133,22 +180,47 @@ s32 brewing_station_init()
     bs::opengl::init( window );
   }
 
-  // FETCH DLL HERE FIRST TODO to specify window stuff
+  s64 bufferSize = (s64) APP_MEMORY_SIZE;
+  void* buffer = VirtualAlloc( 0, bufferSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
+  memory::init_arena( (char*) buffer, bufferSize, &global::appData.mainArena );
+
+  thread::ThreadInfo& mainThread = global::appThreads[global::threadCount++];
+  mainThread.id = GetCurrentThreadId();
+  mainThread.name = "thread_main";
+
+  #ifdef BS_RELEASE_BUILD
+  {
+    global::appDll.sample_sound = &bs::app_sample_sound;
+    global::appDll.on_load = &bs::app_on_load;
+    global::appDll.tick = &bs::app_tick;
+    global::appDll.render = &bs::app_render;
+    global::appDll.receive_udp_packet = &bs::app_receive_udp_packet;
+    //global::appDll.register_debug_callbacks = &platform::debug::app_register_debug_callbacks;
+  }
+  #else
+  {
+    win32::PrmThreadDllLoader dllLoaderPrm = {};
+    thread::ThreadInfo standaloneDllLoadThread {};
+    dllLoaderPrm.threadInfo = &standaloneDllLoadThread;
+    dllLoaderPrm.appDll =  &global::appDll;
+    dllLoaderPrm.pause_app = &pause_all_app_threads;
+    dllLoaderPrm.wait_for_pause = &wait_for_all_app_threads_to_pause;
+    dllLoaderPrm.resume_app = &resume_all_app_threads;
+    CloseHandle( CreateThread( 0, 0, win32::thread_DllLoader, &dllLoaderPrm, 0, (LPDWORD) &dllLoaderPrm.threadInfo->id ) );
+  }
+  #endif
+
 
   global::running = true;
-  return result;
+  while ( global::running )
+  {
+    thread::wait_if_requested( &mainThread );
+    brewing_station_loop();
+  }
+
 }
 
-void brewing_station_run()
-{
-  using namespace win32;
-  // threading::ThreadInfo mainThread {};
-  // mainThread.id = GetCurrentThreadId();
-  // mainThread.name = "thread_Main";
-  // mainThread.parent = nullptr;
 
-  // while ( global::running )
-  // {
-
-  // }
-}
+#ifdef BS_RELEASE_BUILD
+#include <apps/brewing_Station_app.cpp>
+#endif

@@ -123,7 +123,7 @@ void ClosePeerConnection( net::Connection connection )
 
 struct TCPFileTransferReceiverParameter
 {
-  threading::ThreadInfo threadInfo;
+  thread::ThreadInfo threadInfo;
   net::Connection  connection;
   HANDLE           fileHandle;
 };
@@ -140,7 +140,7 @@ DWORD thread_TCPFileTransferReceiver( void* void_parameter )
     auto beginTimer = win32::GetTimer();
     while ( win32::GetSecondsElapsed( beginTimer, win32::GetTimer() ) < WAIT_FOR_TCP_SECONDS_MAX )
     {
-      threading::wait_if_requested( &parameter.threadInfo );
+      thread::wait_if_requested( &parameter.threadInfo );
 
       if ( win32::tcp_connect( receiverSocket, parameter.connection ) )
       {
@@ -186,7 +186,7 @@ DWORD thread_TCPFileTransferReceiver( void* void_parameter )
       else
       {
         log_info( "[WIN32_NET] ERROR - connecting to tcp sender. WSA Code: ", WSAGetLastError(), ", Attempting again.\n" );
-        threading::sleep( 10 );
+        thread::sleep( 10 );
       }
     }
   }
@@ -204,7 +204,7 @@ DWORD thread_TCPFileTransferReceiver( void* void_parameter )
 
 struct TCPFileTransferSenderParameter
 {
-  threading::ThreadInfo threadInfo;
+  thread::ThreadInfo threadInfo;
   net::Connection connection;
   char const* data;
   s32         size;
@@ -326,10 +326,10 @@ namespace win32
   #if !BS_BUILD_RELEASE
   struct ThreadDllLoadingParameter
   {
-    //threading::ThreadInfo threadInfo;
+    //thread::ThreadInfo threadInfo;
   };
 
-  void thread_DllLoading( threading::ThreadInfo* threadInfo, void* void_parameter )
+  void thread_DllLoading( thread::ThreadInfo* threadInfo, void* void_parameter )
   {
     threadInfo->name = "thread_DllLoading";
     //    ThreadDllLoadingParameter& parameter = *(ThreadDllLoadingParameter*) void_parameter;
@@ -343,7 +343,7 @@ namespace win32
 
     while ( true )
     {
-      threading::wait_if_requested( threadInfo );
+      thread::wait_if_requested( threadInfo );
 
       if ( newApp == &global::win32Data.app_instances[global::win32Data.guard_currentDllIndex] && global::win32Data.guard_oldDllCanBeDiscarded )
       {
@@ -412,7 +412,7 @@ namespace win32
         }
       }
 
-      threading::sleep( THREAD_SLEEP_DURATION );
+      thread::sleep( THREAD_SLEEP_DURATION );
     }
 
     log_info( "[WIN32_THREAD] DllLoading closing; thread id: ", threadInfo->id, ".\n" );
@@ -439,7 +439,7 @@ namespace win32
 
   struct ThreadUDPListenerParameter
   {
-    threading::ThreadInfo    threadInfo;
+    thread::ThreadInfo    threadInfo;
     SOCKET        udpSocket;
     PlatformData* platformData;
     AppData* appData;
@@ -455,7 +455,7 @@ namespace win32
     char receiveBuffer[APP_NETWORK_PACKET_SIZE_MAX + 1] = {};
     for ( ;; )
     {
-      threading::wait_if_requested( &parameter.threadInfo );
+      thread::wait_if_requested( &parameter.threadInfo );
 
       s32 bytesReceived;
       net::Connection sender;
@@ -1005,7 +1005,7 @@ int CALLBACK WinMain( HINSTANCE hInstance,
                                  0, 0, hInstance, 0 );
     if ( window )
     {
-      threading::ThreadInfo mainThread {};
+      thread::ThreadInfo mainThread {};
       mainThread.id = GetCurrentThreadId();
       mainThread.name = "thread_Main";
       mainThread.parent = nullptr;
@@ -1117,7 +1117,7 @@ int CALLBACK WinMain( HINSTANCE hInstance,
       LARGE_INTEGER beginCounter = win32::GetTimer();
       while ( global::win32Data.running )
       {
-        threading::wait_if_requested( &mainThread );
+        thread::wait_if_requested( &mainThread );
 
         {
           PROFILE_SCOPE( debug_CyclesForFrame );
@@ -1339,7 +1339,7 @@ int CALLBACK WinMain( HINSTANCE hInstance,
               )
               {
                 float const msSleep = ((APP_TARGET_SPF - secondsElapsed) * 1000.f) + sleepMsSubtraction;
-                threading::sleep( s32( max( msSleep, 0.0f ) ) );
+                thread::sleep( s32( max( msSleep, 0.0f ) ) );
                 float secondsElapsedIncludingSleep =  win32::GetSecondsElapsed( beginCounter, win32::GetTimer() );
                 float const msTarget = 1000.f * APP_TARGET_SPF;
                 float const delta = msTarget - 1000.0f * secondsElapsedIncludingSleep;

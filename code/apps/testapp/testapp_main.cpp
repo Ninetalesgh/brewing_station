@@ -1,28 +1,28 @@
-#include "app_common/platform.h" 
+#include "platform/platform.h" 
 
 namespace bs
 {
 
-  void app_sample_sound( AppSampleSoundParameter prm )
+  void app_sample_sound( PrmAppSampleSound prm )
   {
     BREAK;
   }
 
-  void app_on_load( AppOnLoadParameter prm )
+  void app_on_load( PrmAppOnLoad prm )
   {
     BREAK;
   }
 
-  void app_tick( AppTickParameter prm )
+  void app_tick( PrmAppTick prm )
   {
     BREAK;
 
   }
-  void app_render( AppRenderParameter prm )
+  void app_render( PrmAppRender prm )
   {
     BREAK;
   }
-  void app_receive_udp_packet( AppReceiveUDPPacketParameter prm )
+  void app_receive_udp_packet( PrmAppReceiveUDPPacket prm )
   {
     BREAK;
   }

@@ -91,5 +91,4 @@ namespace platform
   };
 };
 
-
 #endif

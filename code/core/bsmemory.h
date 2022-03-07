@@ -1,5 +1,6 @@
 #pragma once
 
+#include <common/bsmtutil.h>
 #include <common/bscommon.h>
 
 namespace memory
@@ -38,6 +39,7 @@ namespace memory
     char* current;
     ArenaEntry* lastEntry;
     s32 entryCount;
+    atomic32 guard;
 
   public:
     Arena();
@@ -111,9 +113,6 @@ namespace memory
     }
   };
 
-
-
-
   Arena::Arena()
     : bufferBegin( nullptr )
     , bufferEnd( nullptr )
@@ -124,15 +123,11 @@ namespace memory
 
   void* Arena::alloc( s64 size, u32 alignment /*= 4*/ )
   {
-    //  return (char*) malloc( (size_t) size );
-      //TODO compensate for fragmentation a bit?
-      //TODO alignment
-      //TODO thread safety?
+    LOCK_SCOPE( guard );
+
+    //TODO compensate for fragmentation a bit?
     char* result = nullptr;
 
-    // changing the current pointer permanently shouldn't be an issue, 
-    //arenas shouldn't be used for a lot of small entries
-    //BS_BUILD_64BIT
     current += ((u64) current) & (alignment - 1);
 
     if ( current + size < (char*) (lastEntry - 1) )
@@ -180,6 +175,8 @@ namespace memory
 
   void Arena::free( void* ptr )
   {
+    LOCK_SCOPE( guard ); //TODO a bit more overhead than necessary
+
     if ( ptr != nullptr )
     {
       ArenaEntry* entry = lastEntry;

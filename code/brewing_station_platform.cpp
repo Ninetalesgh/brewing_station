@@ -3,16 +3,11 @@
 
 #include "common/bscommon.h"
 
-s32 brewing_station_init();
-void brewing_station_run();
-
+void brewing_station_main();
 
 int main( int argc, char** argv )
 {
-  if ( brewing_station_init() )
-  {
-    brewing_station_run();
-  }
+  brewing_station_main();
 
   return 0;
 }

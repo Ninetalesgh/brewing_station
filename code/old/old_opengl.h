@@ -9,7 +9,7 @@ namespace win32
 {
   struct ThreadOpenGLParameter
   {
-    threading::ThreadInfo threadInfo;
+    thread::ThreadInfo threadInfo;
     HWND window;
     int2 resolution;
   };
@@ -70,7 +70,7 @@ namespace win32
 
     while ( 1 )
     {
-      threading::wait_if_requested( &parameter.threadInfo );
+      thread::wait_if_requested( &parameter.threadInfo );
 
       if ( 1 )
       {

@@ -84,8 +84,8 @@ namespace platform
     returns 1 if thread was successfully created and threadInfo was written to
     returns 0 on error
   */
-  using thread_call = void( threading::ThreadInfo* threadInfo, void* parameter );
-  using create_thread = threading::ThreadInfo* (thread_call* entryFunction, void* parameter);
+  using thread_call = void( thread::ThreadInfo* threadInfo, void* parameter );
+  using create_thread = thread::ThreadInfo* (thread_call* entryFunction, void* parameter);
 
 
   #ifdef BS_BUILD_NETWORKING
@@ -351,7 +351,7 @@ struct PlatformData
   u64 currentFrameIndex;
 
   NetworkData network;
-  threading::ThreadInfo threads[APP_THREAD_COUNT_MAX];
+  thread::ThreadInfo threads[APP_THREAD_COUNT_MAX];
 
   platform::get_file_info* get_file_info;
   platform::read_file* read_file;

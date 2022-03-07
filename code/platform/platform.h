@@ -25,37 +25,37 @@ namespace bs
     platform::send_tcp* send_tcp;
   };
 
-  struct AppSampleSoundParameter
+  struct PrmAppSampleSound
   {
     AppData* appData;
     //SoundBuffer* soundBuffer;
   };
-  extern "C" void app_sample_sound( AppSampleSoundParameter );
+  extern "C" void app_sample_sound( PrmAppSampleSound );
 
-  struct AppOnLoadParameter
+  struct PrmAppOnLoad
   {
     //PlatformData const* platformData;
     AppData* appData;
   };
-  extern "C" void app_on_load( AppOnLoadParameter );
+  extern "C" void app_on_load( PrmAppOnLoad );
 
-  struct AppTickParameter
-  {
-    //PlatformData const* platformData;
-    AppData* appData;
-    //BackBuffer* backBuffer;
-  };
-  extern "C" void app_tick( AppTickParameter );
-
-  struct AppRenderParameter
+  struct PrmAppTick
   {
     //PlatformData const* platformData;
     AppData* appData;
     //BackBuffer* backBuffer;
   };
-  extern "C" void app_render( AppRenderParameter );
+  extern "C" void app_tick( PrmAppTick );
 
-  struct AppReceiveUDPPacketParameter
+  struct PrmAppRender
+  {
+    //PlatformData const* platformData;
+    AppData* appData;
+    //BackBuffer* backBuffer;
+  };
+  extern "C" void app_render( PrmAppRender );
+
+  struct PrmAppReceiveUDPPacket
   {
     //PlatformData const* platformData;
     AppData* appData;
@@ -64,6 +64,6 @@ namespace bs
     u32         packetSize;
     u32         id;
   };
-  extern "C" void app_receive_udp_packet( AppReceiveUDPPacketParameter );
+  extern "C" void app_receive_udp_packet( PrmAppReceiveUDPPacket );
 
 };

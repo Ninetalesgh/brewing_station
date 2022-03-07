@@ -13,7 +13,7 @@ namespace win32
   platform::ReadFileResult debug_ReadFile( char const* filename, u32 maxSize, void* out_data );
   u32                      debug_WriteFile( char const* filename, void* const* data, s32 const* size, s32 count );
 
-  threading::ThreadInfo* create_thread( platform::thread_call* entryFunction, void* parameter );
+  thread::ThreadInfo* create_thread( platform::thread_call* entryFunction, void* parameter );
 
 };
 
@@ -32,13 +32,13 @@ namespace win32
   {
     struct BrewingStationThreadLauncherParameter
     {
-      threading::ThreadInfo* threadInfo;
+      thread::ThreadInfo* threadInfo;
       platform::thread_call* entryFunction;
       void* passInParameter;
     };
-    threading::ThreadInfo* try_add_thread_to_platform_data( PlatformData* platform )
+    thread::ThreadInfo* try_add_thread_to_platform_data( PlatformData* platform )
     {
-      threading::ThreadInfo* result {};
+      thread::ThreadInfo* result {};
 
       for ( s32 i = 0; i < APP_THREAD_COUNT_MAX; ++i )
       {
@@ -53,9 +53,9 @@ namespace win32
     }
   };
 
-  threading::ThreadInfo* create_thread( platform::thread_call* entryFunction, void* parameter )
+  thread::ThreadInfo* create_thread( platform::thread_call* entryFunction, void* parameter )
   {
-    threading::ThreadInfo* threadInfo = internal::try_add_thread_to_platform_data( &global::win32Data.platformData );
+    thread::ThreadInfo* threadInfo = internal::try_add_thread_to_platform_data( &global::win32Data.platformData );
 
     if ( threadInfo != nullptr )
     {
@@ -192,7 +192,7 @@ namespace win32
 DWORD brewing_station_thread( void* parameter )
 {
   win32::internal::BrewingStationThreadLauncherParameter* threadLaunchParameter = (win32::internal::BrewingStationThreadLauncherParameter*) parameter;
-  threading::ThreadInfo* threadInfo = threadLaunchParameter->threadInfo;
+  thread::ThreadInfo* threadInfo = threadLaunchParameter->threadInfo;
 
   threadLaunchParameter->entryFunction( threadInfo, threadLaunchParameter->passInParameter );
   threadInfo->hasReturned.increment();
