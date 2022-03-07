@@ -4,6 +4,13 @@
     "key": "ctrl+shift+b",
     "command": "terminalCommandKeys.run",
     "args": {
+        "cmd": "build develop"
+    }
+  },
+  {
+    "key": "ctrl+shift+i",
+    "command": "terminalCommandKeys.run",
+    "args": {
         "cmd": "build"
     }
   },

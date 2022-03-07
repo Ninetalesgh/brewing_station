@@ -1,8 +1,5 @@
 {
   "terminal.integrated.cursorStyle": "line",
-  "terminal.integrated.shell.windows": "C:\\WINDOWS\\System32\\cmd.exe",
-  
-  "window.zoomLevel":              0,
   "editor.fontSize":              14,
   "terminal.integrated.fontSize": 14,
   "debug.console.fontSize":       14,
@@ -17,8 +14,8 @@
   "editor.hideCursorInOverviewRuler": true,
   "editor.overviewRulerBorder":       false,
   "editor.minimap.enabled":           false,
-  "editor.glyphMargin":               false,
-  "editor.lineNumbers":               "off",
+  "editor.glyphMargin":               true,
+  "editor.lineNumbers":               "on",
 
   "editor.formatOnType":        false,
   "editor.formatOnSave":        true,
@@ -26,7 +23,6 @@
   "editor.tabSize":             2,
   "editor.insertSpaces":        true,
   "editor.renderLineHighlight": "all",
-  
 
   "editor.tokenColorCustomizations": {
     "textMateRules": [   
@@ -36,16 +32,16 @@
       ]
     },
     
-  "editor.defaultFormatter": "ms-vscode.cpptools",
-  "C_Cpp.updateChannel":           "Default",
-  "C_Cpp.autocomplete":            "Default",
-  "C_Cpp.autoAddFileAssociations": false,
-  "C_Cpp.codeFolding":             "Disabled",
-  "C_Cpp.configurationWarnings":   "Disabled",
-  "C_Cpp.formatting":              "vcFormat",
-  "C_Cpp.intelliSenseEngine":      "Tag Parser",
-  "C_Cpp.enhancedColorization":    "Enabled",
-
+  "editor.defaultFormatter":                                    "ms-vscode.cpptools",
+"C_Cpp.updateChannel": "Insiders",
+"clangd.path": "c:\\Users\\Red\\AppData\\Roaming\\Code\\User\\globalStorage\\llvm-vs-code-extensions.vscode-clangd\\install\\12.0.0\\clangd_12.0.0\\bin\\clangd.exe",
+  "C_Cpp.autocomplete":                                         "Default",
+  "C_Cpp.autoAddFileAssociations":                              false,
+  "C_Cpp.codeFolding":                                          "Disabled",
+  "C_Cpp.configurationWarnings":                                "Disabled",
+  "C_Cpp.formatting":                                           "vcFormat",
+  "C_Cpp.intelliSenseEngine":                                   "Tag Parser",
+  "C_Cpp.enhancedColorization":                                 "Enabled",
   "C_Cpp.vcFormat.space.aroundAssignmentOperator":              "ignore",
   "C_Cpp.vcFormat.space.aroundBinaryOperator":                  "insert",
   "C_Cpp.vcFormat.space.withinCastParentheses":                 false,
@@ -55,11 +51,11 @@
   "C_Cpp.vcFormat.space.withinParameterListParentheses":        true,
   "C_Cpp.vcFormat.space.beforeInitializerListOpenBrace":        true,
   "C_Cpp.vcFormat.space.afterCastCloseParenthesis":             true,
-  //"C_Cpp.vcFormat.space.insertAfterSemicolon":                true,
   "C_Cpp.vcFormat.indent.preserveWithinParentheses":            true,
   "C_Cpp.vcFormat.indent.caseContents":                         true,
   "C_Cpp.vcFormat.indent.caseLabels":                           true,
-
-
+  "C_Cpp.vcFormat.indent.preprocessor":                       "none",
+  "workbench.editor.untitled.hint": "hidden",
+  "terminal.integrated.cursorBlinking": true,
+  "security.workspace.trust.untrustedFiles": "open",
 }
-    
