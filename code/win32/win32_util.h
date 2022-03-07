@@ -1,8 +1,27 @@
 #pragma once
 
-#include <platform/platform.h>
-#include <common/bscommon.h>
-#include <windows.h>
+#include "win32_global.h"
+
+
+LRESULT CALLBACK brewing_station_main_window_callback( HWND window, UINT message, WPARAM wParam, LPARAM lParam )
+{
+  LRESULT result = 0;
+  switch ( message )
+  {
+    case WM_DESTROY:
+    {
+      global::running = false;
+      break;
+    }
+    default:
+    {
+      result = DefWindowProc( window, message, wParam, lParam );
+      break;
+    }
+  }
+
+  return result;
+}
 
 namespace win32
 {
@@ -31,9 +50,78 @@ namespace win32
     return resultWindow;
   }
 
-  #include <Xinput.h>
-  using xInputGetState = DWORD WINAPI( DWORD, XINPUT_STATE* );
-  using xInputSetState = DWORD WINAPI( DWORD, XINPUT_VIBRATION* );
+  INLINE LARGE_INTEGER GetTimer()
+  {
+    LARGE_INTEGER result;
+    QueryPerformanceCounter( &result );
+    return result;
+  }
+
+  INLINE float GetSecondsElapsed( LARGE_INTEGER beginCounter, LARGE_INTEGER endCounter )
+  {
+    return float( endCounter.QuadPart - beginCounter.QuadPart ) / float( global::performanceCounterFrequency );
+  }
+
+  void pause_all_app_threads()
+  {
+    for ( s32 i = 0; i < THREAD_COUNT_MAX; ++i )
+    {
+      if ( global::appThreads[i].id )
+      {
+        thread::request_pause( &global::appThreads[i] );
+      }
+    }
+  }
+
+  void wait_for_all_app_threads_to_pause()
+  {
+    for ( s32 i = 0; i < THREAD_COUNT_MAX; ++i )
+    {
+      if ( global::appThreads[i].id )
+      {
+        while ( !global::appThreads[i].isPaused )
+        {
+          thread::sleep( 1 );
+        }
+      }
+    }
+  }
+
+  void resume_all_app_threads()
+  {
+    for ( s32 i = 0; i < THREAD_COUNT_MAX; ++i )
+    {
+      if ( global::appThreads[i].id )
+      {
+        thread::request_unpause( &global::appThreads[i] );
+      }
+    }
+  }
+
+  void debug_log( platform::debug::DebugLogFlags flags, char const* string, s32 size )
+  {
+    wchar_t wideChars[platform::debug::MAX_DEBUG_MESSAGE_LENGTH / 2];
+
+    int wideCharCount = MultiByteToWideChar( CP_UTF8, 0, string, -1, NULL, 0 );
+
+    if ( wideCharCount < platform::debug::MAX_DEBUG_MESSAGE_LENGTH )
+    {
+      MultiByteToWideChar( CP_UTF8, 0, string, -1, wideChars, wideCharCount );
+    }
+
+    OutputDebugStringW( wideChars );
+    if ( flags & platform::debug::DebugLogFlags::WRITE_TO_DEBUG_LOG_FILE )
+    {
+      static HANDLE debug_log_file = CreateFileW( L"debug.log", GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0 );
+
+      s32 bytesWritten {};
+      WriteFile( debug_log_file, string, size, (LPDWORD) &bytesWritten, 0 );
+    }
+    if ( flags & platform::debug::DebugLogFlags::SEND_TO_SERVER )
+    {
+
+    }
+  };
 
   namespace stub
   {
@@ -41,7 +129,7 @@ namespace win32
     DWORD WINAPI xInputSetState( DWORD, XINPUT_VIBRATION* ) { return ERROR_DEVICE_NOT_CONNECTED; }
   };
 
-  void load_xInput( xInputGetState** _xInputGetState, xInputSetState** _xInputSetState )
+  void load_xInput()
   {
     HMODULE module = LoadLibraryA( "xinput1_4.dll" );
 
@@ -52,8 +140,8 @@ namespace win32
 
     if ( module )
     {
-      *_xInputGetState = (xInputGetState*) GetProcAddress( module, "XInputGetState" );
-      *_xInputSetState = (xInputSetState*) GetProcAddress( module, "XInputSetState" );
+      global::xInputGetState = (xInputGetState*) GetProcAddress( module, "XInputGetState" );
+      global::xInputSetState = (xInputSetState*) GetProcAddress( module, "XInputSetState" );
 
       #if DEBUG_LOG_INPUT
       OutputDebugStringA( "[WIN32_INPUT] Controller input initialized.\n" );
@@ -63,38 +151,60 @@ namespace win32
     else
     {
       OutputDebugStringA( "[WIN32_INPUT] ERROR - neither xinput1_4.dll or xinput1_3.dll found.\n" );
-      *_xInputGetState = stub::xInputGetState;
-      *_xInputSetState = stub::xInputSetState;
+      global::xInputGetState = stub::xInputGetState;
+      global::xInputSetState = stub::xInputSetState;
     }
   }
 
-  namespace stub
+  INLINE void ProcessXInputDigitalButton( WORD wButtons, DWORD buttonBit, bs::ButtonState& state, bs::ButtonState const& oldState )
   {
-    void app_sample_sound( bs::PrmAppSampleSound ) {}
-    void app_on_load( bs::PrmAppOnLoad ) {}
-    void app_tick( bs::PrmAppTick ) {}
-    void app_render( bs::PrmAppRender ) {}
-    void app_receive_udp_packet( bs::PrmAppReceiveUDPPacket ) {}
-    void app_register_debug_callbacks( platform::debug::PrmRegisterDebugCallbacks ) {}
-  };
+    state.halfTransitionCount = (state.endedDown != oldState.endedDown) ? 1 : 0;
+    state.endedDown = wButtons & buttonBit;
+  }
 
-  using  win32_app_sample_sound = void( bs::PrmAppSampleSound );
-  using  win32_app_on_load = void( bs::PrmAppOnLoad );
-  using  win32_app_tick = void( bs::PrmAppTick );
-  using  win32_app_render = void( bs::PrmAppRender );
-  using  win32_app_receive_udp_packet = void( bs::PrmAppReceiveUDPPacket );
-  using  win32_app_register_debug_callbacks = void( platform::debug::PrmRegisterDebugCallbacks );
-
-  struct AppDll
+  void ProcessControllerInput( bs::Input& input )
   {
-    HMODULE dll;
-    win32_app_sample_sound* sample_sound = stub::app_sample_sound;
-    win32_app_on_load* on_load = stub::app_on_load;
-    win32_app_tick* tick = stub::app_tick;
-    win32_app_render* render = stub::app_render;
-    win32_app_receive_udp_packet* receive_udp_packet = stub::app_receive_udp_packet;
-    win32_app_register_debug_callbacks* register_debug_callbacks = stub::app_register_debug_callbacks;
-  };
+    constexpr s32 supportedControllers = array_count( input.controller );
+    constexpr s32 maxControllerCount = min( supportedControllers, XUSER_MAX_COUNT );
 
+    for ( DWORD iController = 0; iController < (DWORD) maxControllerCount; ++iController )
+    {
+      XINPUT_STATE controllerState;
+      if ( global::xInputGetState( iController, &controllerState ) == ERROR_SUCCESS )
+      {
+        //controller plugged in
+        XINPUT_GAMEPAD& pad = controllerState.Gamepad;
+        bs::ControllerInput& newController = input.controller[iController];
 
-}
+        ProcessXInputDigitalButton( pad.wButtons, XINPUT_GAMEPAD_DPAD_UP, newController.up, newController.up );
+        ProcessXInputDigitalButton( pad.wButtons, XINPUT_GAMEPAD_DPAD_DOWN, newController.down, newController.down );
+        ProcessXInputDigitalButton( pad.wButtons, XINPUT_GAMEPAD_DPAD_LEFT, newController.left, newController.left );
+        ProcessXInputDigitalButton( pad.wButtons, XINPUT_GAMEPAD_DPAD_RIGHT, newController.right, newController.right );
+        ProcessXInputDigitalButton( pad.wButtons, XINPUT_GAMEPAD_LEFT_SHOULDER, newController.leftShoulder, newController.leftShoulder );
+        ProcessXInputDigitalButton( pad.wButtons, XINPUT_GAMEPAD_RIGHT_SHOULDER, newController.rightShoulder, newController.rightShoulder );
+
+        float stickX         = float( pad.sThumbLX ) / (pad.sThumbLX < 0 ? 32768.f : 32767.f);
+        float stickY         = float( pad.sThumbLY ) / (pad.sThumbLY < 0 ? 32768.f : 32767.f);
+
+        newController.start = newController.end;
+        newController.min = newController.max = newController.end = { stickX, stickY };
+        //bool start         = pad.wButtons & XINPUT_GAMEPAD_START;
+        //bool back          = pad.wButtons & XINPUT_GAMEPAD_BACK;
+        //bool buttonA       = pad.wButtons & XINPUT_GAMEPAD_A;
+        //bool buttonB       = pad.wButtons & XINPUT_GAMEPAD_B;
+        //bool buttonX       = pad.wButtons & XINPUT_GAMEPAD_X;
+        //bool buttonY       = pad.wButtons & XINPUT_GAMEPAD_Y;
+      }
+      else
+      {
+        //controller not available
+      }
+    }
+
+    // {
+    //   XINPUT_VIBRATION vibrationState { 0, 0 };
+    //   global::xInputSetState( 0, &vibrationState );
+    // }
+  }
+
+};

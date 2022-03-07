@@ -15,7 +15,7 @@ namespace bs
 
   void app_tick( PrmAppTick prm )
   {
-    BREAK;
+    // BREAK;
 
   }
   void app_render( PrmAppRender prm )

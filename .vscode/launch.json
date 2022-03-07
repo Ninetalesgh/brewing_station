@@ -8,10 +8,10 @@
             "name": "(Windows) Launch",
             "type": "cppvsdbg",
             "request": "launch",
-           "program": "w:/build/debug/brewing_station.exe",
+           "program": "w:/build/dev/brewing_station.exe",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "w:/build/debug",
+            "cwd": "w:/build/dev",
             "environment": [],
             "console": "newExternalWindow",
         }

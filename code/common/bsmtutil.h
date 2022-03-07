@@ -46,6 +46,7 @@ namespace thread
 
 #ifdef _WIN32
 #include <xthreads.h>
+#include <xtimec.h>
 #endif
 
 #ifdef _WIN32
@@ -71,17 +72,21 @@ namespace thread
     lock->increment();
   }
 
-
   LockingObject::~LockingObject()
   {
     assert( *lock );
     lock->decrement();
   }
 
+  #ifdef _WIN32
   INLINE void sleep( s32 milliseconds )
   {
     xtime timer {};
-    timer.nsec = 1000 * (s64) milliseconds;
+    s64 nanosecondsTarget = s64( _Xtime_get_ticks() ) * 100LL + s64( milliseconds ) * 1000000LL;
+    timer.sec  = nanosecondsTarget / 1000000000LL;
+    timer.nsec = nanosecondsTarget % 1000000000LL;
     _Thrd_sleep( &timer );
   }
+  #endif
 };
+

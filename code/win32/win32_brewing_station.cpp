@@ -1,145 +1,179 @@
 
 
 #include "win32_util.h"
+#include "win32_global.h"
 #include "win32_app_dll_loader.h"
-#include <win32/win32_opengl.h>
+#include "win32_opengl.h"
 
 #include <platform/platform.h>
 #include <common/bsstring.h>
-
-#include <windows.h>
-#ifdef min
-# undef min
-#endif
-#ifdef max
-# undef max
-#endif
 
 //winsock
 #pragma comment(lib,"ws2_32.lib")
 //WinMain
 #pragma comment(lib,"user32.lib")
-//time?
+//time
 #pragma comment(lib,"winmm.lib")
-
-//CoInitialize
-//#pragma comment(lib,"Ole32.lib")
-
-
-constexpr u32 THREAD_COUNT_MAX = 32;
-constexpr u64 APP_MEMORY_SIZE = GigaBytes( 1 );
-namespace global
-{
-  static s64 performanceCounterFrequency;
-  static win32::xInputGetState* xInputGetState;
-  static win32::xInputSetState* xInputSetState;
-
-  static win32::AppDll         appDll;
-  static bs::AppData           appData;
-
-  static u32                   running;
-
-  static thread::ThreadInfo appThreads[THREAD_COUNT_MAX];
-  static u32                   threadCount;
-};
-
-void pause_all_app_threads()
-{
-  for ( s32 i = 0; i < THREAD_COUNT_MAX; ++i )
-  {
-    if ( global::appThreads[i].id )
-    {
-      thread::request_pause( &global::appThreads[i] );
-    }
-  }
-}
-
-void wait_for_all_app_threads_to_pause()
-{
-  for ( s32 i = 0; i < THREAD_COUNT_MAX; ++i )
-  {
-    if ( global::appThreads[i].id )
-    {
-      while ( !global::appThreads[i].isPaused )
-      {
-        thread::sleep( 1 );
-      }
-    }
-  }
-}
-
-void resume_all_app_threads()
-{
-  for ( s32 i = 0; i < THREAD_COUNT_MAX; ++i )
-  {
-    if ( global::appThreads[i].id )
-    {
-      thread::request_unpause( &global::appThreads[i] );
-    }
-  }
-}
-
-LRESULT CALLBACK brewing_station_main_window_callback( HWND window, UINT message, WPARAM wParam, LPARAM lParam )
-{
-
-  LRESULT result = 0;
-  switch ( message )
-  {
-    case WM_DESTROY:
-    {
-      global::running = false;
-      break;
-    }
-    default:
-    {
-      result = DefWindowProc( window, message, wParam, lParam );
-      break;
-    }
-  }
-
-  return result;
-}
-
-void debug_log( platform::debug::DebugLogFlags flags, char const* string, s32 size )
-{
-  wchar_t wideChars[platform::debug::MAX_DEBUG_MESSAGE_LENGTH / 2];
-
-  int wideCharCount = MultiByteToWideChar( CP_UTF8, 0, string, -1, NULL, 0 );
-
-  if ( wideCharCount < platform::debug::MAX_DEBUG_MESSAGE_LENGTH )
-  {
-    MultiByteToWideChar( CP_UTF8, 0, string, -1, wideChars, wideCharCount );
-  }
-
-  OutputDebugStringW( wideChars );
-  if ( flags & platform::debug::DebugLogFlags::WRITE_TO_DEBUG_LOG_FILE )
-  {
-    static HANDLE debug_log_file = CreateFileW( L"debug.log", GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0 );
-
-    s32 bytesWritten {};
-    WriteFile( debug_log_file, string, size, (LPDWORD) &bytesWritten, 0 );
-  }
-  if ( flags & platform::debug::DebugLogFlags::SEND_TO_SERVER )
-  {
-
-  }
-};
 
 void brewing_station_loop()
 {
+  u64 debug_CyclesForFrame         = 0;
+  u64 debug_CyclesForAppTick       = 0;
+  u64 debug_CyclesSleep            = 0;
 
+  LARGE_INTEGER beginCounter = win32::GetTimer();
 
-  // while ( global::running )
-  // {
+  {
+    PROFILE_SCOPE( debug_CyclesForFrame );
 
-  // }
+    {
+      bs::Input& input = global::appData.input;
+      memset( input.down, 0, bs::Input::STATE_COUNT );
+      MSG message;
+      while ( PeekMessage( &message, 0, 0, 0, PM_REMOVE ) )
+      {
+        switch ( message.message )
+        {
+          case WM_XBUTTONDOWN:
+          case WM_XBUTTONUP:
+          {
+            assert( message.wParam == 65568 || message.wParam == 131136 );
+            u8 code = message.wParam == 65568 ? bs::Input::MOUSE_4 : bs::Input::MOUSE_5;
+            u8 isDown = (u8) !(message.lParam & (1 << 31));
+            u8 wasDown = input.held[code];
+            input.down[code] = ((!wasDown) && isDown);
+            input.held[code] = isDown;
+            break;
+          }
+          case WM_MOUSEWHEEL:
+          {
+            //TODO
+            break;
+          }
+          case WM_MOUSEMOVE:
+          {
+            input.mousePos[0].start = input.mousePos[0].end;
+            input.mousePos[0].min
+              = input.mousePos[0].max
+              = input.mousePos[0].end
+              = { s32( s16( LOWORD( message.lParam ) ) ), s32( s16( HIWORD( message.lParam ) ) ) };
+            break;
+          }
+          case WM_LBUTTONDOWN:
+          case WM_LBUTTONUP:
+          case WM_RBUTTONDOWN:
+          case WM_RBUTTONUP:
+          case WM_MBUTTONDOWN:
+          case WM_MBUTTONUP:
+          case WM_SYSKEYDOWN:
+          case WM_SYSKEYUP:
+          case WM_KEYDOWN:
+          case WM_KEYUP:
+          {
+            assert( message.wParam < bs::Input::STATE_COUNT );
+            u64 code = message.wParam;
+
+            u8 isDown = (u8) !(message.lParam & (1 << 31));
+            u8 wasDown = input.held[code];
+            input.held[code] = isDown;
+
+            if ( !wasDown && isDown )
+            {
+              switch ( code )
+              {
+                case bs::Input::KEY_F9:
+                  break;
+                case bs::Input::KEY_F10:
+                  break;
+                case bs::Input::KEY_F11:
+                  break;
+                case bs::Input::KEY_F12:
+                  // win32::ServerHandshake( global::netData.udpSocket, global::netData.server, global_debugUsername );
+                  break;
+                case bs::Input::KEY_ESCAPE:
+                  global::running = false;
+                  break;
+                default:
+                  input.down[code] = 1;
+                  break;
+              }
+            }
+
+            if ( input.held[bs::Input::KEY_ALT] && input.down[bs::Input::KEY_F4] ) global::running = false;
+
+            break;
+          }
+          default:
+          {
+            TranslateMessage( &message );
+            DispatchMessage( &message );
+          }
+          break;
+        }
+
+        win32::ProcessControllerInput( global::appData.input );
+      }
+    }
+
+    {
+      PROFILE_SCOPE( debug_CyclesForAppTick );
+
+      bs::PrmAppTick appTickParameter {};
+      appTickParameter.appData = &global::appData;
+      global::appDll.tick( appTickParameter );
+    }
+
+    //TODO sound here ? 
+
+    thread::sleep( 7 );
+
+    constexpr float APP_TARGET_FPS = 60.0f;
+    constexpr float APP_TARGET_SPF = 1.0f / float( APP_TARGET_FPS );
+
+    float secondsElapsed = win32::GetSecondsElapsed( beginCounter, win32::GetTimer() );
+    {
+      PROFILE_SCOPE( debug_CyclesSleep );
+      if ( secondsElapsed < APP_TARGET_SPF )
+      {
+        float const msSleep = ((APP_TARGET_SPF - secondsElapsed) * 1000.f) + global::sleepMsSubtraction;
+        thread::sleep( s32( max( msSleep, 0.0f ) ) );
+        float secondsElapsedIncludingSleep =  win32::GetSecondsElapsed( beginCounter, win32::GetTimer() );
+        float const delta = 1000.0f * (APP_TARGET_SPF - secondsElapsedIncludingSleep);
+        global::sleepMsSubtraction += min( 0.f, delta ) - (delta > 2.0f) * 1.0f;
+
+        log_info( "[WIN32_CLOCK] frame ", global::appData.currentFrameIndex, " had ", delta, " ms left after sleeping for ", max( msSleep, 0.f ),
+                                             " ms\n - - - next sleep reduced by ", -global::sleepMsSubtraction, " ms\n" );
+        do
+        {
+          secondsElapsedIncludingSleep = win32::GetSecondsElapsed( beginCounter, win32::GetTimer() );
+        } while ( secondsElapsedIncludingSleep < APP_TARGET_SPF );
+      }
+      else
+      {
+        log_info( "[WIN32_CLOCK] Missed fps target for frame: ", global::appData.currentFrameIndex,
+                                              "\n- - - - - - - Actual ms: ", 1000.f * secondsElapsed,
+                                              "   fps: ", float( 1.f / secondsElapsed ), "\n" );
+      }
+    } // PROFILE_SCOPE( debug_CyclesSleep );
+  } // PROFILE_SCOPE( debug_CyclesForFrame );
+  LARGE_INTEGER endCounter = win32::GetTimer();
+
+  {
+    float ms = 1000.f * win32::GetSecondsElapsed( beginCounter, endCounter );
+    float fps = 1000.f / ms;
+    log_info( "[WIN32_CLOCK] ms: ", ms,
+              "  fps: ", s32( fps + 0.5f ),
+              "  Mcpf: ", float( debug_CyclesForFrame ) / 1000000.f, "\n" );
+  }
+
 }
+
 
 
 void brewing_station_main()
 {
   #ifdef BS_DEBUG
-  platform::debug::global::ptr_debug_log = &debug_log;
+  platform::debug::global::ptr_debug_log = &win32::debug_log;
   #endif
 
   s32 result = 1;
@@ -154,9 +188,7 @@ void brewing_station_main()
     assert( result == 0 );
   }
 
-  //init debug logging here TODO
-
-  load_xInput( &global::xInputGetState, &global::xInputSetState );
+  win32::load_xInput();
 
   HWND window = 0;
   {
@@ -203,13 +235,15 @@ void brewing_station_main()
     thread::ThreadInfo standaloneDllLoadThread {};
     dllLoaderPrm.threadInfo = &standaloneDllLoadThread;
     dllLoaderPrm.appDll =  &global::appDll;
-    dllLoaderPrm.pause_app = &pause_all_app_threads;
-    dllLoaderPrm.wait_for_pause = &wait_for_all_app_threads_to_pause;
-    dllLoaderPrm.resume_app = &resume_all_app_threads;
+    dllLoaderPrm.pause_app = &win32::pause_all_app_threads;
+    dllLoaderPrm.wait_for_pause = &win32::wait_for_all_app_threads_to_pause;
+    dllLoaderPrm.resume_app = &win32::resume_all_app_threads;
     CloseHandle( CreateThread( 0, 0, win32::thread_DllLoader, &dllLoaderPrm, 0, (LPDWORD) &dllLoaderPrm.threadInfo->id ) );
   }
   #endif
 
+  result = (s32) timeBeginPeriod( 1 );
+  assert( result == TIMERR_NOERROR );
 
   global::running = true;
   while ( global::running )
