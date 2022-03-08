@@ -90,6 +90,7 @@ namespace win32
               FreeLibrary( currentApp.dll );
               currentApp = newApp;
 
+              currentApp.register_debug_callbacks( { &win32::debug_log } );
               parameter->resume_app();
             }
             else

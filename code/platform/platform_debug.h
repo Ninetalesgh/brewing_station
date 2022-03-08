@@ -64,7 +64,7 @@ namespace platform
 
     namespace global
     {
-      static debug_log* ptr_debug_log;
+      extern debug_log* ptr_debug_log;
     };
 
     template<typename... Args> void _debug_log( DebugLogFlags flags, Args... args )

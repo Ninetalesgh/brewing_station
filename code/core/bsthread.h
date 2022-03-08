@@ -49,7 +49,7 @@ namespace thread
       threadInfo->isPaused.increment();
       while ( threadInfo->requestPause )
       {
-        sleep( millisecondsSleepPerPoll );
+        thread::sleep( millisecondsSleepPerPoll );
       }
       threadInfo->isPaused.decrement();
     }

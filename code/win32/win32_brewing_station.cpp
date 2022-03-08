@@ -124,7 +124,7 @@ void brewing_station_loop()
     }
 
     //TODO sound here ? 
-
+    //TODO remove this sleep
     thread::sleep( 7 );
 
     constexpr float APP_TARGET_FPS = 60.0f;
@@ -141,8 +141,8 @@ void brewing_station_loop()
         float const delta = 1000.0f * (APP_TARGET_SPF - secondsElapsedIncludingSleep);
         global::sleepMsSubtraction += min( 0.f, delta ) - (delta > 2.0f) * 1.0f;
 
-        log_info( "[WIN32_CLOCK] frame ", global::appData.currentFrameIndex, " had ", delta, " ms left after sleeping for ", max( msSleep, 0.f ),
-                                             " ms\n - - - next sleep reduced by ", -global::sleepMsSubtraction, " ms\n" );
+        //   log_info( "[WIN32_CLOCK] frame ", global::appData.currentFrameIndex, " had ", delta, " ms left after sleeping for ", max( msSleep, 0.f ),
+        //                                        " ms\n - - - next sleep reduced by ", -global::sleepMsSubtraction, " ms\n" );
         do
         {
           secondsElapsedIncludingSleep = win32::GetSecondsElapsed( beginCounter, win32::GetTimer() );
@@ -150,31 +150,28 @@ void brewing_station_loop()
       }
       else
       {
-        log_info( "[WIN32_CLOCK] Missed fps target for frame: ", global::appData.currentFrameIndex,
-                                              "\n- - - - - - - Actual ms: ", 1000.f * secondsElapsed,
-                                              "   fps: ", float( 1.f / secondsElapsed ), "\n" );
+        //  log_info( "[WIN32_CLOCK] Missed fps target for frame: ", global::appData.currentFrameIndex,
+        //                                        "\n- - - - - - - Actual ms: ", 1000.f * secondsElapsed,
+        //                                       "   fps: ", float( 1.f / secondsElapsed ), "\n" );
       }
     } // PROFILE_SCOPE( debug_CyclesSleep );
   } // PROFILE_SCOPE( debug_CyclesForFrame );
+
   LARGE_INTEGER endCounter = win32::GetTimer();
 
   {
-    float ms = 1000.f * win32::GetSecondsElapsed( beginCounter, endCounter );
-    float fps = 1000.f / ms;
-    log_info( "[WIN32_CLOCK] ms: ", ms,
-              "  fps: ", s32( fps + 0.5f ),
-              "  Mcpf: ", float( debug_CyclesForFrame ) / 1000000.f, "\n" );
+    //  float ms = 1000.f * win32::GetSecondsElapsed( beginCounter, endCounter );
+    //  float fps = 1000.f / ms;
+    //  log_info( "[WIN32_CLOCK] ms: ", ms,
+    //            "  fps: ", s32( fps + 0.5f ),
+    //           "  Mcpf: ", float( debug_CyclesForFrame ) / 1000000.f, "\n" );
   }
-
 }
-
 
 
 void brewing_station_main()
 {
-  #ifdef BS_DEBUG
   platform::debug::global::ptr_debug_log = &win32::debug_log;
-  #endif
 
   s32 result = 1;
   HINSTANCE hInstance = GetModuleHandle( NULL );
@@ -257,4 +254,15 @@ void brewing_station_main()
 
 #ifdef BS_RELEASE_BUILD
 #include <apps/brewing_Station_app.cpp>
+#else
+namespace platform
+{
+  namespace debug
+  {
+    namespace global
+    {
+      debug_log* ptr_debug_log;
+    };
+  };
+};
 #endif
