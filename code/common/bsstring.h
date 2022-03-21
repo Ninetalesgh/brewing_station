@@ -3,14 +3,84 @@
 
 namespace bs
 {
-  struct String
+  class String
   {
+  public:
     String() {}
     String( String const& other ) : data( other.data ), capacity( other.capacity ) {}
     String( char* data, s32 capacity ) : data( data ), capacity( capacity ) {}
     char* data;
     s32 capacity;
   };
+
+  INLINE u32 string_match( String const& a, String const& b )
+  {
+    u32 result = 1;
+    s32 capacity = min( a.capacity, b.capacity );
+    for ( s32 i = 0; i < capacity; ++i )
+    {
+      if ( a.data[i] != b.data[i] )
+      {
+        result = 0;
+        break;
+      }
+      else if ( a.data[i] == '\0' )
+      {
+        break;
+      }
+    }
+
+    return result;
+  }
+
+  INLINE u32 string_match( char const* a, char const* b )
+  {
+    if ( a == nullptr || b == nullptr ) return 0;
+
+    while ( *a == *b )
+    {
+      if ( *a == '\0' ) return 1;
+      ++a;
+      ++b;
+    }
+    return 0;
+  }
+
+  u32 string_contains( char const* string, char const* subString )
+  {
+    if ( string == nullptr || subString == nullptr ) return 0;
+
+    char const* reader = string;
+    u32 result = 0;
+
+    while ( *reader != '\0' )
+    {
+      if ( *reader == *subString )
+      {
+        char const* a = reader;
+        char const* b = subString;
+        while ( *a == *b )
+        {
+          ++a;
+          ++b;
+        }
+
+        if ( *b == '\0' )
+        {
+          result = 1;
+          break;
+        }
+
+        reader = a;
+      }
+      else
+      {
+        ++reader;
+      }
+    }
+
+    return result;
+  }
 
   template<bool internal, typename Arg> INLINE s32 string_format( String to, Arg value );
   template<typename Arg, typename... Args>

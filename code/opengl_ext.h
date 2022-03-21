@@ -5,6 +5,14 @@
 using GLchar = char;
 using GLsizeiptr = ptrdiff_t;
 
+#define GL_NO_ERROR                       0
+#define GL_INVALID_ENUM                   0x0500
+#define GL_INVALID_VALUE                  0x0501
+#define GL_INVALID_OPERATION              0x0502
+#define GL_STACK_OVERFLOW                 0x0503
+#define GL_STACK_UNDERFLOW                0x0504
+#define GL_OUT_OF_MEMORY                  0x0505
+
 #define GL_SHADING_LANGUAGE_VERSION       0x8B8C
 
 #define GL_FRAGMENT_SHADER                0x8B30
@@ -13,8 +21,30 @@ using GLsizeiptr = ptrdiff_t;
 #define GL_ARRAY_BUFFER                   0x8892
 #define GL_STATIC_DRAW                    0x88E4
 
-#define GL_FRAMEBUFFER_SRGB               0x8DB9
+#define GL_RGBA8                          0x8058
 #define GL_SRGB8_ALPHA8                   0x8C43
+#define GL_FRAMEBUFFER_SRGB               0x8DB9
+
+#define WGL_DRAW_TO_WINDOW_ARB            0x2001
+#define WGL_SUPPORT_OPENGL_ARB            0x2010
+#define WGL_DOUBLE_BUFFER_ARB             0x2011
+#define WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB  0x20A9
+#define WGL_PIXEL_TYPE_ARB                0x2013
+#define WGL_COLOR_BITS_ARB                0x2014
+#define WGL_RED_BITS_ARB                  0x2015
+#define WGL_RED_SHIFT_ARB                 0x2016
+#define WGL_GREEN_BITS_ARB                0x2017
+#define WGL_GREEN_SHIFT_ARB               0x2018
+#define WGL_BLUE_BITS_ARB                 0x2019
+#define WGL_BLUE_SHIFT_ARB                0x201A
+#define WGL_ALPHA_BITS_ARB                0x201B
+#define WGL_ALPHA_SHIFT_ARB               0x201C
+
+#define WGL_ACCELERATION_ARB              0x2003
+
+#define WGL_TYPE_RGBA_ARB                 0x202B
+#define WGL_FULL_ACCELERATION_ARB         0x2027
+
 
 #define WGL_CONTEXT_MAJOR_VERSION_ARB           0x2091
 #define WGL_CONTEXT_MINOR_VERSION_ARB           0x2092
@@ -33,6 +63,11 @@ using GLsizeiptr = ptrdiff_t;
 
 namespace opengl_ext
 {
+  using wglCreateContextAttribsARB = HGLRC WINAPI( HDC hDC, HGLRC hShareContext, const int* attribList );
+  using wglChoosePixelFormatARB = BOOL WINAPI( HDC hdc, const int* piAttribIList, const FLOAT* pfAttribFList, UINT nMaxFormats, int* piFormats, UINT* nNumFormats );
+  using wglGetPixelFormatAttribivARB = BOOL( HDC hdc, int iPixelFormat, int iLayerPlane, UINT nAttributes, const int* piAttributes, int* piValues );
+  using wglGetPixelFormatAttribfvARB = BOOL( HDC hdc, int iPixelFormat, int iLayerPlane, UINT nAttributes, const int* piAttributes, FLOAT* pfValues );
+
   using glShaderSource = void WINAPI( GLuint shader, GLsizei count, const GLchar** string, const GLint* length );
   using glCreateShader = GLuint WINAPI( GLenum type );
   using glCompileShader = void WINAPI( GLuint shader );
@@ -48,9 +83,12 @@ namespace opengl_ext
   using glDeleteBuffers = void WINAPI( GLsizei n, const GLuint* buffers );
 
   using wglSwapIntervalEXT = BOOL WINAPI( int );
-
-  using wglCreateContextAttribsARB = HGLRC WINAPI( HDC hDC, HGLRC hShareContext, const int* attribList );
 }
+
+static opengl_ext::wglChoosePixelFormatARB* wglChoosePixelFormatARB;
+static opengl_ext::wglCreateContextAttribsARB* wglCreateContextAttribsARB;
+static opengl_ext::wglGetPixelFormatAttribivARB* wglGetPixelFormatAttribivARB;
+static opengl_ext::wglGetPixelFormatAttribfvARB* wglGetPixelFormatAttribfvARB;
 
 static opengl_ext::glShaderSource* glShaderSource;
 static opengl_ext::glCreateShader* glCreateShader;
@@ -65,8 +103,7 @@ static opengl_ext::glCreateBuffers* glCreateBuffers;
 static opengl_ext::glBufferData* glBufferData;
 static opengl_ext::glBindBuffer* glBindBuffer;
 static opengl_ext::glDeleteBuffers* glDeleteBuffers;
-static opengl_ext::wglSwapIntervalEXT* wglSwapInterval;
-static opengl_ext::wglCreateContextAttribsARB* wglCreateContextAttribsARB;
+static opengl_ext::wglSwapIntervalEXT* wglSwapIntervalEXT;
 
 namespace opengl_ext
 {
@@ -74,7 +111,18 @@ namespace opengl_ext
 
   u32 init()
   {
+    u32 result = 1;
+
+    ::wglChoosePixelFormatARB = (opengl_ext::wglChoosePixelFormatARB*) get_proc_address( "wglChoosePixelFormatARB" );
     ::wglCreateContextAttribsARB =  (opengl_ext::wglCreateContextAttribsARB*) get_proc_address( "wglCreateContextAttribsARB" );
+    ::wglGetPixelFormatAttribivARB = (opengl_ext::wglGetPixelFormatAttribivARB*) get_proc_address( "wglGetPixelFormatAttribivARB" );
+    ::wglGetPixelFormatAttribfvARB = (opengl_ext::wglGetPixelFormatAttribfvARB*) get_proc_address( "wglGetPixelFormatAttribfvARB" );
+
+    if ( ::wglChoosePixelFormatARB == nullptr ) BREAK;
+    if ( ::wglCreateContextAttribsARB == nullptr ) BREAK;
+    if ( ::wglGetPixelFormatAttribivARB == nullptr ) BREAK;
+    if ( ::wglGetPixelFormatAttribfvARB == nullptr ) BREAK;
+
     ::glShaderSource =  (opengl_ext::glShaderSource*) get_proc_address( "glShaderSource" );
     ::glCreateShader =  (opengl_ext::glCreateShader*) get_proc_address( "glCreateShader" );
     ::glCompileShader = (opengl_ext::glCompileShader*) get_proc_address( "glCompileShader" );
@@ -88,7 +136,7 @@ namespace opengl_ext
     ::glBufferData =    (opengl_ext::glBufferData*) get_proc_address( "glBufferData" );
     ::glBindBuffer =    (opengl_ext::glBindBuffer*) get_proc_address( "glBindBuffer" );
     ::glDeleteBuffers = (opengl_ext::glDeleteBuffers*) get_proc_address( "glDeleteBuffers" );
-    ::wglSwapInterval = (opengl_ext::wglSwapIntervalEXT*) get_proc_address( "wglSwapIntervalEXT" );
+    ::wglSwapIntervalEXT = (opengl_ext::wglSwapIntervalEXT*) get_proc_address( "wglSwapIntervalEXT" );
 
     if ( ::glShaderSource == nullptr ) BREAK;
     if ( ::glCreateShader == nullptr ) BREAK;
@@ -103,8 +151,9 @@ namespace opengl_ext
     if ( ::glBufferData == nullptr ) BREAK;
     if ( ::glBindBuffer == nullptr ) BREAK;
     if ( ::glDeleteBuffers == nullptr ) BREAK;
+    if ( ::wglSwapIntervalEXT == nullptr ) BREAK;
 
-    return 1;
+    return result;
   }
 
   void* get_proc_address( char const* functionName )

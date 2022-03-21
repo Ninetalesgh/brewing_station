@@ -29,24 +29,30 @@ namespace win32
   {
     LPCWCHAR windowName;
     WNDCLASSEX wndClass;
+    s32 x;
+    s32 y;
+    s32 width;
+    s32 height;
   };
-  HWND window_init( WindowInitParameter const& parameter )
+  HWND init_window( WindowInitParameter const& parameter )
   {
     HWND resultWindow = 0;
 
     if ( RegisterClassEx( &parameter.wndClass ) )
     {
-      resultWindow = CreateWindowEx( WS_EX_ACCEPTFILES,
-                                     parameter.wndClass.lpszClassName, parameter.windowName,
-                                     WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-                                     CW_USEDEFAULT, CW_USEDEFAULT,
-                                     CW_USEDEFAULT, CW_USEDEFAULT,
-                                     /*parent window*/ 0,
-                                     /*menu*/ 0,
-                                     parameter.wndClass.hInstance,
-                                     0 );
+      resultWindow = CreateWindowEx( WS_EX_ACCEPTFILES,                // DWORD dwExStyle,                                  
+                                     parameter.wndClass.lpszClassName, // LPCWSTR lpClassName,                                  
+                                     parameter.windowName,             // LPCWSTR lpWindowName,                     
+                                     WS_OVERLAPPEDWINDOW | WS_VISIBLE, // DWORD dwStyle,                                 
+                                     parameter.x,                      // int X,               
+                                     parameter.y,                      // int Y,              
+                                     parameter.width,                  // int nWidth,               
+                                     parameter.height,                 // int nHeight,              
+                                     /*parent window*/ 0,              // HWND hWndParent,                    
+                                     /*menu*/ 0,                       // HMENU hMenu,           
+                                     parameter.wndClass.hInstance,     // HINSTANCE hInstance,                             
+                                     0 );                              // LPVOID lpParam    
     }
-
     return resultWindow;
   }
 

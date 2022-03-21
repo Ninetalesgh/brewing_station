@@ -50,18 +50,18 @@ constexpr u16 U16_MAX = 0xffff;
 constexpr u32 U32_MAX = 0xffffffff;
 constexpr u64 U64_MAX = 0xffffffffffffffff;
 
-constexpr s32 min( s32 a, s32 b ) { return a < b ? a : b; }
-constexpr s32 max( s32 a, s32 b ) { return a > b ? a : b; }
-constexpr s32 clamp( s32 value, s32 low, s32 high ) { return max( min( value, high ), low ); }
+constexpr INLINE s32 min( s32 a, s32 b ) { return a < b ? a : b; }
+constexpr INLINE s32 max( s32 a, s32 b ) { return a > b ? a : b; }
+constexpr INLINE s32 clamp( s32 value, s32 low, s32 high ) { return max( min( value, high ), low ); }
 
-constexpr u32 min( u32 a, u32 b ) { return a < b ? a : b; }
-constexpr u32 max( u32 a, u32 b ) { return a > b ? a : b; }
-constexpr u32 clamp( u32 value, u32 low, u32 high ) { return max( min( value, high ), low ); }
+constexpr INLINE u32 min( u32 a, u32 b ) { return a < b ? a : b; }
+constexpr INLINE u32 max( u32 a, u32 b ) { return a > b ? a : b; }
+constexpr INLINE u32 clamp( u32 value, u32 low, u32 high ) { return max( min( value, high ), low ); }
 
-constexpr float min( float a, float b ) { return a < b ? a : b; }
-constexpr float max( float a, float b ) { return a > b ? a : b; }
-constexpr float clamp( float value, float low, float high ) { return max( min( value, high ), low ); }
+constexpr INLINE float min( float a, float b ) { return a < b ? a : b; }
+constexpr INLINE float max( float a, float b ) { return a > b ? a : b; }
+constexpr INLINE float clamp( float value, float low, float high ) { return max( min( value, high ), low ); }
 
-constexpr u64 KiloBytes( u64 kiloBytes ) { return kiloBytes * 1024ULL; }
-constexpr u64 MegaBytes( u64 megaBytes ) { return KiloBytes( megaBytes ) * 1024ULL; }
-constexpr u64 GigaBytes( u64 gigaBytes ) { return MegaBytes( gigaBytes ) * 1024ULL; }
+constexpr INLINE u64 KiloBytes( u64 kiloBytes ) { return kiloBytes * 1024ULL; }
+constexpr INLINE u64 MegaBytes( u64 megaBytes ) { return KiloBytes( megaBytes ) * 1024ULL; }
+constexpr INLINE u64 GigaBytes( u64 gigaBytes ) { return MegaBytes( gigaBytes ) * 1024ULL; }

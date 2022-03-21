@@ -125,7 +125,7 @@ void brewing_station_loop()
 
     //TODO sound here ? 
     //TODO remove this sleep
-    thread::sleep( 7 );
+    //thread::sleep( 7 );
 
     constexpr float APP_TARGET_FPS = 60.0f;
     constexpr float APP_TARGET_SPF = 1.0f / float( APP_TARGET_FPS );
@@ -159,6 +159,8 @@ void brewing_station_loop()
 
   LARGE_INTEGER endCounter = win32::GetTimer();
 
+
+  log_info( "[WIN32] frame: ", global::appData.currentFrameIndex );
   {
     //  float ms = 1000.f * win32::GetSecondsElapsed( beginCounter, endCounter );
     //  float fps = 1000.f / ms;
@@ -191,6 +193,10 @@ void brewing_station_main()
   {
     win32::WindowInitParameter parameter {};
     parameter.windowName = L"tmp_window_name";
+    parameter.width = 1024;
+    parameter.height = 600;
+    parameter.x = -parameter.width - 200;
+    parameter.y = 200;
     parameter.wndClass.cbSize        = sizeof( WNDCLASSEX );
     parameter.wndClass.style         = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
     parameter.wndClass.lpfnWndProc   = brewing_station_main_window_callback;
@@ -204,9 +210,13 @@ void brewing_station_main()
     parameter.wndClass.lpszClassName = L"bswnd";
     //parameter.wndClass.hIconSm       =;
 
-    window = win32::window_init( parameter );
+    window = win32::init_window( parameter );
+    //bs::opengl::load_extensions();
+
     assert( window != 0 );
-    bs::opengl::init( window );
+    HDC deviceContext = GetDC( window );
+    assert( deviceContext != 0 );
+    bs::opengl::init( deviceContext );
   }
 
   s64 bufferSize = (s64) APP_MEMORY_SIZE;
@@ -247,6 +257,12 @@ void brewing_station_main()
   {
     thread::wait_if_requested( &mainThread );
     brewing_station_loop();
+
+    bs::opengl::tick();
+
+
+
+    ++global::appData.currentFrameIndex;
   }
 
 }
