@@ -373,7 +373,7 @@ namespace bs
 
         s32 count = 1;
         u64 num = 5;
-        for ( ;; )
+        for ( ;;)
         {
           fraction = fraction + num * ((fractionBits & MASK_FIRST_BIT) != 0);
           if ( !(fractionBits<<= 1) ) break;

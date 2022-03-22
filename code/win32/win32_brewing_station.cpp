@@ -4,7 +4,7 @@
 #include "win32_global.h"
 #include "win32_app_dll_loader.h"
 #include "win32_opengl.h"
-
+#include "win32_worker_thread.h"
 #include <platform/platform.h>
 #include <common/bsstring.h>
 
@@ -160,7 +160,7 @@ void brewing_station_loop()
   LARGE_INTEGER endCounter = win32::GetTimer();
 
 
-  log_info( "[WIN32] frame: ", global::appData.currentFrameIndex );
+  //log_info( "[WIN32] frame: ", global::appData.currentFrameIndex );
   {
     //  float ms = 1000.f * win32::GetSecondsElapsed( beginCounter, endCounter );
     //  float fps = 1000.f / ms;
@@ -169,6 +169,8 @@ void brewing_station_loop()
     //           "  Mcpf: ", float( debug_CyclesForFrame ) / 1000000.f, "\n" );
   }
 }
+
+
 
 
 void brewing_station_main()
@@ -211,7 +213,6 @@ void brewing_station_main()
     //parameter.wndClass.hIconSm       =;
 
     window = win32::init_window( parameter );
-    //bs::opengl::load_extensions();
 
     assert( window != 0 );
     HDC deviceContext = GetDC( window );
@@ -219,13 +220,12 @@ void brewing_station_main()
     bs::opengl::init( deviceContext );
   }
 
-  s64 bufferSize = (s64) APP_MEMORY_SIZE;
+  s64 bufferSize = (s64) global::APP_MEMORY_SIZE;
   void* buffer = VirtualAlloc( 0, bufferSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
   memory::init_arena( (char*) buffer, bufferSize, &global::appData.mainArena );
 
-  thread::ThreadInfo& mainThread = global::appThreads[global::threadCount++];
-  mainThread.id = GetCurrentThreadId();
-  mainThread.name = "thread_main";
+  global::mainThread.id = thread::get_current_thread_id();
+  global::mainThread.name = "thread_main";
 
   #ifdef BS_RELEASE_BUILD
   {
@@ -242,12 +242,12 @@ void brewing_station_main()
     thread::ThreadInfo standaloneDllLoadThread {};
     dllLoaderPrm.threadInfo = &standaloneDllLoadThread;
     dllLoaderPrm.appDll =  &global::appDll;
-    dllLoaderPrm.pause_app = &win32::pause_all_app_threads;
-    dllLoaderPrm.wait_for_pause = &win32::wait_for_all_app_threads_to_pause;
-    dllLoaderPrm.resume_app = &win32::resume_all_app_threads;
+    dllLoaderPrm.for_all_app_threads = &win32::for_all_app_threads;
     CloseHandle( CreateThread( 0, 0, win32::thread_DllLoader, &dllLoaderPrm, 0, (LPDWORD) &dllLoaderPrm.threadInfo->id ) );
   }
   #endif
+
+  win32::init_worker_threads();
 
   result = (s32) timeBeginPeriod( 1 );
   assert( result == TIMERR_NOERROR );
@@ -255,7 +255,7 @@ void brewing_station_main()
   global::running = true;
   while ( global::running )
   {
-    thread::wait_if_requested( &mainThread );
+    thread::pause_thread_if_requested( &global::mainThread );
     brewing_station_loop();
 
     bs::opengl::tick();

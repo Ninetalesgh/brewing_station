@@ -14,8 +14,6 @@
 # undef max
 #endif
 #include <Xinput.h>
-constexpr u32 THREAD_COUNT_MAX = 32;
-constexpr u64 APP_MEMORY_SIZE = GigaBytes( 1 );
 
 namespace win32
 {
@@ -54,6 +52,9 @@ namespace win32
 
 namespace global
 {
+  constexpr u64 APP_MEMORY_SIZE = GigaBytes( 1 );
+  constexpr u32 SYNCED_THREAD_COUNT = 8;
+  constexpr u32 ASYNC_THREAD_COUNT = 2;
   static s64 performanceCounterFrequency;
   float sleepMsSubtraction;
 
@@ -65,6 +66,7 @@ namespace global
 
   static u32                   running;
 
-  static thread::ThreadInfo appThreads[THREAD_COUNT_MAX];
-  static u32                   threadCount;
+  static thread::ThreadInfo mainThread;
+  static thread::ThreadInfo syncedThreads[SYNCED_THREAD_COUNT];
+  static thread::ThreadInfo asyncThreads[ASYNC_THREAD_COUNT];
 };

@@ -313,6 +313,7 @@ namespace bs
 
     void win32CreateOpenGlContextForWorkerThread()
     {
+      //needs to be called before worker threads hop online
       HGLRC workerRenderContext = wglCreateContextAttribsARB( global::deviceContext, global::renderContext, global::rcAttributes );
       if ( workerRenderContext )
       {
@@ -350,7 +351,7 @@ namespace bs
     void tick()
     {
       //  thread::wait_if_requested( &parameter.threadInfo );
-      glViewport( 0, 0, 600, 600 );
+      glViewport( 200, -10, 600, 600 );
       glClearColor( 1.0f, 0.0f, 1.0f, 0.0f );
       glClear( GL_COLOR_BUFFER_BIT );
       glBegin( GL_TRIANGLES );
@@ -358,7 +359,7 @@ namespace bs
       glMatrixMode( GL_TEXTURE );
       glLoadIdentity();
 
-      float p = 0.9f;
+      float p = 0.7f;
       glColor3f( 1, 0, 0 );
       glVertex2f( -p, -p );
       glColor3f( 0, 1, 0 );
@@ -374,8 +375,6 @@ namespace bs
 
       glEnd();
       SwapBuffers( global::deviceContext );
-
-
     }
 
 

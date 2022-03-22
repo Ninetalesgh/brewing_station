@@ -1,6 +1,6 @@
 #pragma once
 
-#include <common/bsmtutil.h>
+#include <core/bsthread.h>
 #include <common/bscommon.h>
 
 namespace memory

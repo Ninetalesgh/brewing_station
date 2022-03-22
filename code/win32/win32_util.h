@@ -68,40 +68,28 @@ namespace win32
     return float( endCounter.QuadPart - beginCounter.QuadPart ) / float( global::performanceCounterFrequency );
   }
 
-  void pause_all_app_threads()
+  using threadfn = void( thread::ThreadInfo* );
+  INLINE void for_all_async_worker_threads( threadfn* fn )
   {
-    for ( s32 i = 0; i < THREAD_COUNT_MAX; ++i )
+    for ( u32 i = 0; i < global::ASYNC_THREAD_COUNT; ++i )
     {
-      if ( global::appThreads[i].id )
-      {
-        thread::request_pause( &global::appThreads[i] );
-      }
+      if ( global::asyncThreads[i].id ) fn( &global::asyncThreads[i] );
     }
   }
 
-  void wait_for_all_app_threads_to_pause()
+  INLINE void for_all_synced_worker_threads( threadfn* fn )
   {
-    for ( s32 i = 0; i < THREAD_COUNT_MAX; ++i )
+    for ( u32 i = 0; i < global::SYNCED_THREAD_COUNT; ++i )
     {
-      if ( global::appThreads[i].id )
-      {
-        while ( !global::appThreads[i].isPaused )
-        {
-          thread::sleep( 1 );
-        }
-      }
+      if ( global::syncedThreads[i].id ) fn( &global::syncedThreads[i] );
     }
   }
 
-  void resume_all_app_threads()
+  void for_all_app_threads( threadfn* fn )
   {
-    for ( s32 i = 0; i < THREAD_COUNT_MAX; ++i )
-    {
-      if ( global::appThreads[i].id )
-      {
-        thread::request_unpause( &global::appThreads[i] );
-      }
-    }
+    for_all_async_worker_threads( fn );
+    for_all_synced_worker_threads( fn );
+    fn( &global::mainThread );
   }
 
   void debug_log( platform::debug::DebugLogFlags flags, char const* string, s32 size )

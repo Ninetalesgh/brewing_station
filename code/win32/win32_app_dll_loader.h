@@ -1,7 +1,7 @@
 #pragma once
 
 #include "win32_util.h"
-#include <core/bsthread.h>
+#include "win32_thread.h"
 #include <platform/platform_debug.h>
 
 #define dll_log_info(...) log_info("[WIN32_DLL] ", ...)
@@ -9,20 +9,21 @@
 
 namespace win32
 {
+  using for_all_threadfn = void( threadfn* );
   struct PrmThreadDllLoader
   {
     thread::ThreadInfo* threadInfo;
     //char const* appFilename; //lul?
     AppDll* appDll;
-    voidfn* pause_app;
-    voidfn* wait_for_pause;
-    voidfn* resume_app;
+    for_all_threadfn* for_all_app_threads;
   };
   DWORD thread_DllLoader( void* void_parameter )
   {
     PrmThreadDllLoader* parameter = (PrmThreadDllLoader*) void_parameter;
     thread::ThreadInfo* threadInfo = parameter->threadInfo;
-
+    AppDll* appDll = parameter->appDll;
+    for_all_threadfn* for_all_app_threads = parameter->for_all_app_threads;
+    parameter->threadInfo = nullptr;
     threadInfo->name = "thread_dll_loader";
     //dll_log_info( "Thread: ", threadInfo->name, "id: ", threadInfo->id, ".\n" );
     constexpr u32 THREAD_SLEEP_DURATION = 500;
@@ -30,14 +31,13 @@ namespace win32
     char const* APP_FILENAME = "brewing_station_app.dll";
     u32 currentDllIndex = 0;
 
-    //char const* filename = parameter.appFilename;
     AppDll newApp {};
-    AppDll& currentApp = *parameter->appDll;
+    AppDll& currentApp = *appDll;
 
     FILETIME lastWriteTime = {};
-    while ( true )
+    for ( ;;)
     {
-      thread::wait_if_requested( threadInfo );
+      thread::pause_thread_if_requested( threadInfo );
 
       _WIN32_FIND_DATAA findData;
       HANDLE findHandle = FindFirstFileA( APP_FILENAME, &findData );
@@ -81,17 +81,17 @@ namespace win32
 
             if ( successfulLoad )
             {
-              parameter->pause_app();
+              for_all_app_threads( &thread::request_pause );
 
               currentDllIndex = currentDllIndex ? 0 : 1;
               lastWriteTime = findData.ftLastWriteTime;
 
-              parameter->wait_for_pause();
+              for_all_app_threads( &thread::wait_for_thread_to_pause );
               FreeLibrary( currentApp.dll );
               currentApp = newApp;
 
               currentApp.register_debug_callbacks( { &win32::debug_log } );
-              parameter->resume_app();
+              for_all_app_threads( &thread::request_unpause );
             }
             else
             {
@@ -105,9 +105,6 @@ namespace win32
 
       thread::sleep( THREAD_SLEEP_DURATION );
     }
-
-    //dll_log_info( "DllLoading closing; thread id: ", threadInfo->id, ".\n" );
-    return 0;
   }
 
 }
