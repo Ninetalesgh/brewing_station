@@ -4,7 +4,7 @@
 #include "win32_global.h"
 #include "win32_app_dll_loader.h"
 #include "win32_opengl.h"
-#include "win32_worker_thread.h"
+#include "win32_thread.h"
 #include <platform/platform.h>
 #include <common/bsstring.h>
 
@@ -124,8 +124,13 @@ void brewing_station_loop()
     }
 
     //TODO sound here ? 
-    //TODO remove this sleep
-    //thread::sleep( 7 );
+    //bs::TaskState volatile state;
+    // win32::push_synced_task( { &testfunc, nullptr } );
+//    win32::push_async_task( { &testfunc, nullptr }, &state );
+
+
+
+    win32::complete_synced_tasks();
 
     constexpr float APP_TARGET_FPS = 60.0f;
     constexpr float APP_TARGET_SPF = 1.0f / float( APP_TARGET_FPS );
@@ -169,9 +174,6 @@ void brewing_station_loop()
     //           "  Mcpf: ", float( debug_CyclesForFrame ) / 1000000.f, "\n" );
   }
 }
-
-
-
 
 void brewing_station_main()
 {
@@ -234,6 +236,7 @@ void brewing_station_main()
     global::appDll.tick = &bs::app_tick;
     global::appDll.render = &bs::app_render;
     global::appDll.receive_udp_packet = &bs::app_receive_udp_packet;
+
     //global::appDll.register_debug_callbacks = &platform::debug::app_register_debug_callbacks;
   }
   #else
@@ -242,7 +245,7 @@ void brewing_station_main()
     thread::ThreadInfo standaloneDllLoadThread {};
     dllLoaderPrm.threadInfo = &standaloneDllLoadThread;
     dllLoaderPrm.appDll =  &global::appDll;
-    dllLoaderPrm.for_all_app_threads = &win32::for_all_app_threads;
+    //    dllLoaderPrm.for_all_app_threads = &win32::for_all_app_threads;
     CloseHandle( CreateThread( 0, 0, win32::thread_DllLoader, &dllLoaderPrm, 0, (LPDWORD) &dllLoaderPrm.threadInfo->id ) );
   }
   #endif

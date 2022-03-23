@@ -1,7 +1,6 @@
 #pragma once
 
 #include "win32_util.h"
-#include "win32_thread.h"
 #include <platform/platform_debug.h>
 
 #define dll_log_info(...) log_info("[WIN32_DLL] ", ...)
@@ -15,14 +14,14 @@ namespace win32
     thread::ThreadInfo* threadInfo;
     //char const* appFilename; //lul?
     AppDll* appDll;
-    for_all_threadfn* for_all_app_threads;
+    // for_all_threadfn* dll_reload_thread_action;
   };
   DWORD thread_DllLoader( void* void_parameter )
   {
     PrmThreadDllLoader* parameter = (PrmThreadDllLoader*) void_parameter;
     thread::ThreadInfo* threadInfo = parameter->threadInfo;
     AppDll* appDll = parameter->appDll;
-    for_all_threadfn* for_all_app_threads = parameter->for_all_app_threads;
+    // for_all_threadfn* for_all_app_threads = parameter->for_all_app_threads;
     parameter->threadInfo = nullptr;
     threadInfo->name = "thread_dll_loader";
     //dll_log_info( "Thread: ", threadInfo->name, "id: ", threadInfo->id, ".\n" );
@@ -81,17 +80,17 @@ namespace win32
 
             if ( successfulLoad )
             {
-              for_all_app_threads( &thread::request_pause );
+              dll_reload_threads_action( &thread::request_pause );
 
               currentDllIndex = currentDllIndex ? 0 : 1;
               lastWriteTime = findData.ftLastWriteTime;
 
-              for_all_app_threads( &thread::wait_for_thread_to_pause );
+              dll_reload_threads_action( &thread::wait_for_thread_to_pause );
               FreeLibrary( currentApp.dll );
               currentApp = newApp;
 
               currentApp.register_debug_callbacks( { &win32::debug_log } );
-              for_all_app_threads( &thread::request_unpause );
+              dll_reload_threads_action( &thread::request_unpause );
             }
             else
             {

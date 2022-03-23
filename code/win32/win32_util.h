@@ -1,7 +1,7 @@
 #pragma once
 
 #include "win32_global.h"
-
+#include "win32_thread.h"
 
 LRESULT CALLBACK brewing_station_main_window_callback( HWND window, UINT message, WPARAM wParam, LPARAM lParam )
 {
@@ -68,27 +68,10 @@ namespace win32
     return float( endCounter.QuadPart - beginCounter.QuadPart ) / float( global::performanceCounterFrequency );
   }
 
-  using threadfn = void( thread::ThreadInfo* );
-  INLINE void for_all_async_worker_threads( threadfn* fn )
-  {
-    for ( u32 i = 0; i < global::ASYNC_THREAD_COUNT; ++i )
-    {
-      if ( global::asyncThreads[i].id ) fn( &global::asyncThreads[i] );
-    }
-  }
-
-  INLINE void for_all_synced_worker_threads( threadfn* fn )
-  {
-    for ( u32 i = 0; i < global::SYNCED_THREAD_COUNT; ++i )
-    {
-      if ( global::syncedThreads[i].id ) fn( &global::syncedThreads[i] );
-    }
-  }
-
-  void for_all_app_threads( threadfn* fn )
+  void dll_reload_threads_action( threadfn* fn )
   {
     for_all_async_worker_threads( fn );
-    for_all_synced_worker_threads( fn );
+    //synced threads are paused together with mainThread
     fn( &global::mainThread );
   }
 

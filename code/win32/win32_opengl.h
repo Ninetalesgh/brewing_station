@@ -124,8 +124,6 @@ namespace bs
 
     u32 rendererID;
   };
-
-
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -262,7 +260,6 @@ namespace bs
 
     u32 init( HDC deviceContext )
     {
-
       if ( !load_extensions() )
       {
         BREAK;

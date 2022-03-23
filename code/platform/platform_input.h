@@ -140,5 +140,4 @@ namespace bs
     u8 down[STATE_COUNT];
     u8 held[STATE_COUNT];
   };
-
 };

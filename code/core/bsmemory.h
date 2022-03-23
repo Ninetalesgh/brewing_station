@@ -175,7 +175,7 @@ namespace memory
 
   void Arena::free( void* ptr )
   {
-    LOCK_SCOPE( guard ); //TODO a bit more overhead than necessary
+    LOCK_SCOPE( guard ); //TODO this is a bit more overhead than necessary
 
     if ( ptr != nullptr )
     {

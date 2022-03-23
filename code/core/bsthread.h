@@ -15,7 +15,7 @@ struct alignas(4) atomic32
 {
   atomic32() : value( 0 ) {}
   atomic32( s32 value ) : value( value ) {}
-  INLINE operator s32() const { return value; }
+  INLINE operator s32 volatile() const { return value; }
   INLINE s32 increment() { return interlocked_increment( &value ); }
   INLINE s32 increment_unsafe() { return ++value; }
   INLINE s32 decrement() { return interlocked_decrement( &value ); }
@@ -30,7 +30,6 @@ namespace thread
   struct ThreadInfo
   {
     char const* name;
-    void* syncObject;
     u32 id;
     atomic32 requestPause;
     atomic32 isPaused;
@@ -60,27 +59,24 @@ namespace thread
 
 namespace thread
 {
-  LockingObject::LockingObject( atomic32* lock ) : lock( lock )
+  INLINE LockingObject::LockingObject( atomic32* lock ) : lock( lock )
   {
-    if ( *lock )
+    while ( lock->compare_exchange( 1, 0 ) )
     {
-      while ( *lock )
-      {
-        thread::sleep( 0 );
-      }
+      thread::sleep( 0 );
     }
-    lock->increment();
   }
 
-  LockingObject::~LockingObject()
+  INLINE LockingObject::~LockingObject()
   {
     assert( *lock );
-    lock->decrement();
+    lock->compare_exchange( 0, 1 );
   }
 }
 
 #ifdef _WIN32
 #include <xthreads.h>
+#include <intrin.h>
 
 INLINE s16   interlocked_increment16( s16 volatile* value ) { return _InterlockedIncrement16( (s16*) value ); }
 INLINE s16   interlocked_decrement16( s16 volatile* value ) { return _InterlockedDecrement16( (s16*) value ); }
@@ -89,7 +85,6 @@ INLINE s32   interlocked_decrement( s32 volatile* value ) { return _InterlockedD
 INLINE s32   interlocked_exchange( s32 volatile* target, s32 value ) { return _InterlockedExchange( (long*) target, (long) value ); }
 INLINE s32   interlocked_compare_exchange( s32 volatile* value, s32 new_value, s32 comparand ) { return _InterlockedCompareExchange( (long*) value, new_value, comparand ); }
 INLINE void* interlocked_compare_exchange_ptr( void* volatile* value, void* new_value, void* comparand ) { return _InterlockedCompareExchangePointer( value, new_value, comparand ); }
-
 
 namespace thread
 {
@@ -111,5 +106,6 @@ namespace thread
   {
     return _Thrd_id();
   }
+
 };
 #endif

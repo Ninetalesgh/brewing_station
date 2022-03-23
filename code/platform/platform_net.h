@@ -15,32 +15,33 @@ namespace bs
     u32        connectionCount;
   };
 
+  struct TCPSendParameter
+  { //currently only file transfer? 
+    net::Connection to;
+    char const* fileData;
+    u32         fileSize;
+    char const* filename;
+  };
+
+  struct UDPSendParameter
+  {
+    net::Connection to;
+    char const* packet;
+    u32         packetSize;
+  };
+
+  struct UDPReceiveParameter
+  {
+    net::Connection sender;
+    char const* packet;
+    u32         packetSize;
+    u32         id;
+  };
+
   namespace platform
   {
-    struct TCPSendParameter
-    { //currently only file transfer? 
-      net::Connection to;
-      char const* fileData;
-      u32         fileSize;
-      char const* filename;
-    };
     using send_tcp = void( TCPSendParameter const& );
-
-    struct UDPSendParameter
-    {
-      net::Connection to;
-      char const* packet;
-      u32         packetSize;
-    };
     using send_udp = void( UDPSendParameter const& );
-
-    struct UDPReceiveParameter
-    {
-      net::Connection sender;
-      char const* packet;
-      u32         packetSize;
-      u32         id;
-    };
   };
 
 };
