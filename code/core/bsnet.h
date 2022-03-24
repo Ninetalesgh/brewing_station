@@ -3,11 +3,12 @@
 #include <common/bsstring.h>
 #include <common/bscommon.h>
 
+#define APP_CLIENT_COUNT_MAX 24
+
 namespace bs
 {
   namespace net
   {
-
     constexpr u32 IPv4_ADDRESS_ANY = 0;
     constexpr u32 IPv4_ADDRESS_INVALID = U32_MAX;
     constexpr u16 PORT_ANY = 0;
@@ -46,6 +47,40 @@ namespace bs
       INLINE u32 operator !=( Connection const& other ) { return (ipv4_address != other.ipv4_address && port != other.port); }
     };
     INLINE u32 is_valid_connection( Connection connection ) { return connection.port != U16_MAX && connection.ipv4_address != U32_MAX; }
+
+
+    struct NetworkData
+    {
+      net::Connection self;
+      net::Connection server;
+      net::Connection connections[APP_CLIENT_COUNT_MAX];
+      u32        connectionCount;
+    };
+
+    struct TCPSendParameter
+    { //currently only file transfer? 
+      net::Connection to;
+      char const* fileData;
+      u32         fileSize;
+      char const* filename;
+    };
+
+    struct UDPSendParameter
+    {
+      net::Connection to;
+      char const* packet;
+      u32         packetSize;
+    };
+
+    struct UDPReceiveParameter
+    {
+      net::Connection sender;
+      char const* packet;
+      u32         packetSize;
+      u32         id;
+    };
+
+
   };
 
   template<> INLINE s32 string_format<true, net::Connection>( String to, net::Connection connection )

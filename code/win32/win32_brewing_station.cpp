@@ -177,7 +177,7 @@ void brewing_station_loop()
 
 void brewing_station_main()
 {
-  platform::debug::global::ptr_debug_log = &win32::debug_log;
+  platform::debug_log = &win32::debug_log;
 
   s32 result = 1;
   HINSTANCE hInstance = GetModuleHandle( NULL );
@@ -276,12 +276,6 @@ void brewing_station_main()
 #else
 namespace platform
 {
-  namespace debug
-  {
-    namespace global
-    {
-      debug_log* ptr_debug_log;
-    };
-  };
+  callbackfunctionsignature::debug_log* debug_log;
 };
 #endif

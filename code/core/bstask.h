@@ -20,11 +20,4 @@ namespace bs
     bs::taskfn* function;
     void* parameter;
   };
-
-  namespace platform
-  {
-    using push_async_task = void( Task const&, TaskState volatile* out_taskState );
-    using push_synced_task = void( Task const&, TaskState volatile* out_taskState );
-    using complete_synced_tasks = void();
-  };
 };

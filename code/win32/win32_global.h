@@ -2,6 +2,7 @@
 
 //ONLY for brewing_station_platform.cpp build
 #include <platform/platform.h>
+#include <platform/platform_callbacks_internal.h>
 #include <core/bsthread.h>
 #include <common/bscommon.h>
 
@@ -28,7 +29,7 @@ namespace win32
     void app_tick( bs::PrmAppTick ) {}
     void app_render( bs::PrmAppRender ) {}
     void app_receive_udp_packet( bs::PrmAppReceiveUDPPacket ) {}
-    void app_register_debug_callbacks( platform::debug::PrmRegisterDebugCallbacks ) {}
+    void app_register_callbacks( platform::PrmRegisterCallbacks ) {}
   };
 
   using  win32_app_sample_sound = void( bs::PrmAppSampleSound );
@@ -36,7 +37,7 @@ namespace win32
   using  win32_app_tick = void( bs::PrmAppTick );
   using  win32_app_render = void( bs::PrmAppRender );
   using  win32_app_receive_udp_packet = void( bs::PrmAppReceiveUDPPacket );
-  using  win32_app_register_debug_callbacks = void( platform::debug::PrmRegisterDebugCallbacks );
+  using  win32_app_register_callbacks = void( platform::PrmRegisterCallbacks );
 
   struct AppDll
   {
@@ -46,7 +47,7 @@ namespace win32
     win32_app_tick* tick = stub::app_tick;
     win32_app_render* render = stub::app_render;
     win32_app_receive_udp_packet* receive_udp_packet = stub::app_receive_udp_packet;
-    win32_app_register_debug_callbacks* register_debug_callbacks = stub::app_register_debug_callbacks;
+    win32_app_register_callbacks* register_callbacks = stub::app_register_callbacks;
   };
 };
 

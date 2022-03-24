@@ -1,11 +1,9 @@
 #pragma once
 
-#include "platform_net.h"
+#include "platform_callbacks.h"
 #include "platform_input.h"
-#include "platform_file.h"
-#include "platform_thread.h"
-#include "platform_debug.h"
 
+#include <core/bsnet.h>
 #include <core/bsmemory.h>
 
 namespace bs
@@ -16,20 +14,7 @@ namespace bs
 
     u64 currentFrameIndex;
     Input input;
-    NetworkData network;
-
-    //task scheduling
-    platform::push_async_task* push_async_task;
-    platform::push_synced_task* push_synced_task;
-    platform::complete_synced_tasks* complete_synced_tasks;
-    //file
-    platform::get_file_info* get_file_info;
-    platform::read_file* read_file;
-    platform::write_file* write_file;
-    platform::free_file* free_file;
-    //networking
-    platform::send_udp* send_udp;
-    platform::send_tcp* send_tcp;
+    net::NetworkData network;
   };
 
   struct PrmAppSampleSound

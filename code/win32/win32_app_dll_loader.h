@@ -1,7 +1,8 @@
 #pragma once
 
 #include "win32_util.h"
-#include <platform/platform_debug.h>
+#include "win32_thread.h"
+#include <core/bsdebuglog.h>
 
 #define dll_log_info(...) log_info("[WIN32_DLL] ", ...)
 #define dll_log_error(...) log_error("[WIN32_DLL] ", ...)
@@ -14,17 +15,17 @@ namespace win32
     thread::ThreadInfo* threadInfo;
     //char const* appFilename; //lul?
     AppDll* appDll;
-    // for_all_threadfn* dll_reload_thread_action;
   };
-  DWORD thread_DllLoader( void* void_parameter )
+  DWORD WINAPI thread_DllLoader( void* void_parameter )
   {
     PrmThreadDllLoader* parameter = (PrmThreadDllLoader*) void_parameter;
     thread::ThreadInfo* threadInfo = parameter->threadInfo;
     AppDll* appDll = parameter->appDll;
-    // for_all_threadfn* for_all_app_threads = parameter->for_all_app_threads;
+
+    thread::write_barrier();
     parameter->threadInfo = nullptr;
+
     threadInfo->name = "thread_dll_loader";
-    //dll_log_info( "Thread: ", threadInfo->name, "id: ", threadInfo->id, ".\n" );
     constexpr u32 THREAD_SLEEP_DURATION = 500;
     char const* TMP_APP_CODE_FILENAME[2] = { "bs_app0.tmp.dll", "bs_app1.tmp.dll" };
     char const* APP_FILENAME = "brewing_station_app.dll";
@@ -59,9 +60,9 @@ namespace win32
               newApp.tick = (win32_app_tick*) GetProcAddress( newApp.dll, "app_tick" );
               newApp.render = (win32_app_render*) GetProcAddress( newApp.dll, "app_render" );
               newApp.receive_udp_packet = (win32_app_receive_udp_packet*) GetProcAddress( newApp.dll, "app_receive_udp_packet" );
-              newApp.register_debug_callbacks = (win32_app_register_debug_callbacks*) GetProcAddress( newApp.dll, "register_debug_callbacks" );
+              newApp.register_callbacks = (win32_app_register_callbacks*) GetProcAddress( newApp.dll, "register_callbacks" );
 
-              if ( newApp.sample_sound && newApp.on_load && newApp.tick && newApp.receive_udp_packet && newApp.render && newApp.register_debug_callbacks )
+              if ( newApp.sample_sound && newApp.on_load && newApp.tick && newApp.receive_udp_packet && newApp.render && newApp.register_callbacks )
               {
                 successfulLoad = true;
                 //dll_log_info( "Loaded ", TMP_APP_CODE_FILENAME[currentDllIndex], ".\n" );
@@ -89,7 +90,7 @@ namespace win32
               FreeLibrary( currentApp.dll );
               currentApp = newApp;
 
-              currentApp.register_debug_callbacks( { &win32::debug_log } );
+              currentApp.register_callbacks( { &win32::debug_log } );
               dll_reload_threads_action( &thread::request_unpause );
             }
             else

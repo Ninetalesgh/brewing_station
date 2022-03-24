@@ -1,8 +1,7 @@
-#include "platform/platform.h" 
+#include <platform/platform.h>
 
 namespace bs
 {
-
   void app_sample_sound( PrmAppSampleSound prm )
   {
     BREAK;
@@ -15,6 +14,8 @@ namespace bs
 
   void app_tick( PrmAppTick prm )
   {
+
+    //log_info( "tkkkest" );
     // BREAK;
 
   }

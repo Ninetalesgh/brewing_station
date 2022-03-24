@@ -1,6 +1,6 @@
 #pragma once
 
-#include <platform/platform_thread.h>
+#include <core/bstask.h>
 #include "win32_global.h"
 
 namespace thread
@@ -10,8 +10,9 @@ namespace thread
   void wait_for_thread_to_pause( ThreadInfo* );
   void pause_thread_if_requested( ThreadInfo* );
   void pause_thread_if_requested( ThreadInfo*, s32 millisecondsSleepPerPoll );
-};
 
+  void write_barrier();
+};
 
 namespace win32
 {
@@ -33,14 +34,11 @@ namespace win32
 };
 
 
-
-
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 //////////////////inl//////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
-
 
 namespace thread
 {
@@ -79,6 +77,11 @@ namespace thread
   INLINE void pause_thread_if_requested( ThreadInfo* threadInfo )
   {
     pause_thread_if_requested( threadInfo, 0 );
+  }
+
+  INLINE void write_barrier()
+  {
+    __faststorefence();
   }
 };
 
@@ -181,12 +184,6 @@ namespace win32
             interlocked_compare_exchange( (volatile s32*) state, (s32) bs::TaskState::COMPLETED, (s32) bs::TaskState::IN_PROGRESS );
           }
 
-          // task.taskCall;
-           // task.taskState;
-            // interlocked_compare_exchange( (*state) )
-
-
-               //queue->tasks[popIndex].taskCall
           result = true;
           break;
         }
@@ -198,7 +195,7 @@ namespace win32
       }
       else
       {
-        //queue is empty, we can sleep
+        //queue is empty
         break;
       }
     }
@@ -232,6 +229,8 @@ namespace win32
     PrmWorkerThreadEntry* parameter = (PrmWorkerThreadEntry*) void_parameter;
     thread::ThreadInfo* threadInfo = parameter->threadInfo;
     TaskQueue* queue = parameter->taskQueue;
+
+    thread::write_barrier();
     parameter->threadInfo = nullptr;
 
     for ( ;;)
@@ -253,6 +252,12 @@ namespace win32
 
   u32 init_worker_threads()
   {
+    log_info( "test" );
+    log_info( "test" );
+    log_info( "test" );
+    log_info( "test" );
+    log_info( "test" );
+    log_info( "test" );
     global::asyncTaskQueue.semaphore = CreateSemaphoreEx( 0, 0/*initialCount*/, global::ASYNC_THREAD_COUNT, 0, 0, SEMAPHORE_ALL_ACCESS );
     global::syncedTaskQueue.semaphore = CreateSemaphoreEx( 0, 0/*initialCount*/, global::SYNCED_THREAD_COUNT, 0, 0, SEMAPHORE_ALL_ACCESS );
 
