@@ -9,13 +9,28 @@ namespace bs
 
   void app_on_load( PrmAppOnLoad prm )
   {
-    BREAK;
+    //bs::AppData* appData = prm.appData;
+
+    char test2[64] = {};
+    char* test = (char*) memory::allocate( 64 );
+    memory::set( test, 1, 64 );
+    memory::copy( test, test2, 64 );
+    log_info( "test", string_length( "hello" ), string_length( "" ) );
+    // BREAK;
+  //u32 get_file_info( char const* filename, bs::FileInfo* out_FileInfo );
+ // bs::ReadFileResult read_file( char const* filename, u32 maxSize, void* out_data );
+ // void free_file( void* filename );
+ // u32 write_file( bs::WriteFileParameter const& );
+
+//    platform::read_file( "w:/data/Inconsolata.ttf" );
+
   }
 
   void app_tick( PrmAppTick prm )
   {
 
-    //log_info( "tkkkest" );
+    log_info( "tkkkest", "lol" );
+
     // BREAK;
 
   }

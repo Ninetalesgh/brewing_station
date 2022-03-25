@@ -1,7 +1,8 @@
 #pragma once
 
-#include "win32_global.h"
+#include "win32_file.h"
 #include "win32_thread.h"
+#include "win32_global.h"
 
 LRESULT CALLBACK brewing_station_main_window_callback( HWND window, UINT message, WPARAM wParam, LPARAM lParam )
 {
@@ -77,22 +78,19 @@ namespace win32
 
   void debug_log( bs::debug::DebugLogFlags flags, char const* string, s32 size )
   {
-    wchar_t wideChars[bs::debug::MAX_DEBUG_MESSAGE_LENGTH / 2];
+    //wchar_t wideChars[bs::debug::MAX_DEBUG_MESSAGE_LENGTH];
+   // utf8_to_wchar( string, wideChars, array_count( wideChars ) );
 
-    int wideCharCount = MultiByteToWideChar( CP_UTF8, 0, string, -1, NULL, 0 );
-
-    if ( wideCharCount < bs::debug::MAX_DEBUG_MESSAGE_LENGTH )
-    {
-      MultiByteToWideChar( CP_UTF8, 0, string, -1, wideChars, wideCharCount );
-    }
-
-    OutputDebugStringW( wideChars );
+    OutputDebugStringA( string );
     if ( flags & bs::debug::DebugLogFlags::WRITE_TO_DEBUG_LOG_FILE )
     {
       static HANDLE debug_log_file = CreateFileW( L"debug.log", GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0 );
-
       s32 bytesWritten {};
+
+      // LockFile(debug_log_file, dwPos, 0, dwBytesRead, 0); 
       WriteFile( debug_log_file, string, size, (LPDWORD) &bytesWritten, 0 );
+      // UnlockFile(debug_log_file, dwPos, 0, dwBytesRead, 0);
+
     }
     if ( flags & bs::debug::DebugLogFlags::SEND_TO_SERVER )
     {

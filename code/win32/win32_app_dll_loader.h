@@ -90,7 +90,27 @@ namespace win32
               FreeLibrary( currentApp.dll );
               currentApp = newApp;
 
-              currentApp.register_callbacks( { &win32::debug_log } );
+              platform::PrmRegisterCallbacks prm {};
+
+              prm.debug_log = &win32::debug_log;
+              prm.push_async_task = &win32::push_async_task;
+              prm.push_synced_task = &win32::push_synced_task;
+              prm.complete_synced_tasks = &win32::complete_synced_tasks;
+              //TODO
+              //   prm.get_file_info = &win32::get_file_info;
+               //  prm.read_file = &win32::read_file;
+               //  prm.write_file = &win32::write_file;
+                // prm.free_file = &win32::free_file;
+               //  prm.send_udp = &win32::send_udp;
+               //  prm.send_tcp = &win32::send_tcp;
+
+              prm.mainArena = &global::mainArena;
+
+              currentApp.register_callbacks( prm );
+
+              // TODO: maybe this not here? 
+              currentApp.on_load( { &global::appData } );
+
               dll_reload_threads_action( &thread::request_unpause );
             }
             else

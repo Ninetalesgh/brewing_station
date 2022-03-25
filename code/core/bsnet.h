@@ -48,7 +48,6 @@ namespace bs
     };
     INLINE u32 is_valid_connection( Connection connection ) { return connection.port != U16_MAX && connection.ipv4_address != U32_MAX; }
 
-
     struct NetworkData
     {
       net::Connection self;
@@ -81,41 +80,9 @@ namespace bs
     };
 
 
+    u32 parse_ipv4( char const* from );
   };
 
-  template<> INLINE s32 string_format<true, net::Connection>( String to, net::Connection connection )
-  {
-    return string_format( to, connection.ipv4_u8_address0, ".", connection.ipv4_u8_address1, ".",
-                              connection.ipv4_u8_address2, ".", connection.ipv4_u8_address3,
-                              ":", connection.port ) - 1;
-  }
+  template<> INLINE s32 string_format<true, net::Connection>( String to, net::Connection connection );
 
-  u32 parse_ipv4( char const* from )
-  {
-    u32 result = 0;
-    char const* reader = from;
-
-    for ( s32 i = 0; i < 4; ++i )
-    {
-      char const* section = reader;
-      s32 digit = 0;
-      while ( *reader != '.' && *reader != '\0' )
-      {
-        ++reader;
-        if ( ++digit > 3 ) return 0;
-      }
-      ++reader;
-
-      u8 multiplier = 1;
-      u8 u8result = 0;
-      for ( ;digit--; multiplier *= 10 )
-      {
-        u8result += multiplier * (section[digit] - '0');
-      }
-
-      result += u32( u8result ) << (i * 8);
-    }
-
-    return result;
-  }
 };

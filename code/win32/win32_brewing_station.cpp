@@ -1,5 +1,3 @@
-
-
 #include "win32_util.h"
 #include "win32_global.h"
 #include "win32_app_dll_loader.h"
@@ -177,7 +175,22 @@ void brewing_station_loop()
 
 void brewing_station_main()
 {
-  platform::debug_log = &win32::debug_log;
+  platform::ptr_debug_log = &win32::debug_log;
+  platform::mainArena = &global::mainArena;
+
+  s64 bufferSize = (s64) global::APP_MEMORY_SIZE;
+  void* buffer = VirtualAlloc( 0, bufferSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
+  bs::memory::init_arena( (char*) buffer, bufferSize, &global::mainArena );
+
+
+  // win32::fetch_paths();
+
+
+  win32::generate_compiled_assets_file();
+
+
+
+
 
   s32 result = 1;
   HINSTANCE hInstance = GetModuleHandle( NULL );
@@ -222,10 +235,6 @@ void brewing_station_main()
     bs::opengl::init( deviceContext );
   }
 
-  s64 bufferSize = (s64) global::APP_MEMORY_SIZE;
-  void* buffer = VirtualAlloc( 0, bufferSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
-  memory::init_arena( (char*) buffer, bufferSize, &global::appData.mainArena );
-
   global::mainThread.id = thread::get_current_thread_id();
   global::mainThread.name = "thread_main";
 
@@ -264,18 +273,19 @@ void brewing_station_main()
     bs::opengl::tick();
 
 
-
     ++global::appData.currentFrameIndex;
   }
-
 }
-
 
 #ifdef BS_RELEASE_BUILD
 #include <apps/brewing_Station_app.cpp>
 #else
 namespace platform
 {
-  callbackfunctionsignature::debug_log* debug_log;
+  callbackfunctionsignature::debug_log* ptr_debug_log;
+  bs::memory::Arena* mainArena;
 };
 #endif
+
+
+//#include <compiled_assets.cpp>

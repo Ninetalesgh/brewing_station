@@ -1,23 +1,28 @@
 #pragma once 
 
+
 #ifndef BS_DEBUG
 
-# define log_info_con_only( contextName, ... )
-# define log_warning_con_only( contextName, ... )
-# define log_error_con_only( contextName, ... )
+# define log_info_con_only( ... )
+# define log_warning_con_only( ... )
+# define log_error_con_only( ... )
 
-# define log_info( contextName, ... )
-# define log_warning( contextName, ... )
-# define log_error( contextName, ... )
+# define log_info( ... )
+# define log_warning( ... )
+# define log_error( ... )
 
 #else
 
-# define log_info_con_only( contextName, ... )     _debug_log( bs::debug::DebugLogFlags::INFO, contextName, __VA_ARGS__ )
-# define log_warning_con_only( contextName, ... )  _debug_log( bs::debug::DebugLogFlags::WARNING, contextName, __VA_ARGS__ )
-# define log_error_con_only( contextName, ... )    _debug_log( bs::debug::DebugLogFlags::ERROR, contextName, __VA_ARGS__ )
-# define log_info( contextName, ... )     _debug_log( bs::debug::DebugLogFlags::WRITE_TO_DEBUG_LOG_FILE | bs::debug::DebugLogFlags::INFO, contextName, __VA_ARGS__ )
-# define log_warning( contextName, ... )  _debug_log( bs::debug::DebugLogFlags::WRITE_TO_DEBUG_LOG_FILE | bs::debug::DebugLogFlags::WARNING, contextName, __VA_ARGS__ )
-# define log_error( contextName, ... )    _debug_log( bs::debug::DebugLogFlags::WRITE_TO_DEBUG_LOG_FILE | bs::debug::DebugLogFlags::ERROR, contextName, __VA_ARGS__ )
+#ifdef ERROR
+#undef ERROR
+#endif
+
+# define log_info_con_only( ... )     _debug_log( bs::debug::DebugLogFlags::INFO, __VA_ARGS__ )
+# define log_warning_con_only( ... )  _debug_log( bs::debug::DebugLogFlags::WARNING, __VA_ARGS__ )
+# define log_error_con_only( ... )    _debug_log( bs::debug::DebugLogFlags::ERROR, __VA_ARGS__ )
+# define log_info( ... )     _debug_log( bs::debug::DebugLogFlags::WRITE_TO_DEBUG_LOG_FILE | bs::debug::DebugLogFlags::INFO, __VA_ARGS__ )
+# define log_warning( ... )  _debug_log( bs::debug::DebugLogFlags::WRITE_TO_DEBUG_LOG_FILE | bs::debug::DebugLogFlags::WARNING, __VA_ARGS__ )
+# define log_error( ... )    _debug_log( bs::debug::DebugLogFlags::WRITE_TO_DEBUG_LOG_FILE | bs::debug::DebugLogFlags::ERROR, __VA_ARGS__ )
 
 #endif
 

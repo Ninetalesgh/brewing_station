@@ -13,6 +13,13 @@ namespace bs
     s32 capacity;
   };
 
+  INLINE u32 string_length( char const* string )
+  {
+    char const* reader = string;
+    while ( *reader++ != '\0' ) {}
+    return u32( reader - string ) - 1;
+  }
+
   INLINE u32 string_match( String const& a, String const& b )
   {
     u32 result = 1;

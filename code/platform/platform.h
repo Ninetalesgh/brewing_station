@@ -10,8 +10,6 @@ namespace bs
 {
   struct AppData
   {
-    memory::Arena mainArena;
-
     u64 currentFrameIndex;
     Input input;
     net::NetworkData network;

@@ -7,6 +7,9 @@
 #include <common/bscommon.h>
 
 #include <windows.h>
+#ifdef ERROR
+# undef ERROR
+#endif
 
 #ifdef min
 # undef min
@@ -65,9 +68,17 @@ namespace global
   static win32::AppDll         appDll;
   static bs::AppData           appData;
 
+  static bs::memory::Arena     mainArena;
+
   static u32                   running;
 
   static thread::ThreadInfo mainThread;
   static thread::ThreadInfo syncedThreads[SYNCED_THREAD_COUNT];
   static thread::ThreadInfo asyncThreads[ASYNC_THREAD_COUNT];
+};
+
+
+namespace compiledasset
+{
+  extern char const DEFAULT_FONT[];
 };

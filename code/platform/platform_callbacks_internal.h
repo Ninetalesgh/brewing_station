@@ -16,6 +16,7 @@ namespace platform
     platform::callbackfunctionsignature::free_file* free_file;
     platform::callbackfunctionsignature::send_udp* send_udp;
     platform::callbackfunctionsignature::send_tcp* send_tcp;
+    bs::memory::Arena* mainArena;
   };
 };
 
