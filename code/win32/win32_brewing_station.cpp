@@ -4,6 +4,7 @@
 #include "win32_opengl.h"
 #include "win32_thread.h"
 #include <platform/platform.h>
+#include <core/bsfont.h>
 #include <common/bsstring.h>
 
 //winsock
@@ -175,18 +176,15 @@ void brewing_station_loop()
 
 void brewing_station_main()
 {
-  platform::ptr_debug_log = &win32::debug_log;
-  platform::mainArena = &global::mainArena;
-
   s64 bufferSize = (s64) global::APP_MEMORY_SIZE;
   void* buffer = VirtualAlloc( 0, bufferSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
   bs::memory::init_arena( (char*) buffer, bufferSize, &global::mainArena );
 
+  auto table = bs::font::create_glyph_table_from_ttf( compiledasset::DEFAULT_FONT );
+  s32 codepoint = bs::font::get_unicode_codepoint( "t" );
+  auto glyph = bs::font::create_glyph( table, codepoint );
 
   // win32::fetch_paths();
-  win32::generate_compiled_assets_file();
-
-
 
   s32 result = 1;
   HINSTANCE hInstance = GetModuleHandle( NULL );
@@ -276,10 +274,26 @@ void brewing_station_main()
 #ifdef BS_RELEASE_BUILD
 #include <apps/brewing_Station_app.cpp>
 #else
+
 namespace platform
 {
-  callbackfunctionsignature::debug_log* ptr_debug_log;
-  bs::memory::Arena* mainArena;
+  INLINE void debug_log( bs::debug::DebugLogFlags flags, char const* string, s32 size )
+  {
+    return win32::debug_log( flags, string, size );
+  }
+
+  INLINE void* allocate( s64 size )
+  {
+    return global::mainArena.alloc( size );
+  }
+  INLINE void* allocate_to_zero( s64 size )
+  {
+    return global::mainArena.alloc_set_zero( size );
+  }
+  INLINE void free( void* ptr )
+  {
+    global::mainArena.free( ptr );
+  }
 };
 #endif
 

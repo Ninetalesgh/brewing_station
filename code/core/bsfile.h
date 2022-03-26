@@ -14,13 +14,15 @@ namespace bs
 
   namespace file
   {
-    struct LoadedFile
+    struct Info
     {
-      void* data;
-      u32   size;
+      u64 size;
     };
 
-    //LoadedFile load_into_memory( char const* path );
-
+    struct Data
+    {
+      void* data;
+      u64   size;
+    };
   };
 };

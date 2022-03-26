@@ -31,18 +31,26 @@ namespace win32
     return wchar_to_utf8( wideChars, out_exePath, exePathLengthMax );
   }
 
-  u64 get_file_size( char const* filepath )
+  u32 get_file_info( char const* filePath, bs::file::Info* out_fileInfo )
   {
-    u64 result = 0;
-    wchar_t wideChars[MAX_BS_PATH];
-    utf8_to_wchar( filepath, wideChars, MAX_BS_PATH );
-
-    _WIN32_FIND_DATAW findData;
-    HANDLE findHandle = FindFirstFileW( wideChars, &findData );
-    if ( findHandle != INVALID_HANDLE_VALUE )
+    u32 result = 0;
+    if ( out_fileInfo )
     {
-      FindClose( findHandle );
-      result = u64( findData.nFileSizeLow ) + (u64( findData.nFileSizeHigh ) << 32);
+      wchar_t wideChars[MAX_BS_PATH];
+      utf8_to_wchar( filePath, wideChars, MAX_BS_PATH );
+
+      _WIN32_FIND_DATAW findData;
+      HANDLE findHandle = FindFirstFileW( wideChars, &findData );
+      if ( findHandle != INVALID_HANDLE_VALUE )
+      {
+        FindClose( findHandle );
+        out_fileInfo->size = u64( findData.nFileSizeLow ) + (u64( findData.nFileSizeHigh ) << 32);
+        result = 1;
+      }
+      else
+      {
+        BREAK;
+      }
     }
     else
     {
@@ -52,61 +60,63 @@ namespace win32
     return result;
   }
 
-
-  bs::file::LoadedFile load_into_memory( char const* filepath )
+  u32 load_file_into_memory( char const* filePath, bs::file::Data* out_loadedFileData )
   {
-    bs::file::LoadedFile loadedFile {};
-
-    wchar_t wideChars[MAX_BS_PATH];
-    utf8_to_wchar( filepath, wideChars, MAX_BS_PATH );
-    HANDLE fileHandle = CreateFileW( wideChars,
-                                     GENERIC_READ,
-                                     FILE_SHARE_READ, 0,
-                                     OPEN_EXISTING,
-                                     FILE_ATTRIBUTE_NORMAL, 0 );
-
-    if ( fileHandle != INVALID_HANDLE_VALUE )
+    u32 result = 0;
+    if ( out_loadedFileData )
     {
-      LARGE_INTEGER fileSize;
-      if ( GetFileSizeEx( fileHandle, &fileSize ) )
-      {
-        if ( (u64) fileSize.QuadPart < MegaBytes( 512 ) )
-        {
-          loadedFile.data = bs::memory::allocate( fileSize.QuadPart );
+      wchar_t wideChars[MAX_BS_PATH];
+      utf8_to_wchar( filePath, wideChars, MAX_BS_PATH );
+      HANDLE fileHandle = CreateFileW( wideChars,
+                                       GENERIC_READ,
+                                       FILE_SHARE_READ, 0,
+                                       OPEN_EXISTING,
+                                       FILE_ATTRIBUTE_NORMAL, 0 );
 
-          u32 fileSize32 = (u32) fileSize.QuadPart;
-          DWORD bytesRead;
-          if ( ReadFile( fileHandle, loadedFile.data, fileSize32, &bytesRead, 0 )
-            && (fileSize32 == bytesRead) )
+      if ( fileHandle != INVALID_HANDLE_VALUE )
+      {
+        LARGE_INTEGER fileSize;
+        if ( GetFileSizeEx( fileHandle, &fileSize ) )
+        {
+          if ( (u64) fileSize.QuadPart < MegaBytes( 512 ) )
           {
-            loadedFile.size = fileSize32;
+            out_loadedFileData->data = bs::memory::allocate( fileSize.QuadPart );
+            if ( out_loadedFileData->data )
+            {
+              u32 fileSize32 = (u32) fileSize.QuadPart;
+              DWORD bytesRead;
+              if ( ReadFile( fileHandle, out_loadedFileData->data, fileSize32, &bytesRead, 0 )
+                && (fileSize32 == bytesRead) )
+              {
+                out_loadedFileData->size = fileSize32;
+                result = 1;
+              }
+              else
+              {
+                bs::memory::free( out_loadedFileData->data );
+                (*out_loadedFileData) = {};
+              }
+            }
           }
           else
           {
-            bs::memory::free( loadedFile.data );
-            loadedFile = {};
+            BREAK; //file a bit large, huh 
+            //TODO read file in chunks
           }
         }
-        else
-        {
-          BREAK; //file a bit large, huh 
-          //TODO read file in chunks
-        }
-      }
 
-      CloseHandle( fileHandle );
+        CloseHandle( fileHandle );
+      }
     }
 
-    return loadedFile;
+    return result;
   }
 
-  void write_file();
-
-  u32 append_file( char const* filepath, void const* data, u32 size )
+  u32 append_file( char const* filePath, void const* data, u32 size )
   {
     u32 result = 1;
     wchar_t wideChars[MAX_BS_PATH];
-    utf8_to_wchar( filepath, wideChars, MAX_BS_PATH );
+    utf8_to_wchar( filePath, wideChars, MAX_BS_PATH );
 
     HANDLE fileHandle = CreateFileW( wideChars,
                                      FILE_APPEND_DATA,
@@ -133,7 +143,7 @@ namespace win32
         else
         {
           result = 0;
-          log_error( "[WIN32_FILE] ERROR - couldn't write data to file: ", filepath );
+          log_error( "[WIN32_FILE] ERROR - couldn't write data to file: ", filePath );
           break;
         }
       }
@@ -148,11 +158,11 @@ namespace win32
     return result;
   }
 
-  u32 write_file( char const* filepath, void const* data, u32 size )
+  u32 write_file( char const* filePath, void const* data, u32 size )
   {
     u32 result = 1;
     wchar_t wideChars[MAX_BS_PATH];
-    utf8_to_wchar( filepath, wideChars, MAX_BS_PATH );
+    utf8_to_wchar( filePath, wideChars, MAX_BS_PATH );
 
     HANDLE fileHandle = CreateFileW( wideChars,
                                      GENERIC_WRITE,
@@ -179,7 +189,7 @@ namespace win32
         else
         {
           result = 0;
-          log_error( "[WIN32_FILE]", "ERROR - couldn't write data to file: ", filepath );
+          log_error( "[WIN32_FILE]", "ERROR - couldn't write data to file: ", filePath );
           break;
         }
       }
@@ -205,13 +215,7 @@ namespace win32
     //get asset path
   }
 
-  struct HexArrayString
-  {
-    char* data;
-    u32 size;
-  };
-
-  HexArrayString generate_hex_array_string( u8 const* data, u32 size, char const* assetName )
+  void generate_hex_array_string( u8 const* data, u32 size, char const* assetName, char** out_data, u32* out_size )
   {
     s32 const entriesPerLine = 16;
     u32 hexArraySize = size * 5 + ((size / entriesPerLine) + (size % entriesPerLine ? 1 : 0)) * 2;
@@ -255,30 +259,38 @@ namespace win32
     writer += postContentLength;
 
     assert( u32( writer - hexArray ) == hexArraySize );
-    return { hexArray, hexArraySize };
+
+    *out_data = hexArray;
+    *out_size = hexArraySize;
   }
 
   void generate_compiled_assets_file()
   {
-    bs::file::LoadedFile ttf = load_into_memory( "w:/data/bs.ttf" );
+    bs::file::Data ttf;
+    if ( !load_file_into_memory( "w:/data/bs.ttf", &ttf ) )
+    {
+      BREAK;
+    }
 
     char const preContent[] = "#pragma warning(push)\r\n#pragma warning(disable:4309)\r\n#pragma warning(push)\r\n#pragma warning(disable:4838)\r\nnamespace compiledasset\r\n{";
     write_file( "w:/code/compiled_assets", preContent, bs::string_length( preContent ) );
 
-    HexArrayString hexArray = generate_hex_array_string( (u8 const*) ttf.data, (u32) ttf.size, "DEFAULT_FONT" );
-    append_file( "w:/code/compiled_assets", hexArray.data, hexArray.size );
-    bs::memory::free( hexArray.data );
+    char* hexArrayString;
+    u32 hexArraySize;
+    generate_hex_array_string( (u8 const*) ttf.data, (u32) ttf.size, "DEFAULT_FONT", &hexArrayString, &hexArraySize );
+    append_file( "w:/code/compiled_assets", hexArrayString, hexArraySize );
+    bs::memory::free( hexArrayString );
     bs::memory::free( ttf.data );
 
     char const postContent[] = "};\r\n#pragma warning(pop)\r\n#pragma warning(pop)\r\n";
     append_file( "w:/code/compiled_assets", postContent, bs::string_length( postContent ) );
   }
 
-  // u32 write_file( char const* filepath, void const* data, u32 size )
+  // u32 write_file( char const* filePath, void const* data, u32 size )
   // {
   //   u32 result = 1;
   //   wchar_t wideChars[MAX_BS_PATH];
-  //   utf8_to_wchar( filepath, wideChars, MAX_BS_PATH );
+  //   utf8_to_wchar( filePath, wideChars, MAX_BS_PATH );
 
   //   HANDLE fileHandle = CreateFileW( wideChars,
   //                                    GENERIC_WRITE,
@@ -305,7 +317,7 @@ namespace win32
   //       else
   //       {
   //         result = 0;
-  //         log_error( "[WIN32_FILE]", "ERROR - couldn't write data to file: ", filepath );
+  //         log_error( "[WIN32_FILE]", "ERROR - couldn't write data to file: ", filePath );
   //         break;
   //       }
   //     }

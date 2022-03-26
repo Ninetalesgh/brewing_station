@@ -86,15 +86,15 @@ namespace bs
   {
     INLINE void* allocate( s64 size )
     {
-      return platform::mainArena->alloc( size );
+      return platform::allocate( size );
     }
     INLINE void* allocate_to_zero( s64 size )
     {
-      return platform::mainArena->alloc_set_zero( size );
+      return platform::allocate_to_zero( size );
     }
     INLINE void free( void* ptr )
     {
-      platform::mainArena->free( ptr );
+      platform::free( ptr );
     }
 
     INLINE void* set( void* ptr, s32 value, u32 bytesToWrite )

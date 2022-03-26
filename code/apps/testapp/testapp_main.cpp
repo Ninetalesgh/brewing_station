@@ -16,13 +16,19 @@ namespace bs
     memory::set( test, 1, 64 );
     memory::copy( test, test2, 64 );
     log_info( "test", string_length( "hello" ), string_length( "" ) );
-    // BREAK;
-  //u32 get_file_info( char const* filename, bs::FileInfo* out_FileInfo );
- // bs::ReadFileResult read_file( char const* filename, u32 maxSize, void* out_data );
- // void free_file( void* filename );
- // u32 write_file( bs::WriteFileParameter const& );
 
-//    platform::read_file( "w:/data/Inconsolata.ttf" );
+    bs::file::Data ttf;
+    if ( !platform::load_file_into_memory( "w:/data/bs.ttf", &ttf ) )
+    {
+      BREAK;
+    }
+
+    //u32 get_file_info( char const* filename, bs::FileInfo* out_FileInfo );
+   // bs::ReadFileResult read_file( char const* filename, u32 maxSize, void* out_data );
+   // void free_file( void* filename );
+   // u32 write_file( bs::WriteFileParameter const& );
+
+  //    platform::read_file( "w:/data/Inconsolata.ttf" );
 
   }
 

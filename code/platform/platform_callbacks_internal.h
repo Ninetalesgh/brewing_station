@@ -4,20 +4,39 @@
 
 namespace platform
 {
-  struct PrmRegisterCallbacks
+  namespace callbackfunctionsignature
   {
-    platform::callbackfunctionsignature::debug_log* debug_log;
-    platform::callbackfunctionsignature::push_async_task* push_async_task;
-    platform::callbackfunctionsignature::push_synced_task* push_synced_task;
-    platform::callbackfunctionsignature::complete_synced_tasks* complete_synced_tasks;
-    platform::callbackfunctionsignature::get_file_info* get_file_info;
-    platform::callbackfunctionsignature::read_file* read_file;
-    platform::callbackfunctionsignature::write_file* write_file;
-    platform::callbackfunctionsignature::free_file* free_file;
-    platform::callbackfunctionsignature::send_udp* send_udp;
-    platform::callbackfunctionsignature::send_tcp* send_tcp;
+    using debug_log = void( bs::debug::DebugLogFlags, char const*, s32 );
+
+    using send_tcp = void( bs::net::TCPSendParameter const& );
+    using send_udp = void( bs::net::UDPSendParameter const& );
+
+    using get_file_info = u32( char const* filePath, bs::file::Info* out_fileInfo );
+    using load_file_into_memory = u32( char const* filePath, bs::file::Data* out_loadedFileData );
+    using write_file = u32( char const* filePath, void const* data, u32 size );
+
+    using push_async_task = u32( bs::Task const&, bs::TaskState volatile* out_taskState );
+    using push_synced_task = u32( bs::Task const&, bs::TaskState volatile* out_taskState );
+    using complete_synced_tasks = void();
+  };
+
+  struct Callbacks
+  {
+    callbackfunctionsignature::debug_log* ptr_debug_log;
+
+    callbackfunctionsignature::send_udp* ptr_send_udp;
+    callbackfunctionsignature::send_tcp* ptr_send_tcp;
+
+    callbackfunctionsignature::push_async_task* ptr_push_async_task;
+    callbackfunctionsignature::push_synced_task* ptr_push_synced_task;
+    callbackfunctionsignature::complete_synced_tasks* ptr_complete_synced_tasks;
+
+    callbackfunctionsignature::get_file_info* ptr_get_file_info;
+    callbackfunctionsignature::load_file_into_memory* ptr_load_file_into_memory;
+    callbackfunctionsignature::write_file* ptr_write_file;
+
     bs::memory::Arena* mainArena;
   };
 };
 
-extern "C" void register_callbacks( platform::PrmRegisterCallbacks );
+extern "C" void register_callbacks( platform::Callbacks const& );

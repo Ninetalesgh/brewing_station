@@ -24,7 +24,6 @@ namespace win32
   using xInputGetState = DWORD WINAPI( DWORD, XINPUT_STATE* );
   using xInputSetState = DWORD WINAPI( DWORD, XINPUT_VIBRATION* );
 
-
   namespace stub
   {
     void app_sample_sound( bs::PrmAppSampleSound ) {}
@@ -32,7 +31,7 @@ namespace win32
     void app_tick( bs::PrmAppTick ) {}
     void app_render( bs::PrmAppRender ) {}
     void app_receive_udp_packet( bs::PrmAppReceiveUDPPacket ) {}
-    void app_register_callbacks( platform::PrmRegisterCallbacks ) {}
+    void app_register_callbacks( platform::Callbacks ) {}
   };
 
   using  win32_app_sample_sound = void( bs::PrmAppSampleSound );
@@ -40,7 +39,7 @@ namespace win32
   using  win32_app_tick = void( bs::PrmAppTick );
   using  win32_app_render = void( bs::PrmAppRender );
   using  win32_app_receive_udp_packet = void( bs::PrmAppReceiveUDPPacket );
-  using  win32_app_register_callbacks = void( platform::PrmRegisterCallbacks );
+  using  win32_app_register_callbacks = void( platform::Callbacks );
 
   struct AppDll
   {
@@ -68,6 +67,7 @@ namespace global
   static win32::AppDll         appDll;
   static bs::AppData           appData;
 
+  static platform::Callbacks   platformCallbacks;
   static bs::memory::Arena     mainArena;
 
   static u32                   running;
