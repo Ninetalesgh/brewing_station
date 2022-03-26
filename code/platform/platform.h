@@ -4,7 +4,6 @@
 #include "platform_input.h"
 
 #include <core/bsnet.h>
-#include <core/bsmemory.h>
 
 namespace bs
 {

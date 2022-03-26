@@ -1,5 +1,6 @@
 #include <platform/platform.h>
 
+#include <core/bsmemory.h>
 namespace bs
 {
   void app_sample_sound( PrmAppSampleSound prm )

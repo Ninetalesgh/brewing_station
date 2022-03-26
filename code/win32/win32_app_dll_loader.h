@@ -104,7 +104,7 @@ namespace win32
               //  prm.send_udp = &win32::send_udp;
               //  prm.send_tcp = &win32::send_tcp;
 
-              prm.mainArena = &global::mainArena;
+              prm.mainArena = global::defaultArena;
 
               currentApp.register_callbacks( prm );
 

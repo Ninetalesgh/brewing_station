@@ -6,6 +6,9 @@
 #include <platform/platform_renderer.h>
 
 #include <opengl_ext.h>
+#include <core/bsfont.h>
+#include <core/bsmemory.h>
+#include <common/bscolor.h>
 #include <common/bscommon.h>
 #include <windows.h>
 #ifdef min
@@ -35,9 +38,9 @@ namespace bs
     void tick();
 
     OpenGlInfo const* get_info();
-    void win32CreateOpenGlContextForWorkerThread();
+    void create_opengl_context_for_worker_thread();
 
-    TextureID allocate_texture( Texture const& texture );
+    TextureID allocate_texture( u32 const* pixel, s32 width, s32 height );
     void deallocate_texture( TextureID texture );
   };
 
@@ -308,7 +311,7 @@ namespace bs
       return 1;
     }
 
-    void win32CreateOpenGlContextForWorkerThread()
+    void create_opengl_context_for_worker_thread()
     {
       //needs to be called before worker threads hop online
       HGLRC workerRenderContext = wglCreateContextAttribsARB( global::deviceContext, global::renderContext, global::rcAttributes );
@@ -322,13 +325,13 @@ namespace bs
       }
     }
 
-    TextureID allocate_texture( Texture const& texture )
+    TextureID allocate_texture( u32 const* pixel, s32 width, s32 height )
     {
       //TODO use PBO to skip one copy step
       GLuint textureHandle = 0;
       glGenTextures( 1, &textureHandle );
       glBindTexture( GL_TEXTURE_2D, textureHandle );
-      glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, texture.width, texture.height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, texture.pixel );
+      glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, pixel );
       glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
       glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
       glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
@@ -345,29 +348,79 @@ namespace bs
       glDeleteTextures( 1, &handle );
     }
 
+    u32* upscale_glyph( bs::font::Glyph* glyph )
+    {
+      s32 width = glyph->width;
+      s32 height = glyph->height;
+      u8* data = glyph->data;
+      u32* result = (u32*) bs::memory::allocate( width * height * sizeof( u32 ) );
+
+      for ( s32 i = 0; i < height; ++i )
+      {
+        for ( s32 j = 0; j < width; ++j )
+        {
+          s32 index = j + i * width;
+          u8 ff = 0xff;
+          result[index] = color::rgba( data[index], data[index], data[index], data[index] );
+          //result[index] = color::rgba( ff, 0, 0, ff );
+        }
+      }
+
+      return result;
+    }
+
     void tick()
     {
+      static TextureID f;
       //  thread::wait_if_requested( &parameter.threadInfo );
-      glViewport( 200, -10, 600, 600 );
-      glClearColor( 1.0f, 0.0f, 1.0f, 0.0f );
+      if ( !::global::appData.currentFrameIndex )
+      {
+        glViewport( 200, -10, 700, 600 );
+        glClearColor( 1.0f, 0.0f, 1.0f, 0.0f );
+
+        bs::font::Glyph* test = bs::font::create_glyph( ::global::defaultGlyphTable, 97 );
+        u32* ptr = upscale_glyph( test );
+        f = allocate_texture( ptr, test->width, test->height );
+        bs::memory::free( ptr );
+        bs::memory::free( test );
+      }
+
+      glBindTexture( GL_TEXTURE_2D, f );
+      glEnable( GL_TEXTURE_2D );
+
       glClear( GL_COLOR_BUFFER_BIT );
       glBegin( GL_TRIANGLES );
 
       glMatrixMode( GL_TEXTURE );
       glLoadIdentity();
 
+      glMatrixMode( GL_MODELVIEW );
+      glLoadIdentity();
+
+      glMatrixMode( GL_PROJECTION );
+      glLoadIdentity();
+
+      glEnable( GL_BLEND );
+      glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+
       float p = 0.7f;
-      glColor3f( 1, 0, 0 );
+
+      glTexCoord2f( 0, 1 );
       glVertex2f( -p, -p );
-      glColor3f( 0, 1, 0 );
+
+      glTexCoord2f( 1, 1 );
       glVertex2f( p, -p );
-      glColor3f( 0, 0, 1 );
+
+      glTexCoord2f( 1, 0 );
       glVertex2f( p, p );
-      glColor3f( 1, 0, 0 );
+
+      glTexCoord2f( 0, 1 );
       glVertex2f( -p, -p );
-      glColor3f( 0, 1, 0 );
+
+      glTexCoord2f( 1, 0 );
       glVertex2f( p, p );
-      glColor3f( 0, 0, 1 );
+
+      glTexCoord2f( 0, 0 );
       glVertex2f( -p, p );
 
       glEnd();

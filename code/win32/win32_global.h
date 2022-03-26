@@ -53,6 +53,10 @@ namespace win32
   };
 };
 
+namespace bs
+{
+  namespace font { struct GlyphTable; };
+};
 namespace global
 {
   constexpr u64 APP_MEMORY_SIZE = GigaBytes( 1 );
@@ -67,8 +71,8 @@ namespace global
   static win32::AppDll         appDll;
   static bs::AppData           appData;
 
-  static platform::Callbacks   platformCallbacks;
-  static bs::memory::Arena     mainArena;
+  static bs::memory::Arena* defaultArena;
+  static bs::font::GlyphTable* defaultGlyphTable;
 
   static u32                   running;
 

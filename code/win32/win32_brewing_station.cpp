@@ -128,7 +128,7 @@ void brewing_station_loop()
 //    win32::push_async_task( { &testfunc, nullptr }, &state );
 
 
-
+//TODO remove this here and leave it up to the app
     win32::complete_synced_tasks();
 
     constexpr float APP_TARGET_FPS = 60.0f;
@@ -176,14 +176,6 @@ void brewing_station_loop()
 
 void brewing_station_main()
 {
-  s64 bufferSize = (s64) global::APP_MEMORY_SIZE;
-  void* buffer = VirtualAlloc( 0, bufferSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
-  bs::memory::init_arena( (char*) buffer, bufferSize, &global::mainArena );
-
-  auto table = bs::font::create_glyph_table_from_ttf( compiledasset::DEFAULT_FONT );
-  s32 codepoint = bs::font::get_unicode_codepoint( "t" );
-  auto glyph = bs::font::create_glyph( table, codepoint );
-
   // win32::fetch_paths();
 
   s32 result = 1;
@@ -229,8 +221,15 @@ void brewing_station_main()
     bs::opengl::init( deviceContext );
   }
 
+  void* buffer = VirtualAlloc( 0, (s64) global::APP_MEMORY_SIZE, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
+  // bs::memory::init_arena( (char*) buffer, (s64) global::APP_MEMORY_SIZE, &global::mainArena );
+
+  global::defaultArena = bs::memory::init_arena_in_place( (char*) buffer, (s64) global::APP_MEMORY_SIZE );
+
   global::mainThread.id = thread::get_current_thread_id();
   global::mainThread.name = "thread_main";
+
+  global::defaultGlyphTable = bs::font::create_glyph_table_from_ttf( compiledasset::DEFAULT_FONT );
 
   #ifdef BS_RELEASE_BUILD
   {
@@ -284,15 +283,15 @@ namespace platform
 
   INLINE void* allocate( s64 size )
   {
-    return global::mainArena.alloc( size );
+    return global::defaultArena->alloc( size );
   }
   INLINE void* allocate_to_zero( s64 size )
   {
-    return global::mainArena.alloc_set_zero( size );
+    return global::defaultArena->alloc_set_zero( size );
   }
   INLINE void free( void* ptr )
   {
-    global::mainArena.free( ptr );
+    global::defaultArena->free( ptr );
   }
 };
 #endif

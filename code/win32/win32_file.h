@@ -3,6 +3,7 @@
 
 #include <core/bsdebuglog.h>
 #include <core/bsfile.h>
+#include <core/bsmemory.h>
 #include <common/bsstring.h>
 #include <common/bscommon.h>
 

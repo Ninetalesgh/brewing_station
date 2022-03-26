@@ -2,6 +2,11 @@
 
 #include "platform_callbacks.h"
 
+namespace bs
+{
+  namespace memory { struct Arena; };
+};
+
 namespace platform
 {
   namespace callbackfunctionsignature
