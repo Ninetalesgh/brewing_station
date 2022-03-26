@@ -184,11 +184,7 @@ void brewing_station_main()
 
 
   // win32::fetch_paths();
-
-
   win32::generate_compiled_assets_file();
-
-
 
 
 
@@ -288,4 +284,4 @@ namespace platform
 #endif
 
 
-//#include <compiled_assets.cpp>
+#include <compiled_assets>

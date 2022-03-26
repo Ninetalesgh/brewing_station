@@ -205,20 +205,6 @@ namespace win32
     //get asset path
   }
 
-  INLINE void byte_to_hex_as_string( u8 byte, char* out_4ByteString )
-  {
-    char* writer = out_4ByteString;
-    writer[0] = '0';
-    writer[1] = 'x';
-
-    u8 tmp = byte >> 4;
-    tmp = tmp < 10 ? 48 + tmp : 87 + tmp;
-    writer[2] = tmp;
-    tmp = byte & 0x0f;
-    tmp = tmp < 10 ? 48 + tmp : 87 + tmp;
-    writer[3] = tmp;
-  }
-
   struct HexArrayString
   {
     char* data;
@@ -228,10 +214,10 @@ namespace win32
   HexArrayString generate_hex_array_string( u8 const* data, u32 size, char const* assetName )
   {
     s32 const entriesPerLine = 16;
-    u32 hexArraySize = size * 5 + (size / entriesPerLine) + (size % entriesPerLine ? 1 : 0);
-    char const preContent0[] = "char const ";
-    char const preContent1[] = "[]={\"\n";
-    char const postContent[] = "\"};";
+    u32 hexArraySize = size * 5 + ((size / entriesPerLine) + (size % entriesPerLine ? 1 : 0)) * 2;
+    char const preContent0[] = "\r\nchar const ";
+    char const preContent1[] = "[] = { \r\n";
+    char const postContent[] = "};\r\n";
     u32 nameLength = bs::string_length( assetName );
     u32 preContent0Length = bs::string_length( preContent0 );
     u32 preContent1Length = bs::string_length( preContent1 );
@@ -250,11 +236,18 @@ namespace win32
     writer += preContent1Length;
     for ( u32 i = 0; i < size; ++i )
     {
-      byte_to_hex_as_string( data[i], writer );
-      writer += 4;
+      *writer++ = '0';
+      *writer++ = 'x';
+      u8 tmp = data[i] >> 4;
+      tmp = tmp < 10 ? 48 + tmp : 87 + tmp;
+      *writer++ = (char) tmp;
+      tmp = data[i] & 0x0f;
+      tmp = tmp < 10 ? 48 + tmp : 87 + tmp;
+      *writer++ = (char) tmp;
       *writer++ = ',';
       if ( !((i + 1) % entriesPerLine) )
       {
+        *writer++ = '\r';
         *writer++ = '\n';
       }
     }
@@ -269,23 +262,18 @@ namespace win32
   {
     bs::file::LoadedFile ttf = load_into_memory( "w:/data/bs.ttf" );
 
-    char const preContent[] = "#pragma warning(push)\n#pragma warning(disable:4309)\n#pragma warning(push)\n#pragma warning(disable:4838)\nnamespace compiledasset\n{\n";
-    write_file( "w:/code/compiled_assets.cpp", preContent, bs::string_length( preContent ) );
+    char const preContent[] = "#pragma warning(push)\r\n#pragma warning(disable:4309)\r\n#pragma warning(push)\r\n#pragma warning(disable:4838)\r\nnamespace compiledasset\r\n{";
+    write_file( "w:/code/compiled_assets", preContent, bs::string_length( preContent ) );
 
     HexArrayString hexArray = generate_hex_array_string( (u8 const*) ttf.data, (u32) ttf.size, "DEFAULT_FONT" );
-    append_file( "w:/code/compiled_assets.cpp", hexArray.data, hexArray.size );
+    append_file( "w:/code/compiled_assets", hexArray.data, hexArray.size );
     bs::memory::free( hexArray.data );
     bs::memory::free( ttf.data );
 
-
-    char const postContent[] = "};\n#pragma warning(pop)\n#pragma warning(pop)\n";
-    append_file( "w:/code/compiled_assets.cpp", postContent, bs::string_length( postContent ) );
-
-
-    //filething( "w:/data/bs.ttf" );
-
-
+    char const postContent[] = "};\r\n#pragma warning(pop)\r\n#pragma warning(pop)\r\n";
+    append_file( "w:/code/compiled_assets", postContent, bs::string_length( postContent ) );
   }
+
   // u32 write_file( char const* filepath, void const* data, u32 size )
   // {
   //   u32 result = 1;
