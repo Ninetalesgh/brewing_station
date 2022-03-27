@@ -1,7 +1,7 @@
 #pragma once
 
 #include <core/bsdebuglog.h>
-
+#include <core/bsgraphics.h>
 #include <core/bsnet.h>
 #include <core/bsfile.h>
 #include <core/bstask.h>
@@ -61,6 +61,8 @@ namespace platform
   //graphics
   ///////////////////////////////////////////////////////////////////////////////
 
-
+  bs::graphics::TextureID allocate_texture( u32 const* pixel, s32 width, s32 height );
+  void free_texture( bs::graphics::TextureID );
+  void render( bs::graphics::RenderTarget*, bs::graphics::RenderGroup*, bs::graphics::Camera* );
 
 };

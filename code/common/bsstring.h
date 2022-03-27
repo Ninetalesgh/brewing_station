@@ -13,81 +13,25 @@ namespace bs
     s32 capacity;
   };
 
-  INLINE u32 string_length( char const* string )
-  {
-    char const* reader = string;
-    while ( *reader++ != '\0' ) {}
-    return u32( reader - string ) - 1;
-  }
+  //returns the length of the string, not counting the \0
+  u32 string_length( char const* string );
 
-  INLINE u32 string_match( String const& a, String const& b )
-  {
-    u32 result = 1;
-    s32 capacity = min( a.capacity, b.capacity );
-    for ( s32 i = 0; i < capacity; ++i )
-    {
-      if ( a.data[i] != b.data[i] )
-      {
-        result = 0;
-        break;
-      }
-      else if ( a.data[i] == '\0' )
-      {
-        break;
-      }
-    }
+  //returns the number of utf8 characters in the string, not counting the \0
+  u32 string_utf8_length( char const* utf8String );
 
-    return result;
-  }
+  //returns 1 if the strings match
+  //returns 0 if they don't
+  u32 string_match( char const* a, char const* b );
+  u32 string_match( String const& a, String const& b );
 
-  INLINE u32 string_match( char const* a, char const* b )
-  {
-    if ( a == nullptr || b == nullptr ) return 0;
+  //returns pointer to where subString begins in string
+  //returns nullptr if the subString is not part of string
+  char const* string_contains( char const* string, char const* subString );
 
-    while ( *a == *b )
-    {
-      if ( *a == '\0' ) return 1;
-      ++a;
-      ++b;
-    }
-    return 0;
-  }
+  //returns the next character in the string after parsing the codepoint
+  char const* parse_utf8( char const* utf8String, s32* out_codepoint );
 
-  u32 string_contains( char const* string, char const* subString )
-  {
-    if ( string == nullptr || subString == nullptr ) return 0;
-
-    char const* reader = string;
-    u32 result = 0;
-
-    while ( *reader != '\0' )
-    {
-      if ( *reader == *subString )
-      {
-        char const* a = reader;
-        char const* b = subString;
-        while ( *a == *b )
-        {
-          ++a;
-          ++b;
-        }
-
-        if ( *b == '\0' )
-        {
-          result = 1;
-          break;
-        }
-
-        reader = a;
-      }
-      else
-      {
-        ++reader;
-      }
-    }
-
-    return result;
-  }
+  s32 get_unicode_codepoint( char const* utf8String, s32* out_extraBytes = nullptr );
 
   template<bool internal, typename Arg> INLINE s32 string_format( String to, Arg value );
   template<typename Arg, typename... Args>
@@ -440,5 +384,162 @@ namespace bs
 
       return result + string_format<true, char const*>( { to.data, to.capacity - result }, tmpTo );
     }
+  }
+
+  INLINE u32 string_length( char const* string )
+  {
+    char const* reader = string;
+    while ( *reader++ != '\0' ) {}
+    return u32( reader - string ) - 1;
+  }
+
+  INLINE u32 string_utf8_length( char const* utf8String )
+  {
+    u32 result = 0;
+    while ( *utf8String )
+    {
+      s32 codepoint;
+      utf8String = parse_utf8( utf8String, &codepoint );
+      ++result;
+    }
+    return result;
+  }
+
+  INLINE u32 string_match( String const& a, String const& b )
+  {
+    u32 result = 1;
+    s32 capacity = min( a.capacity, b.capacity );
+    for ( s32 i = 0; i < capacity; ++i )
+    {
+      if ( a.data[i] != b.data[i] )
+      {
+        result = 0;
+        break;
+      }
+      else if ( a.data[i] == '\0' )
+      {
+        break;
+      }
+    }
+
+    return result;
+  }
+
+  INLINE u32 string_match( char const* a, char const* b )
+  {
+    if ( a == nullptr || b == nullptr )
+    {
+      return 0;
+    }
+
+    u32 result = 0;
+    while ( *a == *b )
+    {
+      if ( *a == '\0' )
+      {
+        result = 1;
+        break;
+      }
+
+      ++a;
+      ++b;
+    }
+
+    if ( (*a) * (*b) == 0 )
+    {
+      result = 1;
+    }
+
+    return 0;
+  }
+
+  char const* string_contains( char const* string, char const* subString )
+  {
+    if ( string == nullptr || subString == nullptr ) return 0;
+
+    char const* result = nullptr;
+    char const* reader = string;
+
+    while ( *reader != '\0' )
+    {
+      if ( *reader == *subString )
+      {
+        char const* a = reader;
+        char const* b = subString;
+        while ( *a == *b )
+        {
+          ++a;
+          ++b;
+        }
+
+        if ( *b == '\0' )
+        {
+          result = reader;
+          break;
+        }
+
+        reader = a;
+      }
+      else
+      {
+        ++reader;
+      }
+    }
+
+    return result;
+  }
+
+  s32 get_unicode_codepoint( char const* utf8String, s32* out_extraBytes /*= nullptr*/ )
+  {
+    s32 result = 0;
+    u8 const* reader = (u8 const*) utf8String;
+    u8 const extraByteCheckMask = 0b10000000;
+    u8 const extraByteValueMask = 0b00111111;
+
+    u8 unicodeMask = 0b11000000;
+
+    s32 extraBytes = 0;
+    result = *(u8*) (reader);
+    while ( *utf8String & unicodeMask )
+    {
+      unicodeMask >>= 1;
+      ++reader;
+      if ( (*reader & ~extraByteValueMask) == extraByteCheckMask )
+      {
+        result <<= 6;
+        result += (*reader) & extraByteValueMask;
+
+        ++extraBytes;
+      }
+      else
+      {
+        break;
+      }
+    }
+
+    if ( extraBytes )
+    {
+      s32 maskLength = 1 << (5 * extraBytes + 6);
+      result &= (maskLength - 1);
+    }
+    else
+    {
+      //TODO maybe check whether it's a valid 1 byte character? aka: < 128
+    }
+
+    if ( out_extraBytes ) *out_extraBytes = extraBytes;
+    return result;
+  }
+
+  char const* parse_utf8( char const* utf8String, s32* out_codepoint )
+  {
+    char const* nextChar = nullptr;
+    if ( *utf8String != '\0' )
+    {
+      s32 extraBytes = 0;
+      *out_codepoint = get_unicode_codepoint( utf8String, &extraBytes );
+      nextChar = utf8String + 1 + extraBytes;
+    }
+    return nextChar;
   }
 };

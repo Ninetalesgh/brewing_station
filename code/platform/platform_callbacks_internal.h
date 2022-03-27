@@ -23,6 +23,13 @@ namespace platform
     using push_async_task = u32( bs::Task const&, bs::TaskState volatile* out_taskState );
     using push_synced_task = u32( bs::Task const&, bs::TaskState volatile* out_taskState );
     using complete_synced_tasks = void();
+
+    using allocate_texture = bs::graphics::TextureID( u32 const* pixel, s32 width, s32 height );
+    using free_texture = void( bs::graphics::TextureID );
+    using render = void( bs::graphics::RenderTarget*, bs::graphics::RenderGroup*, bs::graphics::Camera* );
+
+    using bind_shader = void();
+    using unbind_shader = void();
   };
 
   struct Callbacks
@@ -39,6 +46,10 @@ namespace platform
     callbackfunctionsignature::get_file_info* ptr_get_file_info;
     callbackfunctionsignature::load_file_into_memory* ptr_load_file_into_memory;
     callbackfunctionsignature::write_file* ptr_write_file;
+
+    callbackfunctionsignature::allocate_texture* ptr_allocate_texture;
+    callbackfunctionsignature::free_texture* ptr_free_texture;
+    callbackfunctionsignature::render* ptr_render;
 
     bs::memory::Arena* mainArena;
   };

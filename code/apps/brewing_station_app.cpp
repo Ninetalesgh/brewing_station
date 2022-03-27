@@ -79,6 +79,23 @@ namespace platform
   {
     platform::callbacks.mainArena->free( ptr );
   }
+
+  INLINE bs::graphics::TextureID allocate_texture( u32 const* pixel, s32 width, s32 height )
+  {
+    platform::callbacks.ptr_allocate_texture( pixel, width, height );
+  }
+
+  INLINE void free_texture( bs::graphics::TextureID id )
+  {
+    platform::callbacks.ptr_free_texture( id );
+  }
+
+  INLINE void render( bs::graphics::RenderTarget* rt, bs::graphics::RenderGroup* rg, bs::graphics::Camera* cam )
+  {
+    platform::callbacks.ptr_render( rt, rg, cam );
+  }
+
+
 };
 
 

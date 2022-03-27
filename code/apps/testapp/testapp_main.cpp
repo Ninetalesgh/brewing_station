@@ -1,5 +1,6 @@
 #include <platform/platform.h>
 
+#include <core/bsgraphics.h>
 #include <core/bsmemory.h>
 namespace bs
 {
@@ -24,12 +25,14 @@ namespace bs
       BREAK;
     }
 
-    //u32 get_file_info( char const* filename, bs::FileInfo* out_FileInfo );
-   // bs::ReadFileResult read_file( char const* filename, u32 maxSize, void* out_data );
-   // void free_file( void* filename );
-   // u32 write_file( bs::WriteFileParameter const& );
+    //  graphics::allocate_texture( nullptr, 30, 30 );
 
-  //    platform::read_file( "w:/data/Inconsolata.ttf" );
+      //u32 get_file_info( char const* filename, bs::FileInfo* out_FileInfo );
+     // bs::ReadFileResult read_file( char const* filename, u32 maxSize, void* out_data );
+     // void free_file( void* filename );
+     // u32 write_file( bs::WriteFileParameter const& );
+
+    //    platform::read_file( "w:/data/Inconsolata.ttf" );
 
   }
 

@@ -293,6 +293,14 @@ namespace platform
   {
     global::defaultArena->free( ptr );
   }
+  INLINE bs::graphics::TextureID allocate_texture( u32 const* pixel, s32 width, s32 height )
+  {
+    return bs::opengl::allocate_texture( pixel, width, height );
+  }
+  INLINE void free_texture( bs::graphics::TextureID id )
+  {
+    return bs::opengl::free_texture( id );
+  }
 };
 #endif
 

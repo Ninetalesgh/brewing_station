@@ -3,7 +3,7 @@
 #pragma comment(lib,"Gdi32.lib")
 #pragma comment(lib,"opengl32.lib")
 
-#include <platform/platform_renderer.h>
+#include <core/bsgraphics.h>
 
 #include <opengl_ext.h>
 #include <core/bsfont.h>
@@ -40,8 +40,10 @@ namespace bs
     OpenGlInfo const* get_info();
     void create_opengl_context_for_worker_thread();
 
-    TextureID allocate_texture( u32 const* pixel, s32 width, s32 height );
-    void deallocate_texture( TextureID texture );
+    graphics::TextureID allocate_texture( u32 const* pixel, s32 width, s32 height );
+    void free_texture( graphics::TextureID texture );
+
+    void render( bs::graphics::RenderTarget*, bs::graphics::RenderGroup*, bs::graphics::Camera* );
   };
 
 
@@ -167,8 +169,8 @@ namespace bs
       global::info.version = (char const*) glGetString( GL_VERSION );
       global::info.shadingLanguageVersion = (char const*) glGetString( GL_SHADING_LANGUAGE_VERSION );
       global::info.extensions = (char const*) glGetString( GL_EXTENSIONS );
-      global::info.GL_EXT_texture_sRGB = bs::string_contains( global::info.extensions, "GL_EXT_texture_sRGB" );
-      global::info.GL_EXT_framebuffer_sRGB = bs::string_contains( global::info.extensions, "GL_EXT_framebuffer_sRGB" );
+      global::info.GL_EXT_texture_sRGB = bs::string_contains( global::info.extensions, "GL_EXT_texture_sRGB" ) != nullptr;
+      global::info.GL_EXT_framebuffer_sRGB = bs::string_contains( global::info.extensions, "GL_EXT_framebuffer_sRGB" ) != nullptr;
     };
 
     u32 set_pixel_format_for_dc( HDC deviceContext )
@@ -325,29 +327,6 @@ namespace bs
       }
     }
 
-    TextureID allocate_texture( u32 const* pixel, s32 width, s32 height )
-    {
-      //TODO use PBO to skip one copy step
-      GLuint textureHandle = 0;
-      glGenTextures( 1, &textureHandle );
-      glBindTexture( GL_TEXTURE_2D, textureHandle );
-      glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, pixel );
-      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
-      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
-      glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
-      glBindTexture( GL_TEXTURE_2D, 0 );
-
-      return (TextureID) textureHandle;
-    }
-
-    void deallocate_texture( TextureID texture )
-    {
-      GLuint handle = (GLuint) texture;
-      glDeleteTextures( 1, &handle );
-    }
-
     u32* upscale_glyph( bs::font::Glyph* glyph )
     {
       s32 width = glyph->width;
@@ -360,9 +339,7 @@ namespace bs
         for ( s32 j = 0; j < width; ++j )
         {
           s32 index = j + i * width;
-          u8 ff = 0xff;
           result[index] = color::rgba( data[index], data[index], data[index], data[index] );
-          //result[index] = color::rgba( ff, 0, 0, ff );
         }
       }
 
@@ -371,18 +348,32 @@ namespace bs
 
     void tick()
     {
-      static TextureID f;
+      static graphics::TextureID f;
       //  thread::wait_if_requested( &parameter.threadInfo );
       if ( !::global::appData.currentFrameIndex )
       {
-        glViewport( 200, -10, 700, 600 );
         glClearColor( 1.0f, 0.0f, 1.0f, 0.0f );
 
-        bs::font::Glyph* test = bs::font::create_glyph( ::global::defaultGlyphTable, 97 );
-        u32* ptr = upscale_glyph( test );
-        f = allocate_texture( ptr, test->width, test->height );
-        bs::memory::free( ptr );
-        bs::memory::free( test );
+        // bs::font::Glyph* test = bs::font::create_glyph( ::global::defaultGlyphTable, 97 );
+         //u32* ptr = upscale_glyph( test );
+        // bs::memory::free( ptr );
+         //bs::memory::free( test );
+
+        char const chars[] = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+        font::GlyphSheetRect* rects;
+        s32 rectCount;
+        //f = bs::font::create_glyph_sheet( ::global::defaultGlyphTable, chars, &rects, &rectCount );
+
+        font::GlyphSheet* sheet = bs::font::create_glyph_sheet_internal( ::global::defaultGlyphTable, chars, &rects, &rectCount );
+        f = platform::allocate_texture( sheet->data, sheet->width, sheet->height );
+        glViewport( 200, 0, sheet->width, sheet->height );
+        memory::free( sheet );
+
+        //f = allocate_texture( sheet->data, sheet->width, sheet->height );
+        //memory::free( sheet );
+
+        //  s32 whut = bs::string_length( chars );
+        //  whut = 2;
       }
 
       glBindTexture( GL_TEXTURE_2D, f );
@@ -427,7 +418,33 @@ namespace bs
       SwapBuffers( global::deviceContext );
     }
 
+    graphics::TextureID allocate_texture( u32 const* pixel, s32 width, s32 height )
+    {
+      //TODO use PBO to skip one copy step
+      GLuint textureHandle = 0;
+      glGenTextures( 1, &textureHandle );
+      glBindTexture( GL_TEXTURE_2D, textureHandle );
+      glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, pixel );
+      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
+      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
+      glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+      glBindTexture( GL_TEXTURE_2D, 0 );
 
+      return (graphics::TextureID) textureHandle;
+    }
+
+    void free_texture( graphics::TextureID texture )
+    {
+      GLuint handle = (GLuint) texture;
+      glDeleteTextures( 1, &handle );
+    }
+
+    void render( bs::graphics::RenderTarget* target, bs::graphics::RenderGroup* group, bs::graphics::Camera* camera )
+    {
+
+    }
   };
 }
 

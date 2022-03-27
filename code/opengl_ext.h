@@ -1,9 +1,11 @@
 #pragma once
 
 #include <gl/gl.h>
+#include <common/bscommon.h>
+
 
 using GLchar = char;
-using GLsizeiptr = ptrdiff_t;
+using GLsizeiptr = s64;
 
 #define GL_NO_ERROR                       0
 #define GL_INVALID_ENUM                   0x0500
@@ -170,3 +172,4 @@ namespace opengl_ext
     return p;
   }
 }
+

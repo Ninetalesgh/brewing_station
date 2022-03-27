@@ -12,16 +12,9 @@
 
 //asset loaded in game
 
-using TextureID = u32;
 namespace bs
 {
-  struct Texture
-  {
-    TextureID vramID;
-    u32* pixel;
-    s32 width;
-    s32 height;
-  };
+
 };
 
 ///////////////////////////////////////////////////////////////////////////

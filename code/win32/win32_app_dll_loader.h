@@ -2,6 +2,7 @@
 
 #include "win32_util.h"
 #include "win32_thread.h"
+#include "win32_opengl.h"
 #include <core/bsdebuglog.h>
 
 #define dll_log_info(...) log_info("[WIN32_DLL] ", ...)
@@ -96,13 +97,18 @@ namespace win32
               prm.ptr_push_async_task = &win32::push_async_task;
               prm.ptr_push_synced_task = &win32::push_synced_task;
               prm.ptr_complete_synced_tasks = &win32::complete_synced_tasks;
-              //TODO
               prm.ptr_get_file_info = &win32::get_file_info;
               prm.ptr_load_file_into_memory = &win32::load_file_into_memory;
               prm.ptr_write_file = &win32::write_file;
 
+              prm.ptr_allocate_texture = &bs::opengl::allocate_texture;
+              prm.ptr_free_texture = &bs::opengl::free_texture;
+              prm.ptr_render = &bs::opengl::render;
+
+              //TODO
               //  prm.send_udp = &win32::send_udp;
               //  prm.send_tcp = &win32::send_tcp;
+
 
               prm.mainArena = global::defaultArena;
 
