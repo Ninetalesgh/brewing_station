@@ -14,6 +14,12 @@
 //time
 #pragma comment(lib,"winmm.lib")
 
+void brewing_station_loop();
+void brewing_station_main();
+void init_compiled_assets();
+LRESULT CALLBACK brewing_station_main_window_callback( HWND window, UINT message, WPARAM wParam, LPARAM lParam );
+
+
 void brewing_station_loop()
 {
   u64 debug_CyclesForFrame         = 0;
@@ -174,7 +180,43 @@ void brewing_station_loop()
   }
 }
 
-void init_compiled_assets();
+LRESULT CALLBACK brewing_station_main_window_callback( HWND window, UINT message, WPARAM wParam, LPARAM lParam )
+{
+  LRESULT result = 0;
+  switch ( message )
+  {
+    case WM_SIZE:
+    {
+      global::mainWindow.size.x = s32( LOWORD( lParam ) );
+      global::mainWindow.size.y = s32( HIWORD( lParam ) );
+
+      break;
+    }
+    case WM_MOVE:
+    {
+      global::mainWindow.pos.x = s32( LOWORD( lParam ) );
+      global::mainWindow.pos.y = s32( HIWORD( lParam ) );
+      break;
+    }
+    case WM_EXITSIZEMOVE:
+    {
+      opengl::resize_viewport();
+      break;
+    }
+    case WM_DESTROY:
+    {
+      global::running = false;
+      break;
+    }
+    default:
+    {
+      result = DefWindowProc( window, message, wParam, lParam );
+      break;
+    }
+  }
+
+  return result;
+}
 
 void brewing_station_main()
 {
@@ -194,7 +236,6 @@ void brewing_station_main()
 
   win32::load_xInput();
 
-  HWND window = 0;
   {
     win32::WindowInitParameter parameter {};
     parameter.windowName = L"tmp_window_name";
@@ -215,12 +256,12 @@ void brewing_station_main()
     parameter.wndClass.lpszClassName = L"bswnd";
     //parameter.wndClass.hIconSm       =;
 
-    window = win32::init_window( parameter );
+    global::mainWindow.handle = win32::init_window( parameter );
 
-    assert( window != 0 );
-    HDC deviceContext = GetDC( window );
+    assert( global::mainWindow.handle != 0 );
+    HDC deviceContext = GetDC( global::mainWindow.handle );
     assert( deviceContext != 0 );
-    bs::opengl::init( deviceContext );
+    opengl::init( deviceContext );
   }
 
   void* buffer = VirtualAlloc( 0, (s64) global::APP_MEMORY_SIZE, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
@@ -265,7 +306,7 @@ void brewing_station_main()
     thread::pause_thread_if_requested( &global::mainThread );
     brewing_station_loop();
 
-    bs::opengl::tick();
+    opengl::tick();
 
 
     ++global::appData.currentFrameIndex;
@@ -325,11 +366,11 @@ namespace platform
   }
   INLINE bs::graphics::TextureID allocate_texture( u32 const* pixel, s32 width, s32 height )
   {
-    return bs::opengl::allocate_texture( pixel, width, height );
+    return opengl::allocate_texture( pixel, width, height );
   }
   INLINE void free_texture( bs::graphics::TextureID id )
   {
-    return bs::opengl::free_texture( id );
+    return opengl::free_texture( id );
   }
 };
 #endif

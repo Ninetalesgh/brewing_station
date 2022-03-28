@@ -1,7 +1,10 @@
-#include <platform/platform.h>
+
+#include <ui/bstextarea.h>
 
 #include <core/bsgraphics.h>
 #include <core/bsmemory.h>
+
+#include <platform/platform.h>
 namespace bs
 {
   void app_sample_sound( PrmAppSampleSound prm )
@@ -9,37 +12,23 @@ namespace bs
     BREAK;
   }
 
+  static ui::TextArea* testArea;
+
   void app_on_load( PrmAppOnLoad prm )
   {
-    //bs::AppData* appData = prm.appData;
 
-    char test2[64] = {};
-    char* test = (char*) memory::allocate( 64 );
-    memory::set( test, 1, 64 );
-    memory::copy( test, test2, 64 );
-    log_info( "test", string::length( "hello" ), string::length( "" ) );
+    //char const* text = "hello\ntest";
+    char const* text = "hello klara";
+    testArea = ui::create_text_area_from_text( text, nullptr, { 0,0 } );
 
-    bs::file::Data ttf;
-    if ( !platform::load_file_into_memory( "w:/data/bs.ttf", &ttf ) )
-    {
-      BREAK;
-    }
-
-    //  graphics::allocate_texture( nullptr, 30, 30 );
-
-      //u32 get_file_info( char const* filename, bs::FileInfo* out_FileInfo );
-     // bs::ReadFileResult read_file( char const* filename, u32 maxSize, void* out_data );
-     // void free_file( void* filename );
-     // u32 write_file( bs::WriteFileParameter const& );
-
-    //    platform::read_file( "w:/data/Inconsolata.ttf" );
 
   }
 
   void app_tick( PrmAppTick prm )
   {
+    graphics::RenderGroup rg = graphics::get_text_area_render_group( testArea );
 
-    log_info( "tkkkest", "lol" );
+    platform::render( nullptr, &rg, nullptr );
 
     // BREAK;
 

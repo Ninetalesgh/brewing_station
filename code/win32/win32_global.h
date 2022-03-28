@@ -51,6 +51,13 @@ namespace win32
     win32_app_receive_udp_packet* receive_udp_packet = stub::app_receive_udp_packet;
     win32_app_register_callbacks* register_callbacks = stub::app_register_callbacks;
   };
+
+  struct Window
+  {
+    HWND handle;
+    int2 pos;
+    int2 size;
+  };
 };
 
 namespace bs
@@ -67,6 +74,8 @@ namespace global
 
   static win32::xInputGetState* xInputGetState;
   static win32::xInputSetState* xInputSetState;
+
+  static win32::Window        mainWindow;
 
   static win32::AppDll         appDll;
   static bs::AppData           appData;

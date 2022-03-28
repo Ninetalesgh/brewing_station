@@ -5,11 +5,20 @@ namespace bs
 {
   namespace string
   {
-    //returns the length of the string, not counting the \0
-    u32 length( char const* string );
+    //returns the number of bytes in the string, not counting the \0
+    s32 length( char const* string );
 
     //returns the number of utf8 characters in the string, not counting the \0
-    u32 length_utf8( char const* utf8String );
+    s32 length_utf8( char const* utf8String );
+
+    //returns the number of lines in the string
+    s32 line_count( char const* string );
+
+    //returns the number of bytes until a \n or a \0, including it
+    s32 line_length( char const* string );
+
+    //returns the number of utf8 characters until a \n or a \0, including it
+    s32 line_length_utf8( char const* utf8String );
 
     //returns 1 if the strings match
     //returns 0 if they don't
@@ -380,14 +389,14 @@ namespace bs
       }
     }
 
-    INLINE u32 length( char const* string )
+    INLINE s32 length( char const* string )
     {
       char const* reader = string;
       while ( *reader++ != '\0' ) {}
       return u32( reader - string ) - 1;
     }
 
-    INLINE u32 length_utf8( char const* utf8String )
+    INLINE s32 length_utf8( char const* utf8String )
     {
       u32 result = 0;
       while ( *utf8String )
@@ -425,6 +434,42 @@ namespace bs
       }
 
       return 0;
+    }
+
+    INLINE s32 line_count( char const* string )
+    {
+      char const* reader = string;
+      s32 result = 1;
+      while ( *reader != '\0' )
+      {
+        if ( *reader == '\n' )
+        {
+          ++result;
+        }
+
+        ++reader;
+      }
+
+      return result;
+    }
+
+    INLINE s32 line_length( char const* string )
+    {
+      char const* reader = string;
+      while ( *reader != '\0' && *reader != '\n' ) { ++reader; }
+      return u32( reader - string );
+    }
+
+    INLINE s32 line_length_utf8( char const* utf8String )
+    {
+      u32 result = 1;
+      while ( *utf8String && *utf8String != '\n' )
+      {
+        s32 codepoint;
+        utf8String = parse_utf8( utf8String, &codepoint );
+        ++result;
+      }
+      return result;
     }
 
     char const* contains( char const* string, char const* subString )
@@ -505,7 +550,7 @@ namespace bs
       return result;
     }
 
-    char const* parse_utf8( char const* utf8String, s32* out_codepoint )
+    INLINE char const* parse_utf8( char const* utf8String, s32* out_codepoint )
     {
       char const* nextChar = nullptr;
       if ( *utf8String != '\0' )
@@ -513,6 +558,10 @@ namespace bs
         s32 extraBytes = 0;
         *out_codepoint = get_unicode_codepoint( utf8String, &extraBytes );
         nextChar = utf8String + 1 + extraBytes;
+      }
+      else
+      {
+        *out_codepoint = 0;
       }
       return nextChar;
     }

@@ -4,25 +4,6 @@
 #include "win32_thread.h"
 #include "win32_global.h"
 
-LRESULT CALLBACK brewing_station_main_window_callback( HWND window, UINT message, WPARAM wParam, LPARAM lParam )
-{
-  LRESULT result = 0;
-  switch ( message )
-  {
-    case WM_DESTROY:
-    {
-      global::running = false;
-      break;
-    }
-    default:
-    {
-      result = DefWindowProc( window, message, wParam, lParam );
-      break;
-    }
-  }
-
-  return result;
-}
 
 namespace win32
 {

@@ -20,10 +20,10 @@ namespace bs
     struct Glyph
     {
       s32 codepoint;
-      float2 uvBegin;
-      float2 uvSize;
-      s32 advance;
-      s32 lsb;
+      int2 uvBegin;
+      int2 uvSize;
+      float advance;
+      float lsb;
       s32 offsetX;
       s32 offsetY;
     };
@@ -147,15 +147,19 @@ namespace bs
 
         if ( glyphIndex > 0 )
         {
-          stbtt_GetGlyphHMetrics( fontInfo, glyphIndex, &result.advance, &result.lsb );
+          s32 advance;
+          s32 lsb;
+          stbtt_GetGlyphHMetrics( fontInfo, glyphIndex, &advance, &lsb );
 
           s32 ix0, ix1, iy0, iy1;
           stbtt_GetGlyphBitmapBoxSubpixel( fontInfo, glyphIndex, scale, scale, 0, 0, &ix0, &iy0, &ix1, &iy1 );
-          result.uvSize.x = (float) (ix1 - ix0);
-          result.uvSize.y = (float) (iy1 - iy0);
+          result.uvSize.x = (ix1 - ix0);
+          result.uvSize.y = (iy1 - iy0);
           result.offsetX = ix0;
           result.offsetY = iy0;
 
+          result.advance = float( advance ) * scale;
+          result.lsb = float( lsb );
         }
         else // !( glyphIndex > 0 )
         {
@@ -276,7 +280,7 @@ namespace bs
 
         if ( currentRow.x + (s32) newGlyph.uvSize.x > MAX_WIDTH )
         {
-          sheetDims.y += currentRow.y;
+          sheetDims.y += currentRow.y + 1;
           sheetDims.x = max( sheetDims.x, currentRow.x );
           currentRow = { 0, 0 };
         }
@@ -284,7 +288,7 @@ namespace bs
         newGlyph.uvBegin = { currentRow.x, sheetDims.y };
         rects[rectsIndex++] = newGlyph;
 
-        currentRow.x += (s32) newGlyph.uvSize.x;
+        currentRow.x += (s32) newGlyph.uvSize.x + 1;
         currentRow.y = max( currentRow.y, (s32) newGlyph.uvSize.y );
       }
 
@@ -323,13 +327,13 @@ namespace bs
         }
       }
 
-      float width = (float) sheetBMP->width;
-      float height = (float) sheetBMP->height;
-      for ( s32 i = 0; i < glyphCount; ++i )
-      {
-        rects[i].uvBegin = { rects[i].uvBegin.x / width, rects[i].uvBegin.y / height };
-        rects[i].uvSize = { rects[i].uvSize.x / width, rects[i].uvSize.y / height };
-      }
+      // float width = (float) sheetBMP->width;
+      // float height = (float) sheetBMP->height;
+      // for ( s32 i = 0; i < glyphCount; ++i )
+      // {
+      //   rects[i].uvBegin = { rects[i].uvBegin.x / width, rects[i].uvBegin.y / height };
+      //   rects[i].uvSize = { rects[i].uvSize.x / width, rects[i].uvSize.y / height };
+      // }
 
       resultSheet->glyphs =     rects;
       resultSheet->glyphCount = glyphCount;

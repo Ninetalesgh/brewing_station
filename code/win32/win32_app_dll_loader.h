@@ -101,9 +101,9 @@ namespace win32
               prm.ptr_load_file_into_memory = &win32::load_file_into_memory;
               prm.ptr_write_file = &win32::write_file;
 
-              prm.ptr_allocate_texture = &bs::opengl::allocate_texture;
-              prm.ptr_free_texture = &bs::opengl::free_texture;
-              prm.ptr_render = &bs::opengl::render;
+              prm.ptr_allocate_texture = &opengl::allocate_texture;
+              prm.ptr_free_texture = &opengl::free_texture;
+              prm.ptr_render = &opengl::render;
 
               //TODO
               //  prm.send_udp = &win32::send_udp;

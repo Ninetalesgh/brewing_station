@@ -4,10 +4,29 @@
 
 namespace bs
 {
+  namespace ui { struct TextArea; }
+
   namespace graphics
   {
     using TextureID = u32;
-    struct RenderGroup;
+
+    struct RenderGroup
+    {
+      enum : u32
+      {
+        TEXT_AREA,
+      } type;
+      void* renderObject;
+    };
+
+    RenderGroup get_text_area_render_group( ui::TextArea* ta )
+    {
+      RenderGroup result {};
+      result.type = RenderGroup::TEXT_AREA;
+      result.renderObject = ta;
+      return result;
+    }
+
     struct RenderTarget;
 
     struct Rect
@@ -40,15 +59,9 @@ namespace bs
 {
   namespace graphics
   {
-    struct RenderGroup
-    {
-      Rect objects[4];
-      TextureID textures[4];
-    };
-
     struct RenderTarget
     {
-      Rect viewport;
+      void* placeholder;
     };
   };
 };
