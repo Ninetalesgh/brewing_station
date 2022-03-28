@@ -1,45 +1,9 @@
 #pragma once
-#include <common/bsmath.h>
+
 
 namespace bs
 {
-  struct ButtonState
-  {
-    s32 halfTransitionCount;
-    u32 endedDown;
-  };
-
-  struct ControllerInput
-  {
-    float2 start;
-    float2 min;
-    float2 max;
-    float2 end;
-
-    union
-    {
-      ButtonState button[6];
-      struct
-      {
-        ButtonState up;
-        ButtonState down;
-        ButtonState left;
-        ButtonState right;
-        ButtonState leftShoulder;
-        ButtonState rightShoulder;
-      };
-    };
-  };
-
-  struct MousePosition
-  {
-    int2 start;
-    int2 end;
-    int2 min;
-    int2 max;
-  };
-
-  struct Input
+  namespace input
   {
     enum : u8
     {
@@ -132,12 +96,51 @@ namespace bs
       STATE_COUNT              = 0xff
     };
 
-    ControllerInput controller[4];
-    MousePosition mousePos[1];
-    s32 mouseWheelDelta;
+    struct ControllerButton
+    {
+      s32 halfTransitionCount;
+      u32 endedDown;
+    };
 
-    //mouse & keyboard
-    u8 down[STATE_COUNT];
-    u8 held[STATE_COUNT];
+    struct Controller
+    {
+      float2 start;
+      float2 min;
+      float2 max;
+      float2 end;
+
+      union
+      {
+        ControllerButton button[6];
+        struct
+        {
+          ControllerButton up;
+          ControllerButton down;
+          ControllerButton left;
+          ControllerButton right;
+          ControllerButton leftShoulder;
+          ControllerButton rightShoulder;
+        };
+      };
+    };
+
+    struct Mouse
+    {
+      int2 start;
+      int2 end;
+      int2 min;
+      int2 max;
+    };
+
+    struct State
+    {
+      Controller controller[4];
+      Mouse mousePos[1];
+      s32 mouseWheelDelta;
+
+      //mouse & keyboard
+      u8 down[STATE_COUNT];
+      u8 held[STATE_COUNT];
+    };
   };
 };

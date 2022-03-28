@@ -17,7 +17,7 @@ namespace bs
     char* test = (char*) memory::allocate( 64 );
     memory::set( test, 1, 64 );
     memory::copy( test, test2, 64 );
-    log_info( "test", string_length( "hello" ), string_length( "" ) );
+    log_info( "test", string::length( "hello" ), string::length( "" ) );
 
     bs::file::Data ttf;
     if ( !platform::load_file_into_memory( "w:/data/bs.ttf", &ttf ) )

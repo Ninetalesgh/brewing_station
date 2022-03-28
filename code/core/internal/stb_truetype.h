@@ -11,7 +11,7 @@
 #define STBTT_free(x,u)    ((void)(u),bs::memory::free(x))
 
 #define STBTT_assert(x)    assert(x)
-#define STBTT_strlen(x)    bs::string_length(x)
+#define STBTT_strlen(x)    bs::string::length(x)
 
 #define STBTT_memcpy       bs::memory::copy
 #define STBTT_memset       bs::memory::set

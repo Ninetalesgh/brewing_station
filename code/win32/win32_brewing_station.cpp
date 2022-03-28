@@ -26,8 +26,8 @@ void brewing_station_loop()
     PROFILE_SCOPE( debug_CyclesForFrame );
 
     {
-      bs::Input& input = global::appData.input;
-      memset( input.down, 0, bs::Input::STATE_COUNT );
+      bs::input::State& input = global::appData.input;
+      memset( input.down, 0, bs::input::STATE_COUNT );
       MSG message;
       while ( PeekMessage( &message, 0, 0, 0, PM_REMOVE ) )
       {
@@ -37,7 +37,7 @@ void brewing_station_loop()
           case WM_XBUTTONUP:
           {
             assert( message.wParam == 65568 || message.wParam == 131136 );
-            u8 code = message.wParam == 65568 ? bs::Input::MOUSE_4 : bs::Input::MOUSE_5;
+            u8 code = message.wParam == 65568 ? bs::input::MOUSE_4 : bs::input::MOUSE_5;
             u8 isDown = (u8) !(message.lParam & (1 << 31));
             u8 wasDown = input.held[code];
             input.down[code] = ((!wasDown) && isDown);
@@ -69,7 +69,7 @@ void brewing_station_loop()
           case WM_KEYDOWN:
           case WM_KEYUP:
           {
-            assert( message.wParam < bs::Input::STATE_COUNT );
+            assert( message.wParam < bs::input::STATE_COUNT );
             u64 code = message.wParam;
 
             u8 isDown = (u8) !(message.lParam & (1 << 31));
@@ -80,16 +80,16 @@ void brewing_station_loop()
             {
               switch ( code )
               {
-                case bs::Input::KEY_F9:
+                case bs::input::KEY_F9:
                   break;
-                case bs::Input::KEY_F10:
+                case bs::input::KEY_F10:
                   break;
-                case bs::Input::KEY_F11:
+                case bs::input::KEY_F11:
                   break;
-                case bs::Input::KEY_F12:
+                case bs::input::KEY_F12:
                   // win32::ServerHandshake( global::netData.udpSocket, global::netData.server, global_debugUsername );
                   break;
-                case bs::Input::KEY_ESCAPE:
+                case bs::input::KEY_ESCAPE:
                   global::running = false;
                   break;
                 default:
@@ -98,7 +98,7 @@ void brewing_station_loop()
               }
             }
 
-            if ( input.held[bs::Input::KEY_ALT] && input.down[bs::Input::KEY_F4] ) global::running = false;
+            if ( input.held[bs::input::KEY_ALT] && input.down[bs::input::KEY_F4] ) global::running = false;
 
             break;
           }
@@ -174,6 +174,8 @@ void brewing_station_loop()
   }
 }
 
+void init_compiled_assets();
+
 void brewing_station_main()
 {
   // win32::fetch_paths();
@@ -229,7 +231,12 @@ void brewing_station_main()
   global::mainThread.id = thread::get_current_thread_id();
   global::mainThread.name = "thread_main";
 
-  global::defaultGlyphTable = bs::font::create_glyph_table_from_ttf( compiledasset::DEFAULT_FONT );
+  win32::init_worker_threads();
+
+  result = (s32) timeBeginPeriod( 1 );
+  assert( result == TIMERR_NOERROR );
+
+  init_compiled_assets();
 
   #ifdef BS_RELEASE_BUILD
   {
@@ -252,11 +259,6 @@ void brewing_station_main()
   }
   #endif
 
-  win32::init_worker_threads();
-
-  result = (s32) timeBeginPeriod( 1 );
-  assert( result == TIMERR_NOERROR );
-
   global::running = true;
   while ( global::running )
   {
@@ -269,6 +271,34 @@ void brewing_station_main()
     ++global::appData.currentFrameIndex;
   }
 }
+
+#include <compiled_assets>
+
+void init_compiled_assets()
+{
+  //switch to either initialize already compiled assets (1) or compile them (0)
+  #if 1
+
+  {
+    char const chars[] = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+    global::defaultGlyphTable = bs::font::create_glyph_table_from_ttf( compiledasset::DEFAULT_FONT );
+    bs::font::set_scale_for_glyph_creation( global::defaultGlyphTable, 64.0f );
+    global::defaultGlyphSheet = bs::font::create_glyph_sheet( global::defaultGlyphTable, chars );
+  }
+
+  #else
+  bs::file::Data ttf;
+  win32::load_file_into_memory( "w:/data/bs.ttf", &ttf );
+
+  win32::AssetToCompile assets[] =
+  {
+    {"DEFAULT_FONT", ttf.data,(u32) ttf.size},
+  };
+
+  win32::generate_compiled_assets_file( assets, array_count( assets ) );
+  #endif
+}
+
 
 #ifdef BS_RELEASE_BUILD
 #include <apps/brewing_Station_app.cpp>
@@ -304,5 +334,3 @@ namespace platform
 };
 #endif
 
-
-#include <compiled_assets>

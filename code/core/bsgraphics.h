@@ -7,6 +7,8 @@ namespace bs
   namespace graphics
   {
     using TextureID = u32;
+    struct RenderGroup;
+    struct RenderTarget;
 
     struct Rect
     {
@@ -14,20 +16,16 @@ namespace bs
       float2 size;
     };
 
-    struct RenderGroup
-    {
-      Rect objects[4];
-      TextureID textures[4];
-    };
-
-    struct RenderTarget
-    {
-
-    };
-
     struct Camera
     {
+      float3 pos;
+    };
 
+    struct Bitmap
+    {
+      u32* pixel;
+      s32 width;
+      s32 height;
     };
   };
 };
@@ -38,11 +36,19 @@ namespace bs
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
-
 namespace bs
 {
   namespace graphics
   {
+    struct RenderGroup
+    {
+      Rect objects[4];
+      TextureID textures[4];
+    };
 
+    struct RenderTarget
+    {
+      Rect viewport;
+    };
   };
 };

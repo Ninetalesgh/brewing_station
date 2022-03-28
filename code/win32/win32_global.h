@@ -55,7 +55,7 @@ namespace win32
 
 namespace bs
 {
-  namespace font { struct GlyphTable; };
+  namespace font { struct GlyphTable; struct GlyphSheet; };
 };
 namespace global
 {
@@ -73,6 +73,7 @@ namespace global
 
   static bs::memory::Arena* defaultArena;
   static bs::font::GlyphTable* defaultGlyphTable;
+  static bs::font::GlyphSheet* defaultGlyphSheet;
 
   static u32                   running;
 
@@ -84,5 +85,5 @@ namespace global
 
 namespace compiledasset
 {
-  extern char const DEFAULT_FONT[];
+  // extern char const DEFAULT_FONT[];
 };

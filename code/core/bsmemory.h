@@ -96,7 +96,6 @@ namespace bs
     {
       platform::free( ptr );
     }
-
     INLINE void* set( void* ptr, s32 value, u32 bytesToWrite )
     {
       for ( u32 i = 0; i < bytesToWrite; ++i )

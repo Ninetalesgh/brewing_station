@@ -1,8 +1,8 @@
 #pragma once
 
 #include "platform_callbacks.h"
-#include "platform_input.h"
 
+#include <core/bsinput.h>
 #include <core/bsnet.h>
 
 namespace bs
@@ -10,7 +10,7 @@ namespace bs
   struct AppData
   {
     u64 currentFrameIndex;
-    Input input;
+    input::State input;
     net::NetworkData network;
   };
 

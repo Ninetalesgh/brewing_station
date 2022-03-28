@@ -83,6 +83,8 @@ namespace bs
     u32 parse_ipv4( char const* from );
   };
 
-  template<> INLINE s32 string_format<true, net::Connection>( String to, net::Connection connection );
-
+  namespace string
+  {
+    template<> INLINE s32 format<true, net::Connection>( char* destination, s32 capacity, net::Connection connection );
+  };
 };

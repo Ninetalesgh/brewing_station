@@ -131,13 +131,13 @@ namespace win32
     }
   }
 
-  INLINE void ProcessXInputDigitalButton( WORD wButtons, DWORD buttonBit, bs::ButtonState& state, bs::ButtonState const& oldState )
+  INLINE void ProcessXInputDigitalButton( WORD wButtons, DWORD buttonBit, bs::input::ControllerButton& state, bs::input::ControllerButton const& oldState )
   {
     state.halfTransitionCount = (state.endedDown != oldState.endedDown) ? 1 : 0;
     state.endedDown = wButtons & buttonBit;
   }
 
-  void ProcessControllerInput( bs::Input& input )
+  void ProcessControllerInput( bs::input::State& input )
   {
     constexpr s32 supportedControllers = array_count( input.controller );
     constexpr s32 maxControllerCount = min( supportedControllers, XUSER_MAX_COUNT );
@@ -149,7 +149,7 @@ namespace win32
       {
         //controller plugged in
         XINPUT_GAMEPAD& pad = controllerState.Gamepad;
-        bs::ControllerInput& newController = input.controller[iController];
+        bs::input::Controller& newController = input.controller[iController];
 
         ProcessXInputDigitalButton( pad.wButtons, XINPUT_GAMEPAD_DPAD_UP, newController.up, newController.up );
         ProcessXInputDigitalButton( pad.wButtons, XINPUT_GAMEPAD_DPAD_DOWN, newController.down, newController.down );

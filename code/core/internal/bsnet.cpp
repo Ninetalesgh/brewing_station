@@ -36,10 +36,13 @@ namespace bs
     }
   };
 
-  template<> INLINE s32 string_format<true, net::Connection>( String to, net::Connection connection )
+  namespace string
   {
-    return string_format( to, connection.ipv4_u8_address0, ".", connection.ipv4_u8_address1, ".",
-                              connection.ipv4_u8_address2, ".", connection.ipv4_u8_address3,
-                              ":", connection.port ) - 1;
+    template<> INLINE s32 format<true, net::Connection>( char* destination, s32 capacity, net::Connection connection )
+    {
+      return format( destination, capacity, connection.ipv4_u8_address0, ".", connection.ipv4_u8_address1, ".",
+                                connection.ipv4_u8_address2, ".", connection.ipv4_u8_address3,
+                                ":", connection.port ) - 1;
+    }
   }
 };

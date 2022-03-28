@@ -216,17 +216,18 @@ namespace win32
     //get asset path
   }
 
-  void generate_hex_array_string( u8 const* data, u32 size, char const* assetName, char** out_data, u32* out_size )
+  char* generate_hex_array_string( u8 const* data, u32 size, char const* assetName, u32* out_size )
   {
     s32 const entriesPerLine = 16;
-    u32 hexArraySize = size * 5 + ((size / entriesPerLine) + (size % entriesPerLine ? 1 : 0)) * 2;
+    u32 hexArraySize = size * 5 + ((size / entriesPerLine) + ((size >= entriesPerLine && size % entriesPerLine) ? 1 : 0)) * 2;
+
     char const preContent0[] = "\r\nchar const ";
     char const preContent1[] = "[] = { \r\n";
     char const postContent[] = "};\r\n";
-    u32 nameLength = bs::string_length( assetName );
-    u32 preContent0Length = bs::string_length( preContent0 );
-    u32 preContent1Length = bs::string_length( preContent1 );
-    u32 postContentLength = bs::string_length( postContent );
+    u32 nameLength = bs::string::length( assetName );
+    u32 preContent0Length = bs::string::length( preContent0 );
+    u32 preContent1Length = bs::string::length( preContent1 );
+    u32 postContentLength = bs::string::length( postContent );
 
     hexArraySize += nameLength + preContent0Length + preContent1Length + postContentLength;
 
@@ -261,78 +262,38 @@ namespace win32
 
     assert( u32( writer - hexArray ) == hexArraySize );
 
-    *out_data = hexArray;
     *out_size = hexArraySize;
+    return hexArray;
   }
 
-  void generate_compiled_assets_file()
+  struct AssetToCompile
   {
-    bs::file::Data ttf;
-    if ( !load_file_into_memory( "w:/data/bs.ttf", &ttf ) )
+    char const* name;
+    void* data;
+    u32 size;
+  };
+
+  void generate_compiled_assets_file( AssetToCompile* assetArray, s32 assetCount )
+  {
+    char const preContent[] = "#pragma warning(push)\r\n#pragma warning(disable:4309)\r\n#pragma warning(push)\r\n#pragma warning(disable:4838)\r\nnamespace compiledasset\r\n{";
+    write_file( "w:/code/compiled_assets", preContent, bs::string::length( preContent ) );
+
+    for ( s32 i = 0; i < assetCount; ++i )
     {
-      BREAK;
+      u32 hexArraySize;
+      char* hexArrayString = generate_hex_array_string( (u8 const*) assetArray[i].data, (u32) assetArray[i].size, assetArray[i].name, &hexArraySize );
+      append_file( "w:/code/compiled_assets", hexArrayString, hexArraySize );
+      bs::memory::free( hexArrayString );
     }
 
-    char const preContent[] = "#pragma warning(push)\r\n#pragma warning(disable:4309)\r\n#pragma warning(push)\r\n#pragma warning(disable:4838)\r\nnamespace compiledasset\r\n{";
-    write_file( "w:/code/compiled_assets", preContent, bs::string_length( preContent ) );
-
-    char* hexArrayString;
-    u32 hexArraySize;
-    generate_hex_array_string( (u8 const*) ttf.data, (u32) ttf.size, "DEFAULT_FONT", &hexArrayString, &hexArraySize );
-    append_file( "w:/code/compiled_assets", hexArrayString, hexArraySize );
-    bs::memory::free( hexArrayString );
-    bs::memory::free( ttf.data );
+    // char* hexArrayString;
+    // u32 hexArraySize;
+    // generate_hex_array_string( (u8 const*) ttf.data, (u32) ttf.size, "DEFAULT_FONT", &hexArrayString, &hexArraySize );
+    // append_file( "w:/code/compiled_assets", hexArrayString, hexArraySize );
+    // bs::memory::free( hexArrayString );
+    // bs::memory::free( ttf.data );
 
     char const postContent[] = "};\r\n#pragma warning(pop)\r\n#pragma warning(pop)\r\n";
-    append_file( "w:/code/compiled_assets", postContent, bs::string_length( postContent ) );
+    append_file( "w:/code/compiled_assets", postContent, bs::string::length( postContent ) );
   }
-
-  // u32 write_file( char const* filePath, void const* data, u32 size )
-  // {
-  //   u32 result = 1;
-  //   wchar_t wideChars[MAX_BS_PATH];
-  //   utf8_to_wchar( filePath, wideChars, MAX_BS_PATH );
-
-  //   HANDLE fileHandle = CreateFileW( wideChars,
-  //                                    GENERIC_WRITE,
-  //                                    0, 0,
-  //                                    CREATE_ALWAYS,
-  //                                    FILE_ATTRIBUTE_NORMAL,
-  //                                    0 );
-
-  //   if ( fileHandle != INVALID_HANDLE_VALUE )
-  //   {
-  //     DWORD bytesWritten;
-  //     u8 const* reader = (u8 const*) data;
-  //     u32 sizeLeft = size;
-  //     u32 const MAX_WRITE = (u32) KiloBytes( 4 );
-
-  //     while ( sizeLeft > 0 )
-  //     {
-  //       if ( WriteFile( fileHandle, reader, min( MAX_WRITE, sizeLeft ), &bytesWritten, 0 ) )
-  //       {
-  //         assert( bytesWritten <= sizeLeft );
-  //         sizeLeft -= bytesWritten;
-  //         reader += bytesWritten;
-  //       }
-  //       else
-  //       {
-  //         result = 0;
-  //         log_error( "[WIN32_FILE]", "ERROR - couldn't write data to file: ", filePath );
-  //         break;
-  //       }
-  //     }
-  //   }
-  //   else
-  //   {
-  //     result = 0;
-  //   }
-
-  //   CloseHandle( fileHandle );
-
-  //   return result;
-  // }
-
-
-
 };

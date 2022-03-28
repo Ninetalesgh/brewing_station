@@ -85,7 +85,7 @@ namespace bs
     template<typename... Args> void _debug_log( DebugLogFlags flags, Args... args )
     {
       char debugBuffer[MAX_DEBUG_MESSAGE_LENGTH];
-      s32 bytesToWrite = bs::string_format( { debugBuffer, MAX_DEBUG_MESSAGE_LENGTH }, args... ) - 1 /* ommit null */;
+      s32 bytesToWrite = bs::string::format( debugBuffer, MAX_DEBUG_MESSAGE_LENGTH, args... ) - 1 /* ommit null */;
       if ( bytesToWrite > 0 )
       {
         if ( debugBuffer[bytesToWrite - 1] != '\n' )

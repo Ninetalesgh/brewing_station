@@ -51,8 +51,7 @@ namespace bs
   {
     void create( char const* headerSource, char const* vertexSource, char const* fragmentSource )
     {
-
-      GLint shaderCodeLengths[] = { -1,-1,-1,-1,-1,-1,-1,-1 };
+      GLint shaderCodeLengths[] = { -1,-1 };
 
       GLuint vsID = glCreateShader( GL_VERTEX_SHADER );
       GLchar const* vsCode[] =
@@ -169,8 +168,8 @@ namespace bs
       global::info.version = (char const*) glGetString( GL_VERSION );
       global::info.shadingLanguageVersion = (char const*) glGetString( GL_SHADING_LANGUAGE_VERSION );
       global::info.extensions = (char const*) glGetString( GL_EXTENSIONS );
-      global::info.GL_EXT_texture_sRGB = bs::string_contains( global::info.extensions, "GL_EXT_texture_sRGB" ) != nullptr;
-      global::info.GL_EXT_framebuffer_sRGB = bs::string_contains( global::info.extensions, "GL_EXT_framebuffer_sRGB" ) != nullptr;
+      global::info.GL_EXT_texture_sRGB = bs::string::contains( global::info.extensions, "GL_EXT_texture_sRGB" ) != nullptr;
+      global::info.GL_EXT_framebuffer_sRGB = bs::string::contains( global::info.extensions, "GL_EXT_framebuffer_sRGB" ) != nullptr;
     };
 
     u32 set_pixel_format_for_dc( HDC deviceContext )
@@ -327,54 +326,32 @@ namespace bs
       }
     }
 
-    u32* upscale_glyph( bs::font::Glyph* glyph )
+    void tk()
     {
-      s32 width = glyph->width;
-      s32 height = glyph->height;
-      u8* data = glyph->data;
-      u32* result = (u32*) bs::memory::allocate( width * height * sizeof( u32 ) );
-
-      for ( s32 i = 0; i < height; ++i )
-      {
-        for ( s32 j = 0; j < width; ++j )
-        {
-          s32 index = j + i * width;
-          result[index] = color::rgba( data[index], data[index], data[index], data[index] );
-        }
-      }
-
-      return result;
+      glEnd();
+      SwapBuffers( global::deviceContext );
+      glClearColor( 1.0f, 0.0f, 1.0f, 0.0f );
+      glBegin( GL_TRIANGLES );
     }
 
     void tick()
     {
       static graphics::TextureID f;
       //  thread::wait_if_requested( &parameter.threadInfo );
+
+      static font::Glyph* test2;
+      font::GlyphSheet* sheet = ::global::defaultGlyphSheet;
       if ( !::global::appData.currentFrameIndex )
       {
         glClearColor( 1.0f, 0.0f, 1.0f, 0.0f );
+        f = sheet->textureID;
 
-        // bs::font::Glyph* test = bs::font::create_glyph( ::global::defaultGlyphTable, 97 );
-         //u32* ptr = upscale_glyph( test );
-        // bs::memory::free( ptr );
-         //bs::memory::free( test );
-
-        char const chars[] = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
-        font::GlyphSheetRect* rects;
-        s32 rectCount;
-        //f = bs::font::create_glyph_sheet( ::global::defaultGlyphTable, chars, &rects, &rectCount );
-
-        font::GlyphSheet* sheet = bs::font::create_glyph_sheet_internal( ::global::defaultGlyphTable, chars, &rects, &rectCount );
-        f = platform::allocate_texture( sheet->data, sheet->width, sheet->height );
         glViewport( 200, 0, sheet->width, sheet->height );
-        memory::free( sheet );
-
-        //f = allocate_texture( sheet->data, sheet->width, sheet->height );
-        //memory::free( sheet );
-
-        //  s32 whut = bs::string_length( chars );
-        //  whut = 2;
+        test2 = sheet->glyphs + 1;
       }
+      static s32 counter = 0;
+      font::Glyph* test = test2 + counter++;
+      if ( counter > 90 ) counter = 0;
 
       glBindTexture( GL_TEXTURE_2D, f );
       glEnable( GL_TEXTURE_2D );
@@ -394,25 +371,47 @@ namespace bs
       glEnable( GL_BLEND );
       glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 
-      float p = 0.7f;
+      {
+        float p = 0.7f;
+        float2 min = test->uvBegin;
+        float2 max = test->uvBegin + test->uvSize;
 
-      glTexCoord2f( 0, 1 );
-      glVertex2f( -p, -p );
+        glTexCoord2f( min.x, max.y );
+        glVertex2f( -p, -p );
 
-      glTexCoord2f( 1, 1 );
-      glVertex2f( p, -p );
+        glTexCoord2f( max.x, max.y );
+        glVertex2f( p, -p );
 
-      glTexCoord2f( 1, 0 );
-      glVertex2f( p, p );
+        glTexCoord2f( max.x, min.y );
+        glVertex2f( p, p );
 
-      glTexCoord2f( 0, 1 );
-      glVertex2f( -p, -p );
+        glTexCoord2f( min.x, max.y );
+        glVertex2f( -p, -p );
 
-      glTexCoord2f( 1, 0 );
-      glVertex2f( p, p );
+        glTexCoord2f( max.x, min.y );
+        glVertex2f( p, p );
 
-      glTexCoord2f( 0, 0 );
-      glVertex2f( -p, p );
+        glTexCoord2f( min.x, min.y );
+        glVertex2f( -p, p );
+      }
+
+      // glTexCoord2f( 0, 1 );
+      // glVertex2f( -p, -p );
+
+      // glTexCoord2f( 1, 1 );
+      // glVertex2f( p, -p );
+
+      // glTexCoord2f( 1, 0 );
+      // glVertex2f( p, p );
+
+      // glTexCoord2f( 0, 1 );
+      // glVertex2f( -p, -p );
+
+      // glTexCoord2f( 1, 0 );
+      // glVertex2f( p, p );
+
+      // glTexCoord2f( 0, 0 );
+      // glVertex2f( -p, p );
 
       glEnd();
       SwapBuffers( global::deviceContext );
@@ -443,6 +442,52 @@ namespace bs
 
     void render( bs::graphics::RenderTarget* target, bs::graphics::RenderGroup* group, bs::graphics::Camera* camera )
     {
+      // //rendertarget stuff:
+      // glViewport( , , , );
+
+      // //rendergroup stuff:
+      // glBindTexture( GL_TEXTURE_2D, f );
+      // glEnable( GL_TEXTURE_2D );
+
+      // glClear( GL_COLOR_BUFFER_BIT );
+      // glBegin( GL_TRIANGLES );
+
+      // glMatrixMode( GL_TEXTURE );
+      // glLoadIdentity();
+
+      // glMatrixMode( GL_MODELVIEW );
+      // glLoadIdentity();
+
+      // glMatrixMode( GL_PROJECTION );
+      // glLoadIdentity();
+
+      // glEnable( GL_BLEND );
+      // glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+
+      // {
+      //   float2 min = test->uvBegin;
+      //   float2 max = test->uvBegin + test->uvSize;
+
+      //   glTexCoord2f( min.x, max.y );
+      //   glVertex2f( -p, -p );
+
+      //   glTexCoord2f( max.x, max.y );
+      //   glVertex2f( p, -p );
+
+      //   glTexCoord2f( max.x, min.y );
+      //   glVertex2f( p, p );
+
+      //   glTexCoord2f( min.x, max.y );
+      //   glVertex2f( -p, -p );
+
+      //   glTexCoord2f( max.x, min.y );
+      //   glVertex2f( p, p );
+
+      //   glTexCoord2f( min.x, min.y );
+      //   glVertex2f( -p, p );
+      // }
+
+
 
     }
   };

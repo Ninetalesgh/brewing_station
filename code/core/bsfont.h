@@ -2,14 +2,54 @@
 
 #include <common/bscommon.h>
 
+//todo
+/*
+textfields
+
+
+*/
+
+
 namespace bs
 {
   namespace font
   {
-    using RawTTF = file::Data;
+    //GlyphTable holds reference to unrasterized font data
     struct GlyphTable;
 
     struct Glyph
+    {
+      s32 codepoint;
+      float2 uvBegin;
+      float2 uvSize;
+      s32 advance;
+      s32 lsb;
+      s32 offsetX;
+      s32 offsetY;
+    };
+
+    struct GlyphSheet
+    {
+      Glyph* glyphs;
+      s32 glyphCount;
+      graphics::TextureID textureID;
+      s32 width;
+      s32 height;
+    };
+
+    //returns nullptr on fail
+    GlyphTable* create_glyph_table_from_ttf( void const* data );
+
+    //set scale for create_raw_glyph_data() and create_glyph_sheet() calls
+    void set_scale_for_glyph_creation( GlyphTable*, float scale );
+
+    //returns a rasterized sheet with exactly the unicode characters supplied 
+    //glyphs are of scale previously set with set_scale_for_glyph_creation()
+    GlyphSheet* create_glyph_sheet( GlyphTable* glyphTable, char const* utf8String );
+
+    Glyph* get_glyph_for_codepoint( GlyphSheet* glyphSheet, s32 codepoint );
+
+    struct RawGlyphData
     {
       u8* data;
       s32 advance;
@@ -19,33 +59,9 @@ namespace bs
       s32 offsetX;
       s32 offsetY;
     };
-
-    struct GlyphSheet
-    {
-      u32* data;
-      s32 width;
-      s32 height;
-    };
-
-    struct GlyphSheetRect
-    {
-      s32 codepoint;
-      int2 pos;
-      int2 size;
-    };
-
-    //returns nullptr on fail
-    GlyphTable* create_glyph_table_from_ttf( void const* data );
-
-    //set scale for create_glyph() calls
-    void set_scale_for_glyph_creation( GlyphTable*, float scale );
-
     //returns nullptr if the table doesn't have the glyph to the requested codepoint
     //returns a rasterized glyph at the scale previously set with set_scale_for_glyph_creation()
-    Glyph* create_glyph( GlyphTable*, s32 unicodeCodepoint );
-
-    //returns a rasterized sheet with exactly the unicode characters supplied 
-    graphics::TextureID create_glyph_sheet( GlyphTable*, char const* utf8String, GlyphSheetRect** out_rects, s32* out_rectCount );
+    RawGlyphData* create_raw_glyph_data( GlyphTable*, s32 unicodeCodepoint );
   };
 };
 
@@ -71,6 +87,7 @@ namespace bs
     struct GlyphTable
     {
       float scale;
+      float scaleForPixelHeight;
       stbtt_fontinfo* fontInfo;
     };
 
@@ -108,7 +125,8 @@ namespace bs
     {
       if ( glyphTable && glyphTable->fontInfo )
       {
-        glyphTable->scale = stbtt_ScaleForPixelHeight( (stbtt_fontinfo*) glyphTable->fontInfo, scale );
+        glyphTable->scale = scale;
+        glyphTable->scaleForPixelHeight = stbtt_ScaleForPixelHeight( (stbtt_fontinfo*) glyphTable->fontInfo, scale );
       }
       else
       {
@@ -116,22 +134,28 @@ namespace bs
       }
     }
 
-    int2 get_glyph_dimensions( GlyphTable* glyphTable, s32 unicodeCodepoint )
+    Glyph get_glyph_dimensions( GlyphTable* glyphTable, s32 unicodeCodepoint )
     {
       stbtt_fontinfo* fontInfo = glyphTable->fontInfo;
-      float scale = glyphTable->scale;
+      float scale = glyphTable->scaleForPixelHeight;
 
-      int2 result = { -1,-1 };
+      Glyph result = {};
+
       if ( scale > 0.0f )
       {
         s32 glyphIndex = stbtt_FindGlyphIndex( fontInfo, unicodeCodepoint );
 
         if ( glyphIndex > 0 )
         {
+          stbtt_GetGlyphHMetrics( fontInfo, glyphIndex, &result.advance, &result.lsb );
+
           s32 ix0, ix1, iy0, iy1;
           stbtt_GetGlyphBitmapBoxSubpixel( fontInfo, glyphIndex, scale, scale, 0, 0, &ix0, &iy0, &ix1, &iy1 );
-          result.x = (ix1 - ix0);
-          result.y = (iy1 - iy0);
+          result.uvSize.x = (float) (ix1 - ix0);
+          result.uvSize.y = (float) (iy1 - iy0);
+          result.offsetX = ix0;
+          result.offsetY = iy0;
+
         }
         else // !( glyphIndex > 0 )
         {
@@ -146,12 +170,12 @@ namespace bs
       return result;
     }
 
-    Glyph* create_glyph( GlyphTable* glyphTable, s32 unicodeCodepoint )
+    RawGlyphData* create_raw_glyph_data( GlyphTable* glyphTable, s32 unicodeCodepoint )
     {
       stbtt_fontinfo* fontInfo = glyphTable->fontInfo;
-      float scale = glyphTable->scale;
+      float scale = glyphTable->scaleForPixelHeight;
 
-      Glyph* glyph = nullptr;
+      RawGlyphData* glyph = nullptr;
       s32 advance;
       s32 lsb;
 
@@ -179,9 +203,9 @@ namespace bs
 
           if ( gbm.w && gbm.h )
           {
-            u8* allocation = (u8*) platform::allocate( sizeof( Glyph ) + gbm.w * gbm.h );
-            glyph = (Glyph*) allocation;
-            gbm.pixels = allocation + sizeof( Glyph );
+            u8* allocation = (u8*) platform::allocate( sizeof( RawGlyphData ) + gbm.w * gbm.h );
+            glyph = (RawGlyphData*) allocation;
+            gbm.pixels = allocation + sizeof( RawGlyphData );
             glyph->data = gbm.pixels;
             glyph->advance = advance;
             glyph->lsb = lsb;
@@ -224,11 +248,18 @@ namespace bs
       return glyph;
     }
 
-    GlyphSheet* create_glyph_sheet_internal( GlyphTable* glyphTable, char const* utf8String, GlyphSheetRect** out_rects, s32* out_rectCount )
+    GlyphSheet* create_glyph_sheet( GlyphTable* glyphTable, char const* utf8String )
     {
       char const* reader = utf8String;
-      s32 glyphCount = bs::string_utf8_length( utf8String );
-      GlyphSheetRect* rects = (GlyphSheetRect*) memory::allocate_to_zero( sizeof( GlyphSheetRect ) * glyphCount );
+      s32 glyphCount = bs::string::length_utf8( utf8String );
+
+      Glyph* rects = nullptr;
+      GlyphSheet* resultSheet = nullptr;
+      {
+        u8* allocation = (u8*) memory::allocate_to_zero( sizeof( GlyphSheet ) + sizeof( Glyph ) * glyphCount );
+        resultSheet = (GlyphSheet*) allocation;
+        rects = (Glyph*) (allocation + sizeof( GlyphSheet ));
+      }
 
       int2 sheetDims = 0;
       int2 currentRow = 0;
@@ -238,74 +269,89 @@ namespace bs
       while ( *reader )
       {
         s32 codepoint;
-        reader = bs::parse_utf8( reader, &codepoint );
+        reader = bs::string::parse_utf8( reader, &codepoint );
 
-        int2 dims = get_glyph_dimensions( glyphTable, codepoint );
+        Glyph newGlyph = get_glyph_dimensions( glyphTable, codepoint );
+        newGlyph.codepoint = codepoint;
 
-        if ( currentRow.x + dims.x > MAX_WIDTH )
+        if ( currentRow.x + (s32) newGlyph.uvSize.x > MAX_WIDTH )
         {
           sheetDims.y += currentRow.y;
           sheetDims.x = max( sheetDims.x, currentRow.x );
           currentRow = { 0, 0 };
-          rects[rectsIndex++] = { codepoint, { 0, sheetDims.y }, dims };
-        }
-        else
-        {
-          rects[rectsIndex++] = { codepoint, { currentRow.x, sheetDims.y }, dims };
         }
 
-        currentRow.x += dims.x;
-        currentRow.y = max( currentRow.y, dims.y );
+        newGlyph.uvBegin = { currentRow.x, sheetDims.y };
+        rects[rectsIndex++] = newGlyph;
+
+        currentRow.x += (s32) newGlyph.uvSize.x;
+        currentRow.y = max( currentRow.y, (s32) newGlyph.uvSize.y );
       }
 
       sheetDims.x = max( sheetDims.x, currentRow.x );
       sheetDims.y = sheetDims.y + currentRow.y;
 
-      u8* allocation = (u8*) memory::allocate( sizeof( GlyphSheet ) + sizeof( u32 ) * sheetDims.x * sheetDims.y );
-      GlyphSheet* sheet = (GlyphSheet*) allocation;
-      sheet->width = sheetDims.x;
-      sheet->height = sheetDims.y;
-      sheet->data = (u32*) (allocation + sizeof( GlyphSheet ));
+      graphics::Bitmap* sheetBMP = nullptr;
+      {
+        u8* allocation = (u8*) memory::allocate( sizeof( graphics::Bitmap ) + sizeof( u32 ) * sheetDims.x * sheetDims.y );
+        sheetBMP = (graphics::Bitmap*) allocation;
+        sheetBMP->width = sheetDims.x;
+        sheetBMP->height = sheetDims.y;
+        sheetBMP->pixel = (u32*) (allocation + sizeof( graphics::Bitmap ));
+      }
 
       //rasterize glyphs
-
       for ( s32 i = 0; i < glyphCount; ++i )
       {
-        Glyph* glyph = create_glyph( glyphTable, rects[i].codepoint );
-        if ( glyph )
+        RawGlyphData* rawGlyphData = create_raw_glyph_data( glyphTable, rects[i].codepoint );
+        if ( rawGlyphData )
         {
-          assert( glyph->width == rects[i].size.x );
-          assert( glyph->height == rects[i].size.y );
+          assert( rawGlyphData->width == (s32) rects[i].uvSize.x );
+          assert( rawGlyphData->height == (s32) rects[i].uvSize.y );
 
-          for ( s32 y = 0; y < rects[i].size.y; ++y )
+          for ( s32 y = 0; y < (s32) rects[i].uvSize.y; ++y )
           {
-            u32* writer = sheet->data + rects[i].pos.x + ((rects[i].pos.y + y) * sheet->width);
-            for ( s32 x = 0; x < rects[i].size.x; ++x )
+            u32* writer = sheetBMP->pixel + (s32) rects[i].uvBegin.x + (((s32) rects[i].uvBegin.y + y) * sheetBMP->width);
+            for ( s32 x = 0; x < (s32) rects[i].uvSize.x; ++x )
             {
-              s32 index = x + y * glyph->width;
-              *writer++ = color::rgba( glyph->data[index], glyph->data[index], glyph->data[index], glyph->data[index] );
+              s32 index = x + y * rawGlyphData->width;
+              *writer++ = color::rgba( rawGlyphData->data[index], rawGlyphData->data[index], rawGlyphData->data[index], rawGlyphData->data[index] );
             }
           }
 
-          memory::free( glyph );
+          memory::free( rawGlyphData );
         }
       }
 
-      assert( out_rects != nullptr );
-      assert( out_rectCount != nullptr );
-      *out_rects = rects;
-      *out_rectCount = glyphCount;
-      return sheet;
+      float width = (float) sheetBMP->width;
+      float height = (float) sheetBMP->height;
+      for ( s32 i = 0; i < glyphCount; ++i )
+      {
+        rects[i].uvBegin = { rects[i].uvBegin.x / width, rects[i].uvBegin.y / height };
+        rects[i].uvSize = { rects[i].uvSize.x / width, rects[i].uvSize.y / height };
+      }
+
+      resultSheet->glyphs =     rects;
+      resultSheet->glyphCount = glyphCount;
+      resultSheet->textureID =  platform::allocate_texture( sheetBMP->pixel, sheetBMP->width, sheetBMP->height );
+      resultSheet->width =      sheetBMP->width;
+      resultSheet->height =     sheetBMP->height;
+
+      memory::free( sheetBMP );
+
+      return resultSheet;
     }
 
-    graphics::TextureID create_glyph_sheet( GlyphTable* glyphTable, char const* utf8String, GlyphSheetRect** out_rects, s32* out_rectCount )
+    Glyph* get_glyph_for_codepoint( GlyphSheet* glyphSheet, s32 codepoint )
     {
-      GlyphSheet* sheet = create_glyph_sheet_internal( glyphTable, utf8String, out_rects, out_rectCount );
-      graphics::TextureID textureID = platform::allocate_texture( sheet->data, sheet->width, sheet->height );
-      memory::free( sheet );
-      return textureID;
-    }
+      //TODO filter and sort glypharray and binary search
 
+      Glyph* glyph = glyphSheet->glyphs;
+      Glyph* end = glyph + glyphSheet->glyphCount;
+      while ( glyph->codepoint != codepoint && glyph != end ) { ++glyph; }
+
+      return glyph == end ? nullptr : glyph;
+    }
   };
 };
 
