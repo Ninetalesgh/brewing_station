@@ -78,6 +78,15 @@ char global_debugUsername[] = "release_xamilla";
 
 constexpr float APP_TARGET_SPF = 1.0f / float( APP_UPDATE_HZ );
 
+struct win32_SoundOutput
+{
+  s32 samplesPerSecond;
+  s32 bytesPerSample;
+  s32 soundBufferSize;
+  u32 runningSampleIndex;
+  s32 writeSafetyBytes;
+};
+
 namespace win32
 {
   INLINE LARGE_INTEGER GetTimer()

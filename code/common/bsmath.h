@@ -50,10 +50,10 @@ struct int2
   INLINE int2 friend operator -( int2 const& a, int2 const& b ) { return { a.x - b.x, a.y - b.y }; }
   INLINE int2 friend operator *( s32 f, int2 const& v ) { return { f * v.x, f * v.y }; }
   INLINE int2 friend operator *( int2 const& v, s32 f ) { return { f * v.x, f * v.y }; }
-  INLINE int2        operator =( int2 const& other ) { x = other.x; y = other.y; return other; }
-  INLINE int2        operator+=( int2 const& other ) { return *this = *this + other; }
-  INLINE int2        operator-=( int2 const& other ) { return *this = *this - other; }
-  INLINE int2        operator*=( s32 other ) { return *this = *this * other; }
+
+  INLINE int2 const& operator+=( int2 const& other ) { return *this = *this + other; }
+  INLINE int2 const& operator-=( int2 const& other ) { return *this = *this - other; }
+  INLINE int2 const& operator*=( s32 other ) { return *this = *this * other; }
 };
 struct float2
 {
@@ -62,7 +62,7 @@ struct float2
   float2( float x, float y ) : x( x ), y( y ) {}
   float2( s32 x, s32 y ) : x( float( x ) ), y( float( y ) ) {}
   float2( int2 _int2 ) : x( float( _int2.x ) ), y( float( _int2.y ) ) {}
-  float2( float2 const& other ) : x( other.x ), y( other.y ) {}
+
   union
   {
     float elements[2];
@@ -76,8 +76,8 @@ struct float2
   INLINE float2 friend operator -( float2 const& a, float2 const& b ) { return { a.x - b.x, a.y - b.y }; }
   INLINE float2 friend operator *( float f, float2 const& v ) { return { f * v.x, f * v.y }; }
   INLINE float2 friend operator *( float2 const& v, float f ) { return { f * v.x, f * v.y }; }
+  INLINE float2 friend operator /( float2 const& v, float f ) { f = 1.0f / f; return v * f; }
 
-  INLINE float2        operator =( float2 const& other ) { x = other.x; y = other.y; return other; }
   INLINE float2        operator+=( float2 const& other ) { return *this = *this + other; }
   INLINE float2        operator-=( float2 const& other ) { return *this = *this - other; }
   INLINE float2        operator*=( float other ) { return *this = *this * other; }
@@ -98,15 +98,17 @@ struct float3
   };
 
   INLINE float& operator[]( int i ) { return elements[i]; }
-  INLINE float         operator[]( int i ) const { return elements[i]; }
+  INLINE float  operator[]( int i ) const { return elements[i]; }
+
   INLINE float3 friend operator +( float3 const& a, float3 const& b ) { return { a.x + b.x, a.y + b.y, a.z + b.z }; }
   INLINE float3 friend operator -( float3 const& a, float3 const& b ) { return { a.x - b.x, a.y - b.y, a.z - b.z }; }
   INLINE float3 friend operator *( float f, float3 const& v ) { return { f * v.x, f * v.y, f * v.z }; }
   INLINE float3 friend operator *( float3 const& v, float f ) { return { f * v.x, f * v.y, f * v.z }; }
+  INLINE float3 friend operator /( float3 const& v, float f ) { f = 1.0f / f; return v * f; }
 
-  INLINE float3        operator+=( float3 const& other ) { return *this = *this + other; }
-  INLINE float3        operator-=( float3 const& other ) { return *this = *this - other; }
-  INLINE float3        operator*=( float other ) { return *this = *this * other; }
+  INLINE float3 const& operator+=( float3 const& other ) { return *this = *this + other; }
+  INLINE float3 const& operator-=( float3 const& other ) { return *this = *this - other; }
+  INLINE float3 const& operator*=( float other ) { return *this = *this * other; }
 };
 
 struct float4
@@ -127,12 +129,60 @@ struct float4
   INLINE float4 friend operator -( float4 const& a, float4 const& b ) { return { a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w }; }
   INLINE float4 friend operator *( float f, float4 const& v ) { return { f * v.x, f * v.y, f * v.z, f * v.w }; }
   INLINE float4 friend operator *( float4 const& v, float f ) { return { f * v.x, f * v.y, f * v.z, f * v.w }; }
-  INLINE float4 friend operator /( float4 const& v, float f ) { float rcp = 1.0f / f; return v * rcp; }
-  INLINE float4 const& operator =( float4 const& other ) { x = other.x; y = other.y; z = other.z; w = other.w; return other; }
+  INLINE float4 friend operator /( float4 const& v, float f ) { f = 1.0f / f; return v * f; }
+
   INLINE float4 const& operator+=( float4 const& other ) { return *this = *this + other; }
   INLINE float4 const& operator-=( float4 const& other ) { return *this = *this - other; }
   INLINE float4 const& operator*=( float other ) { return *this = *this * other; }
 
+};
+
+class float2x2
+{
+public:
+  float2x2();
+  float2x2( float2 const& a ) : j0( a ), j1( a ) {}
+  float2x2( float2 const& j0, float2 const& b ) : j0( j0 ), j1( j1 ) {}
+  float2x2( float i0j0, float i1j0, float i0j1, float i1j1 )
+    : i0j0( i0j0 ), i1j0( i1j0 )
+    , i0j1( i0j1 ), i1j1( i1j1 )
+  {}
+  union
+  {
+    struct { float2 j0, j1; };
+    struct { float2 col[2]; };
+    struct { float data[4]; };
+    struct
+    {
+      float i0j0, i1j0;
+      float i0j1, i1j1;
+    };
+  };
+
+  INLINE float2  operator[]( int i ) const { return col[i]; }
+  INLINE float2& operator[]( int i ) { return col[i]; }
+  INLINE float2x2	 operator-() { return float2x2 { -i0j0, -i1j0, -i0j1, -i1j1 }; }
+
+  INLINE friend float2x2 operator+ ( float2x2 const& a, float2x2 const& b ) { return float2x2 { a.j0 + b.j0, a.j1 + b.j1 }; }
+  INLINE friend float2x2 operator- ( float2x2 const& a, float2x2 const& b ) { return float2x2 { a.j0 - b.j0, a.j1 - b.j1 }; }
+  INLINE friend float2x2 operator*( float f, float2x2 const& m ) { return float2x2 { m.j0 * f, m.j1 * f }; }
+  INLINE friend float2x2 operator*( float2x2 const& m, float f ) { return float2x2 { m.j0 * f, m.j1 * f }; }
+  INLINE friend float2x2 operator/( float2x2 const& m, float f ) { f = 1.0f / f; return m * f; }
+  INLINE friend float2x2 operator* ( float2x2 const& a, float2x2 const& b )
+  {
+    return float2x2 {
+      //column 0
+      a.data[0] * b.data[0] + a.data[2] * b.data[1],
+      a.data[1] * b.data[0] + a.data[3] * b.data[1],
+      //column 1
+      a.data[0] * b.data[2] + a.data[2] * b.data[3],
+      a.data[1] * b.data[2] + a.data[3] * b.data[3] };
+  }
+
+  INLINE float2x2 const& operator+=( float2x2 const& a ) { *this = *this + a; return *this; }
+  INLINE float2x2 const& operator-=( float2x2 const& a ) { *this = *this - a; return *this; }
+  INLINE float2x2 const& operator*=( float2x2 const& a ) { *this = *this * a; return *this; }
+  INLINE float2x2 const& operator/=( float const& a ) { *this = *this / a; return *this; }
 };
 
 struct float4x4
@@ -149,17 +199,18 @@ struct float4x4
     , i0j2( other.i0j2 ), i1j2( other.i1j2 ), i2j2( other.i2j2 ), i3j2( other.i3j2 )
     , i0j3( other.i0j3 ), i1j3( other.i1j3 ), i2j3( other.i2j3 ), i3j3( other.i3j3 )
   {}
-  float4x4( float j0i0, float j0i1, float j0i2, float j0i3,
-            float j1i0, float j1i1, float j1i2, float j1i3,
-            float j2i0, float j2i1, float j2i2, float j2i3,
-            float j3i0, float j3i1, float j3i2, float j3i3 )
-    : i0j0( j0i0 ), i1j0( j0i1 ), i2j0( j0i2 ), i3j0( j0i3 )
-    , i0j1( j1i0 ), i1j1( j1i1 ), i2j1( j1i2 ), i3j1( j1i3 )
-    , i0j2( j2i0 ), i1j2( j2i1 ), i2j2( j2i2 ), i3j2( j2i3 )
-    , i0j3( j3i0 ), i1j3( j3i1 ), i2j3( j3i2 ), i3j3( j3i3 )
+  float4x4( float4 const& j0, float4 const& j1, float4 const& j2, float4 const& j3 )
+    : j0( j0 ), j1( j1 ), j2( j2 ), j3( j3 )
   {}
-  float4x4( const float4& a, const float4& b, const float4& c, const float4& d )
-    : j0( a ), j1( b ), j2( c ), j3( d )
+
+  float4x4( float i0j0, float i1j0, float i2j0, float i3j0,
+            float i0j1, float i1j1, float i2j1, float i3j1,
+            float i0j2, float i1j2, float i2j2, float i3j2,
+            float i0j3, float i1j3, float i2j3, float i3j3 )
+    : i0j0( i0j0 ), i1j0( i1j0 ), i2j0( i2j0 ), i3j0( i3j0 )
+    , i0j1( i0j1 ), i1j1( i1j1 ), i2j1( i2j1 ), i3j1( i3j1 )
+    , i0j2( i0j2 ), i1j2( i1j2 ), i2j2( i2j2 ), i3j2( i3j2 )
+    , i0j3( i0j3 ), i1j3( i1j3 ), i2j3( i2j3 ), i3j3( i3j3 )
   {}
 
   union
@@ -176,14 +227,17 @@ struct float4x4
     };
   };
 
-  const INLINE float4  operator[]( int i ) const { return col[i]; }
+  INLINE float4  operator[]( int i ) const { return col[i]; }
   INLINE float4& operator[]( int i ) { return col[i]; }
 
   INLINE float4x4 operator-() { return float4x4( -i0j0, -i1j0, -i2j0, -i3j0, -i0j1, -i1j1, -i2j1, -i3j1, -i0j2, -i1j2, -i2j2, -i3j2, -i0j3, -i1j3, -i2j3, -i3j3 ); }
-  friend INLINE float4x4 operator+ ( float4x4 const& a, float4x4 const& b ) { return float4x4( a.j0 + b.j0, a.j1 + b.j1, a.j2 + b.j2, a.j3 + b.j3 ); }
-  friend INLINE float4x4 operator- ( float4x4 const& a, float4x4 const& b ) { return float4x4( a.j0 - b.j0, a.j1 - b.j1, a.j2 - b.j2, a.j3 - b.j3 ); }
+  INLINE friend float4x4 operator+ ( float4x4 const& a, float4x4 const& b ) { return float4x4( a.j0 + b.j0, a.j1 + b.j1, a.j2 + b.j2, a.j3 + b.j3 ); }
+  INLINE friend float4x4 operator- ( float4x4 const& a, float4x4 const& b ) { return float4x4( a.j0 - b.j0, a.j1 - b.j1, a.j2 - b.j2, a.j3 - b.j3 ); }
 
-  friend INLINE float4x4 operator* ( float4x4 const& a, float4x4 const& b )
+  INLINE friend float4x4 operator*( float f, float4x4 const& m ) { return float4x4 { m.j0 * f, m.j1 * f, m.j2 * f, m.j3 * f }; }
+  INLINE friend float4x4 operator*( float4x4 const& m, float f ) { return float4x4 { m.j0 * f, m.j1 * f, m.j2 * f, m.j3 * f }; }
+  INLINE friend float4x4 operator/( float4x4 const& m, float f ) { f = 1.0f / f; return m * f; }
+  INLINE friend float4x4 operator* ( float4x4 const& a, float4x4 const& b )
   {
     return float4x4( \
       //column 0     
@@ -208,8 +262,11 @@ struct float4x4
       a.data[3] * b.data[12] + a.data[7] * b.data[13] + a.data[11] * b.data[14] + a.data[15] * b.data[15] );
   }
 
-  friend INLINE float4x4 operator*( float a, float4x4 const& b ) { return float4x4( a * b.j0, a * b.j1, a * b.j2, a * b.j3 ); }
-  friend INLINE float4x4 operator*( float4x4 const& a, float b ) { return float4x4( a.j0 * b, a.j1 * b, a.j2 * b, a.j3 * b ); }
+  INLINE static float4x4 const& identity()
+  {
+    static float4x4 id = float4x4 { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
+    return id;
+  }
 };
 
 struct quaternion
@@ -307,6 +364,7 @@ INLINE quaternion	quaternion_from_axis_angle( float3 const& a, float angle )
 
   return normalize( quaternion( w, x, y, z ) );
 }
+
 float4x4 look_at_matrix( float3 eye, float3 target, float3 up );
 
 float4x4 projection_matrix( float windowWidth, float windowHeight, float fovRadians, float zNear, float zFar );
@@ -400,3 +458,7 @@ float4x4 rotation_matrix_z( float angle )
     0.0f, 0.0f, 0.0f, 1.0f );
   return res;
 }
+
+
+
+

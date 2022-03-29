@@ -88,12 +88,10 @@ namespace opengl_ext
   using glBindBuffer = void WINAPI( GLenum target, GLuint buffer );
   using glDeleteBuffers = void WINAPI( GLsizei n, const GLuint* buffers );
   using glUseProgram = void WINAPI( GLuint program );
-
   using glGetProgramiv = void WINAPI( GLuint program, GLenum pname, GLint* params );
   using glGetProgramInfoLog = void WINAPI( GLuint program, GLsizei bufSize, GLsizei* length, GLchar* infoLog );
   using glGetShaderiv = void WINAPI( GLuint shader, GLenum pname, GLint* params );
   using glGetShaderInfoLog = void WINAPI( GLuint shader, GLsizei bufSize, GLsizei* length, GLchar* infoLog );
-
   using glVertexAttribPointer = void WINAPI( GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void* pointer );
   using glDisableVertexAttribArray = void WINAPI( GLuint index );
   using glEnableVertexAttribArray = void WINAPI( GLuint index );
@@ -101,6 +99,11 @@ namespace opengl_ext
   using glGenVertexArrays = void WINAPI( GLsizei n, GLuint* arrays );
   using glBindVertexArray = void WINAPI( GLuint array );
   using glDeleteVertexArrays = void WINAPI( GLsizei n, const GLuint* arrays );
+
+  using glGetUniformLocation = GLint WINAPI( GLuint program, const GLchar* name );
+  using glGetUniformfv = void WINAPI( GLuint program, GLint location, GLfloat* params );
+  using glGetUniformiv = void WINAPI( GLuint program, GLint location, GLint* params );
+  using glUniformMatrix4fv = void WINAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
 }
 
 static opengl_ext::wglChoosePixelFormatARB* wglChoosePixelFormatARB;
@@ -123,13 +126,10 @@ static opengl_ext::glBufferData* glBufferData;
 static opengl_ext::glBindBuffer* glBindBuffer;
 static opengl_ext::glDeleteBuffers* glDeleteBuffers;
 static opengl_ext::glUseProgram* glUseProgram;
-
 static opengl_ext::glGetProgramiv* glGetProgramiv;
 static opengl_ext::glGetProgramInfoLog* glGetProgramInfoLog;
 static opengl_ext::glGetShaderiv* glGetShaderiv;
 static opengl_ext::glGetShaderInfoLog* glGetShaderInfoLog;
-
-
 static opengl_ext::glVertexAttribPointer* glVertexAttribPointer;
 static opengl_ext::glDisableVertexAttribArray* glDisableVertexAttribArray;
 static opengl_ext::glEnableVertexAttribArray* glEnableVertexAttribArray;
@@ -137,6 +137,11 @@ static opengl_ext::glGenBuffers* glGenBuffers;
 static opengl_ext::glGenVertexArrays* glGenVertexArrays;
 static opengl_ext::glBindVertexArray* glBindVertexArray;
 static opengl_ext::glDeleteVertexArrays* glDeleteVertexArrays;
+
+static opengl_ext::glGetUniformLocation* glGetUniformLocation;
+static opengl_ext::glGetUniformfv* glGetUniformfv;
+static opengl_ext::glGetUniformiv* glGetUniformiv;
+static opengl_ext::glUniformMatrix4fv* glUniformMatrix4fv;
 
 namespace opengl_ext
 {
@@ -150,7 +155,6 @@ namespace opengl_ext
     ::wglGetPixelFormatAttribivARB = (opengl_ext::wglGetPixelFormatAttribivARB*) get_proc_address( "wglGetPixelFormatAttribivARB" );
     ::wglGetPixelFormatAttribfvARB = (opengl_ext::wglGetPixelFormatAttribfvARB*) get_proc_address( "wglGetPixelFormatAttribfvARB" );
     ::wglSwapIntervalEXT = (opengl_ext::wglSwapIntervalEXT*) get_proc_address( "wglSwapIntervalEXT" );
-
     ::glShaderSource =             (opengl_ext::glShaderSource*) get_proc_address( "glShaderSource" );
     ::glCreateShader =             (opengl_ext::glCreateShader*) get_proc_address( "glCreateShader" );
     ::glCompileShader =            (opengl_ext::glCompileShader*) get_proc_address( "glCompileShader" );
@@ -165,12 +169,10 @@ namespace opengl_ext
     ::glBindBuffer =               (opengl_ext::glBindBuffer*) get_proc_address( "glBindBuffer" );
     ::glDeleteBuffers =            (opengl_ext::glDeleteBuffers*) get_proc_address( "glDeleteBuffers" );
     ::glUseProgram =               (opengl_ext::glUseProgram*) get_proc_address( "glUseProgram" );
-
     ::glGetProgramiv =             (opengl_ext::glGetProgramiv*) get_proc_address( "glGetProgramiv" );
     ::glGetProgramInfoLog =        (opengl_ext::glGetProgramInfoLog*) get_proc_address( "glGetProgramInfoLog" );
     ::glGetShaderiv =              (opengl_ext::glGetShaderiv*) get_proc_address( "glGetShaderiv" );
     ::glGetShaderInfoLog =         (opengl_ext::glGetShaderInfoLog*) get_proc_address( "glGetShaderInfoLog" );
-
     ::glVertexAttribPointer =      (opengl_ext::glVertexAttribPointer*) get_proc_address( "glVertexAttribPointer" );
     ::glDisableVertexAttribArray = (opengl_ext::glDisableVertexAttribArray*) get_proc_address( "glDisableVertexAttribArray" );
     ::glEnableVertexAttribArray =  (opengl_ext::glEnableVertexAttribArray*) get_proc_address( "glEnableVertexAttribArray" );
@@ -178,6 +180,11 @@ namespace opengl_ext
     ::glGenVertexArrays =          (opengl_ext::glGenVertexArrays*) get_proc_address( "glGenVertexArrays" );
     ::glBindVertexArray =          (opengl_ext::glBindVertexArray*) get_proc_address( "glBindVertexArray" );
     ::glDeleteVertexArrays =       (opengl_ext::glDeleteVertexArrays*) get_proc_address( "glDeleteVertexArrays" );
+
+    ::glGetUniformLocation = (opengl_ext::glGetUniformLocation*) get_proc_address( "glGetUniformLocation" );
+    ::glGetUniformfv = (opengl_ext::glGetUniformfv*) get_proc_address( "glGetUniformfv" );
+    ::glGetUniformiv = (opengl_ext::glGetUniformiv*) get_proc_address( "glGetUniformiv" );
+    ::glUniformMatrix4fv = (opengl_ext::glUniformMatrix4fv*) get_proc_address( "glUniformMatrix4fv" );
 
     return validate();
   }
@@ -203,12 +210,10 @@ namespace opengl_ext
     if ( ::glBindBuffer == nullptr ) BREAK;
     if ( ::glDeleteBuffers == nullptr ) BREAK;
     if ( ::glUseProgram == nullptr ) BREAK;
-
     if ( ::glGetProgramiv == nullptr ) BREAK;
     if ( ::glGetProgramInfoLog == nullptr ) BREAK;
     if ( ::glGetShaderiv == nullptr ) BREAK;
     if ( ::glGetShaderInfoLog == nullptr ) BREAK;
-
     if ( ::glVertexAttribPointer == nullptr ) BREAK;
     if ( ::glDisableVertexAttribArray == nullptr ) BREAK;
     if ( ::glEnableVertexAttribArray == nullptr ) BREAK;
@@ -216,6 +221,11 @@ namespace opengl_ext
     if ( ::glGenVertexArrays == nullptr ) BREAK;
     if ( ::glBindVertexArray == nullptr ) BREAK;
     if ( ::glDeleteVertexArrays == nullptr ) BREAK;
+
+    if ( ::glGetUniformLocation == nullptr ) BREAK;
+    if ( ::glGetUniformfv == nullptr ) BREAK;
+    if ( ::glGetUniformiv == nullptr ) BREAK;
+    if ( ::glUniformMatrix4fv == nullptr ) BREAK;
 
     return 1;
   }
