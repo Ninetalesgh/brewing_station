@@ -26,6 +26,7 @@ namespace bs
 
     //returns pointer to where subString begins in string
     //returns nullptr if the subString is not part of string
+    char* contains( char* string, char const* subString );
     char const* contains( char const* string, char const* subString );
 
     //returns the next character in the string after parsing the codepoint
@@ -469,6 +470,42 @@ namespace bs
         utf8String = parse_utf8( utf8String, &codepoint );
         ++result;
       }
+      return result;
+    }
+
+    char* contains( char* string, char const* subString )
+    {
+      if ( string == nullptr || subString == nullptr ) return 0;
+
+      char* result = nullptr;
+      char* reader = string;
+
+      while ( *reader != '\0' )
+      {
+        if ( *reader == *subString )
+        {
+          char* a = reader;
+          char const* b = subString;
+          while ( *a == *b )
+          {
+            ++a;
+            ++b;
+          }
+
+          if ( *b == '\0' )
+          {
+            result = reader;
+            break;
+          }
+
+          reader = a;
+        }
+        else
+        {
+          ++reader;
+        }
+      }
+
       return result;
     }
 

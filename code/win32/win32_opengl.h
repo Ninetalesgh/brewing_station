@@ -48,8 +48,10 @@ namespace opengl
 
   using ProgramID = u32;
   using ShaderID = u32;
-  // ProgramID create_shader_program( char const* headerSource, char const* vertexSource, char const* fragmentSource );
   ProgramID create_shader_program( bs::file::Data headerFileData, bs::file::Data vsFileData, bs::file::Data fsFileData );
+
+  //all three files in one, mark sections with #h, #vs and #fs.
+  ProgramID create_shader_program( bs::file::Data combinedglsl );
 
   void render( bs::graphics::RenderTarget*, bs::graphics::RenderGroup*, bs::graphics::Camera* );
 };
@@ -579,6 +581,44 @@ glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &mvp[0][0]);
 
     return programID;
   }
+
+  ProgramID create_shader_program( bs::file::Data combinedglsl )
+  {
+    char* reader = (char*) combinedglsl.data;
+    char* end = reader + combinedglsl.size;
+    bs::file::Data h;
+    bs::file::Data vs;
+    bs::file::Data fs;
+
+    //header
+    char* nextSection = bs::string::contains( reader, "#h" );
+    assert( nextSection );
+    char* currentSection = nextSection + 2;
+
+    nextSection = bs::string::contains( currentSection, "#vs" );
+    assert( nextSection );
+
+    h.data = currentSection;
+    h.size = nextSection - currentSection;
+
+    //vertex shader
+    currentSection = nextSection + 3;
+    nextSection = bs::string::contains( currentSection, "#fs" );
+    assert( nextSection );
+
+    vs.data = currentSection;
+    vs.size = nextSection - currentSection;
+
+    //fragment shader
+    currentSection = nextSection + 3;
+    nextSection = end;
+
+    fs.data = currentSection;
+    fs.size = nextSection - currentSection;
+
+    return create_shader_program( h, vs, fs );
+  }
+
 };
 
 

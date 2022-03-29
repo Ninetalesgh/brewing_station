@@ -334,14 +334,10 @@ u32 init_compiled_assets()
 
   //TODO
   {
-    bs::file::Data h;
-    bs::file::Data vs;
-    bs::file::Data fs;
-    win32::load_file_into_memory( "w:/code/shader/test.h.glsl", &h );
-    win32::load_file_into_memory( "w:/code/shader/test.vs.glsl", &vs );
-    win32::load_file_into_memory( "w:/code/shader/test.fs.glsl", &fs );
+    bs::file::Data test;
+    win32::load_file_into_memory( "w:/code/shader/test.glsl", &test );
 
-    global::defaultGlyphTable->shaderProgram = opengl::create_shader_program( h, vs, fs );
+    global::defaultGlyphTable->shaderProgram = opengl::create_shader_program( test );
   }
 
 
