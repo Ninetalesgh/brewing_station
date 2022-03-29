@@ -9,6 +9,7 @@ namespace bs
   namespace graphics
   {
     using TextureID = u32;
+    using ShaderProgram = u32;
 
     struct RenderGroup
     {

@@ -20,6 +20,10 @@ using GLsizeiptr = s64;
 #define GL_FRAGMENT_SHADER                0x8B30
 #define GL_VERTEX_SHADER                  0x8B31
 
+#define GL_COMPILE_STATUS                 0x8B81
+#define GL_LINK_STATUS                    0x8B82
+#define GL_INFO_LOG_LENGTH                0x8B84
+
 #define GL_ARRAY_BUFFER                   0x8892
 #define GL_STATIC_DRAW                    0x88E4
 
@@ -47,7 +51,6 @@ using GLsizeiptr = s64;
 #define WGL_TYPE_RGBA_ARB                 0x202B
 #define WGL_FULL_ACCELERATION_ARB         0x2027
 
-
 #define WGL_CONTEXT_MAJOR_VERSION_ARB           0x2091
 #define WGL_CONTEXT_MINOR_VERSION_ARB           0x2092
 #define WGL_CONTEXT_LAYER_PLANE_ARB             0x2093
@@ -67,8 +70,9 @@ namespace opengl_ext
 {
   using wglCreateContextAttribsARB = HGLRC WINAPI( HDC hDC, HGLRC hShareContext, const int* attribList );
   using wglChoosePixelFormatARB = BOOL WINAPI( HDC hdc, const int* piAttribIList, const FLOAT* pfAttribFList, UINT nMaxFormats, int* piFormats, UINT* nNumFormats );
-  using wglGetPixelFormatAttribivARB = BOOL( HDC hdc, int iPixelFormat, int iLayerPlane, UINT nAttributes, const int* piAttributes, int* piValues );
-  using wglGetPixelFormatAttribfvARB = BOOL( HDC hdc, int iPixelFormat, int iLayerPlane, UINT nAttributes, const int* piAttributes, FLOAT* pfValues );
+  using wglGetPixelFormatAttribivARB = BOOL WINAPI( HDC hdc, int iPixelFormat, int iLayerPlane, UINT nAttributes, const int* piAttributes, int* piValues );
+  using wglGetPixelFormatAttribfvARB = BOOL WINAPI( HDC hdc, int iPixelFormat, int iLayerPlane, UINT nAttributes, const int* piAttributes, FLOAT* pfValues );
+  using wglSwapIntervalEXT = BOOL WINAPI( int );
 
   using glShaderSource = void WINAPI( GLuint shader, GLsizei count, const GLchar** string, const GLint* length );
   using glCreateShader = GLuint WINAPI( GLenum type );
@@ -83,14 +87,27 @@ namespace opengl_ext
   using glBufferData = void WINAPI( GLenum target, GLsizeiptr size, const void* data, GLenum usage );
   using glBindBuffer = void WINAPI( GLenum target, GLuint buffer );
   using glDeleteBuffers = void WINAPI( GLsizei n, const GLuint* buffers );
+  using glUseProgram = void WINAPI( GLuint program );
 
-  using wglSwapIntervalEXT = BOOL WINAPI( int );
+  using glGetProgramiv = void WINAPI( GLuint program, GLenum pname, GLint* params );
+  using glGetProgramInfoLog = void WINAPI( GLuint program, GLsizei bufSize, GLsizei* length, GLchar* infoLog );
+  using glGetShaderiv = void WINAPI( GLuint shader, GLenum pname, GLint* params );
+  using glGetShaderInfoLog = void WINAPI( GLuint shader, GLsizei bufSize, GLsizei* length, GLchar* infoLog );
+
+  using glVertexAttribPointer = void WINAPI( GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void* pointer );
+  using glDisableVertexAttribArray = void WINAPI( GLuint index );
+  using glEnableVertexAttribArray = void WINAPI( GLuint index );
+  using glGenBuffers = void WINAPI( GLsizei n, GLuint* buffers );
+  using glGenVertexArrays = void WINAPI( GLsizei n, GLuint* arrays );
+  using glBindVertexArray = void WINAPI( GLuint array );
+  using glDeleteVertexArrays = void WINAPI( GLsizei n, const GLuint* arrays );
 }
 
 static opengl_ext::wglChoosePixelFormatARB* wglChoosePixelFormatARB;
 static opengl_ext::wglCreateContextAttribsARB* wglCreateContextAttribsARB;
 static opengl_ext::wglGetPixelFormatAttribivARB* wglGetPixelFormatAttribivARB;
 static opengl_ext::wglGetPixelFormatAttribfvARB* wglGetPixelFormatAttribfvARB;
+static opengl_ext::wglSwapIntervalEXT* wglSwapIntervalEXT;
 
 static opengl_ext::glShaderSource* glShaderSource;
 static opengl_ext::glCreateShader* glCreateShader;
@@ -105,41 +122,73 @@ static opengl_ext::glCreateBuffers* glCreateBuffers;
 static opengl_ext::glBufferData* glBufferData;
 static opengl_ext::glBindBuffer* glBindBuffer;
 static opengl_ext::glDeleteBuffers* glDeleteBuffers;
-static opengl_ext::wglSwapIntervalEXT* wglSwapIntervalEXT;
+static opengl_ext::glUseProgram* glUseProgram;
+
+static opengl_ext::glGetProgramiv* glGetProgramiv;
+static opengl_ext::glGetProgramInfoLog* glGetProgramInfoLog;
+static opengl_ext::glGetShaderiv* glGetShaderiv;
+static opengl_ext::glGetShaderInfoLog* glGetShaderInfoLog;
+
+
+static opengl_ext::glVertexAttribPointer* glVertexAttribPointer;
+static opengl_ext::glDisableVertexAttribArray* glDisableVertexAttribArray;
+static opengl_ext::glEnableVertexAttribArray* glEnableVertexAttribArray;
+static opengl_ext::glGenBuffers* glGenBuffers;
+static opengl_ext::glGenVertexArrays* glGenVertexArrays;
+static opengl_ext::glBindVertexArray* glBindVertexArray;
+static opengl_ext::glDeleteVertexArrays* glDeleteVertexArrays;
 
 namespace opengl_ext
 {
   void* get_proc_address( char const* functionName );
+  u32 validate();
 
   u32 init()
   {
-    u32 result = 1;
-
     ::wglChoosePixelFormatARB = (opengl_ext::wglChoosePixelFormatARB*) get_proc_address( "wglChoosePixelFormatARB" );
     ::wglCreateContextAttribsARB =  (opengl_ext::wglCreateContextAttribsARB*) get_proc_address( "wglCreateContextAttribsARB" );
     ::wglGetPixelFormatAttribivARB = (opengl_ext::wglGetPixelFormatAttribivARB*) get_proc_address( "wglGetPixelFormatAttribivARB" );
     ::wglGetPixelFormatAttribfvARB = (opengl_ext::wglGetPixelFormatAttribfvARB*) get_proc_address( "wglGetPixelFormatAttribfvARB" );
+    ::wglSwapIntervalEXT = (opengl_ext::wglSwapIntervalEXT*) get_proc_address( "wglSwapIntervalEXT" );
 
+    ::glShaderSource =             (opengl_ext::glShaderSource*) get_proc_address( "glShaderSource" );
+    ::glCreateShader =             (opengl_ext::glCreateShader*) get_proc_address( "glCreateShader" );
+    ::glCompileShader =            (opengl_ext::glCompileShader*) get_proc_address( "glCompileShader" );
+    ::glAttachShader =             (opengl_ext::glAttachShader*) get_proc_address( "glAttachShader" );
+    ::glDetachShader =             (opengl_ext::glDetachShader*) get_proc_address( "glDetachShader" );
+    ::glDeleteShader =             (opengl_ext::glDeleteShader*) get_proc_address( "glDeleteShader" );
+    ::glCreateProgram =            (opengl_ext::glCreateProgram*) get_proc_address( "glCreateProgram" );
+    ::glLinkProgram =              (opengl_ext::glLinkProgram*) get_proc_address( "glLinkProgram" );
+    ::glDeleteProgram =            (opengl_ext::glDeleteProgram*) get_proc_address( "glDeleteProgram" );
+    ::glCreateBuffers =            (opengl_ext::glCreateBuffers*) get_proc_address( "glCreateBuffers" );
+    ::glBufferData =               (opengl_ext::glBufferData*) get_proc_address( "glBufferData" );
+    ::glBindBuffer =               (opengl_ext::glBindBuffer*) get_proc_address( "glBindBuffer" );
+    ::glDeleteBuffers =            (opengl_ext::glDeleteBuffers*) get_proc_address( "glDeleteBuffers" );
+    ::glUseProgram =               (opengl_ext::glUseProgram*) get_proc_address( "glUseProgram" );
+
+    ::glGetProgramiv =             (opengl_ext::glGetProgramiv*) get_proc_address( "glGetProgramiv" );
+    ::glGetProgramInfoLog =        (opengl_ext::glGetProgramInfoLog*) get_proc_address( "glGetProgramInfoLog" );
+    ::glGetShaderiv =              (opengl_ext::glGetShaderiv*) get_proc_address( "glGetShaderiv" );
+    ::glGetShaderInfoLog =         (opengl_ext::glGetShaderInfoLog*) get_proc_address( "glGetShaderInfoLog" );
+
+    ::glVertexAttribPointer =      (opengl_ext::glVertexAttribPointer*) get_proc_address( "glVertexAttribPointer" );
+    ::glDisableVertexAttribArray = (opengl_ext::glDisableVertexAttribArray*) get_proc_address( "glDisableVertexAttribArray" );
+    ::glEnableVertexAttribArray =  (opengl_ext::glEnableVertexAttribArray*) get_proc_address( "glEnableVertexAttribArray" );
+    ::glGenBuffers =               (opengl_ext::glGenBuffers*) get_proc_address( "glGenBuffers" );
+    ::glGenVertexArrays =          (opengl_ext::glGenVertexArrays*) get_proc_address( "glGenVertexArrays" );
+    ::glBindVertexArray =          (opengl_ext::glBindVertexArray*) get_proc_address( "glBindVertexArray" );
+    ::glDeleteVertexArrays =       (opengl_ext::glDeleteVertexArrays*) get_proc_address( "glDeleteVertexArrays" );
+
+    return validate();
+  }
+
+  u32 validate()
+  {
     if ( ::wglChoosePixelFormatARB == nullptr ) BREAK;
     if ( ::wglCreateContextAttribsARB == nullptr ) BREAK;
     if ( ::wglGetPixelFormatAttribivARB == nullptr ) BREAK;
     if ( ::wglGetPixelFormatAttribfvARB == nullptr ) BREAK;
-
-    ::glShaderSource =  (opengl_ext::glShaderSource*) get_proc_address( "glShaderSource" );
-    ::glCreateShader =  (opengl_ext::glCreateShader*) get_proc_address( "glCreateShader" );
-    ::glCompileShader = (opengl_ext::glCompileShader*) get_proc_address( "glCompileShader" );
-    ::glAttachShader =  (opengl_ext::glAttachShader*) get_proc_address( "glAttachShader" );
-    ::glDetachShader =  (opengl_ext::glDetachShader*) get_proc_address( "glDetachShader" );
-    ::glDeleteShader =  (opengl_ext::glDeleteShader*) get_proc_address( "glDeleteShader" );
-    ::glCreateProgram = (opengl_ext::glCreateProgram*) get_proc_address( "glCreateProgram" );
-    ::glLinkProgram =   (opengl_ext::glLinkProgram*) get_proc_address( "glLinkProgram" );
-    ::glDeleteProgram = (opengl_ext::glDeleteProgram*) get_proc_address( "glDeleteProgram" );
-    ::glCreateBuffers = (opengl_ext::glCreateBuffers*) get_proc_address( "glCreateBuffers" );
-    ::glBufferData =    (opengl_ext::glBufferData*) get_proc_address( "glBufferData" );
-    ::glBindBuffer =    (opengl_ext::glBindBuffer*) get_proc_address( "glBindBuffer" );
-    ::glDeleteBuffers = (opengl_ext::glDeleteBuffers*) get_proc_address( "glDeleteBuffers" );
-    ::wglSwapIntervalEXT = (opengl_ext::wglSwapIntervalEXT*) get_proc_address( "wglSwapIntervalEXT" );
-
+    if ( ::wglSwapIntervalEXT == nullptr ) BREAK;
     if ( ::glShaderSource == nullptr ) BREAK;
     if ( ::glCreateShader == nullptr ) BREAK;
     if ( ::glCompileShader == nullptr ) BREAK;
@@ -153,9 +202,22 @@ namespace opengl_ext
     if ( ::glBufferData == nullptr ) BREAK;
     if ( ::glBindBuffer == nullptr ) BREAK;
     if ( ::glDeleteBuffers == nullptr ) BREAK;
-    if ( ::wglSwapIntervalEXT == nullptr ) BREAK;
+    if ( ::glUseProgram == nullptr ) BREAK;
 
-    return result;
+    if ( ::glGetProgramiv == nullptr ) BREAK;
+    if ( ::glGetProgramInfoLog == nullptr ) BREAK;
+    if ( ::glGetShaderiv == nullptr ) BREAK;
+    if ( ::glGetShaderInfoLog == nullptr ) BREAK;
+
+    if ( ::glVertexAttribPointer == nullptr ) BREAK;
+    if ( ::glDisableVertexAttribArray == nullptr ) BREAK;
+    if ( ::glEnableVertexAttribArray == nullptr ) BREAK;
+    if ( ::glGenBuffers == nullptr ) BREAK;
+    if ( ::glGenVertexArrays == nullptr ) BREAK;
+    if ( ::glBindVertexArray == nullptr ) BREAK;
+    if ( ::glDeleteVertexArrays == nullptr ) BREAK;
+
+    return 1;
   }
 
   void* get_proc_address( char const* functionName )

@@ -91,8 +91,7 @@ namespace global
   static thread::ThreadInfo asyncThreads[ASYNC_THREAD_COUNT];
 };
 
-
-namespace compiledasset
+namespace DEBUG
 {
-  // extern char const DEFAULT_FONT[];
+  static float scale = 1.0f;
 };

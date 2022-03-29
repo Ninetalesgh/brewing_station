@@ -1,5 +1,5 @@
 #pragma once
-#include "bscommon.h"
+#include "bsmath.h"
 
 namespace color
 {
@@ -25,30 +25,14 @@ namespace color
   INLINE u32 rgba( u8 r, u8 g, u8 b, u8 a ) { return (u32) (a << 24) | (u32) (r << 16) | (u32) (g << 8) | b; }
   INLINE u32 rgb( u8 r, u8 g, u8 b ) { return (u32) (r << 16) | (u32) (g << 8) | b; }
 
-  INLINE u8 get_red( u32 color )
-  {
-    return u8( (color & MASK_RED) >> 16 );
-  }
+  INLINE u8 get_red( u32 color ) { return u8( (color & MASK_RED) >> 16 ); }
+  INLINE u8 get_green( u32 color ) { return u8( (color & MASK_GREEN) >> 8 ); }
+  INLINE u8 get_blue( u32 color ) { return u8( color & MASK_BLUE ); }
+  INLINE u8 get_alpha( u32 color ) { return u8( (color & MASK_ALPHA) >> 24 ); }
 
-  INLINE u8 get_green( u32 color )
-  {
-    return u8( (color & MASK_GREEN) >> 8 );
-  }
+  INLINE float4 float4_from_rgba( u32 color ) { return float4 { (float) get_red( color ),(float) get_green( color ),(float) get_blue( color ),(float) get_alpha( color ) } / 255.0f; }
 
-  INLINE u8 get_blue( u32 color )
-  {
-    return u8( color & MASK_BLUE );
-  }
-
-  INLINE u8 get_alpha( u32 color )
-  {
-    return u8( (color & MASK_ALPHA) >> 24 );
-  }
-
-  INLINE float get_alpha_float( u32 color )
-  {
-    return float( (color & MASK_ALPHA) >> 24 ) / 255.0f;
-  }
+  INLINE float get_alpha_float( u32 color ) { return float( (color & MASK_ALPHA) >> 24 ) / 255.0f; }
 
   INLINE u32 interpolate( float t, u32 colorA, u32 colorB )
   {
@@ -96,3 +80,18 @@ namespace color
     return a | r | g | b;
   }
 }
+
+//TODO put this somewhere useful
+namespace identifiercolors
+{
+  //u32 const text            = color::rgba( 212, 212, 212, 255 );
+  //u32 const text2           = color::rgba( 50, 187, 176, 255 );
+  //u32 const textDark        = color::rgba( 133, 133, 133, 255 );
+  //u32 const function        = color::rgba( 224, 154, 53, 255 );
+  //u32 const basicType       = color::rgba( 44, 122, 214, 255 );
+  //u32 const comment         = color::rgba( 94, 153, 62, 255 );
+  //u32 const preprocessor    = color::rgba( 155, 45, 129, 255 );
+  //u32 const operator        = color::rgba( 197, 134, 192, 255 );
+  //u32 const backgroundDark  = color::rgba( 30, 30, 30, 255 );
+  //u32 const backgroundLight = color::rgba( 66, 66, 66, 255 )
+};

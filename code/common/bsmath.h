@@ -89,6 +89,30 @@ struct float3
   INLINE float3        operator*=( float other ) { return *this = *this * other; }
 };
 
+struct float4
+{
+  float4() {}
+  float4( float x, float y, float z, float w ) : x( x ), y( y ), z( z ), w( w ) {}
+  float4( float xyzw ) : x( xyzw ), y( xyzw ), z( xyzw ), w( xyzw ) {}
+  union
+  {
+    float elements[4];
+    struct { float x; float y; float z; float w; };
+  };
+
+  INLINE float& operator[]( int i ) { return elements[i]; }
+  INLINE float         operator[]( int i ) const { return elements[i]; }
+  INLINE float4 friend operator +( float4 const& a, float4 const& b ) { return { a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w }; }
+  INLINE float4 friend operator -( float4 const& a, float4 const& b ) { return { a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w }; }
+  INLINE float4 friend operator *( float f, float4 const& v ) { return { f * v.x, f * v.y, f * v.z, f * v.w }; }
+  INLINE float4 friend operator *( float4 const& v, float f ) { return { f * v.x, f * v.y, f * v.z, f * v.w }; }
+  INLINE float4 friend operator /( float4 const& v, float f ) { float rcp = 1.0f / f; return v * rcp; }
+  INLINE float4        operator =( float4 const& other ) { x = other.x; y = other.y; z = other.z; w = other.w; return other; }
+  INLINE float4        operator+=( float4 const& other ) { return *this = *this + other; }
+  INLINE float4        operator-=( float4 const& other ) { return *this = *this - other; }
+  INLINE float4        operator*=( float other ) { return *this = *this * other; }
+};
+
 INLINE int2   min( int2 const& a, int2 const& b ) { return { a.x < b.x ? a.x : b.x , a.y < b.y ? a.y : b.y }; }
 INLINE int2   max( int2 const& a, int2 const& b ) { return { a.x > b.x ? a.x : b.x , a.y > b.y ? a.y : b.y }; }
 INLINE int2 clamp( int2 value, int2 low, int2 high ) { return max( min( value, high ), low ); }
@@ -99,6 +123,4 @@ INLINE float2 clamp( float2 value, float2 low, float2 high ) { return max( min( 
 
 INLINE float    dot( float2 const& a, float2 const& b ) { return a.x * b.x + a.y * b.y; }
 INLINE float    dot( float3 const& a, float3 const& b ) { return a.x * b.x + a.y * b.y + a.z * b.z; }
-INLINE float3 cross( float3 const& a, float3 const& b ) {
-  return { a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x };
-}
+INLINE float3 cross( float3 const& a, float3 const& b ) { return { a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x }; }

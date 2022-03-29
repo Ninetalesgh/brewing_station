@@ -86,6 +86,7 @@ namespace bs
   {
     struct GlyphTable
     {
+      graphics::ShaderProgram shaderProgram;
       float scale;
       float scaleForPixelHeight;
       stbtt_fontinfo* fontInfo;
@@ -107,8 +108,7 @@ namespace bs
         }
         else
         {
-          platform::free( stbFontInfo );
-          platform::free( glyphTable );
+          platform::free( allocation );
           glyphTable = nullptr;
           BREAK;
         }
@@ -294,7 +294,7 @@ namespace bs
 
       sheetDims.x = max( sheetDims.x, currentRow.x );
       sheetDims.y = sheetDims.y + currentRow.y;
-
+      #define LUL
       graphics::Bitmap* sheetBMP = nullptr;
       {
         u8* allocation = (u8*) memory::allocate( sizeof( graphics::Bitmap ) + sizeof( u32 ) * sheetDims.x * sheetDims.y );
@@ -319,21 +319,13 @@ namespace bs
             for ( s32 x = 0; x < (s32) rects[i].uvSize.x; ++x )
             {
               s32 index = x + y * rawGlyphData->width;
-              *writer++ = color::rgba( rawGlyphData->data[index], rawGlyphData->data[index], rawGlyphData->data[index], rawGlyphData->data[index] );
+              *writer++ = color::rgba( 0xff, 0xff, 0xff, rawGlyphData->data[index] );
             }
           }
 
           memory::free( rawGlyphData );
         }
       }
-
-      // float width = (float) sheetBMP->width;
-      // float height = (float) sheetBMP->height;
-      // for ( s32 i = 0; i < glyphCount; ++i )
-      // {
-      //   rects[i].uvBegin = { rects[i].uvBegin.x / width, rects[i].uvBegin.y / height };
-      //   rects[i].uvSize = { rects[i].uvSize.x / width, rects[i].uvSize.y / height };
-      // }
 
       resultSheet->glyphs =     rects;
       resultSheet->glyphCount = glyphCount;

@@ -124,7 +124,7 @@ namespace bs
       };
     };
 
-    struct Mouse
+    struct MousePos
     {
       int2 start;
       int2 end;
@@ -135,7 +135,7 @@ namespace bs
     struct State
     {
       Controller controller[4];
-      Mouse mousePos[1];
+      MousePos mousePos[1];
       s32 mouseWheelDelta;
 
       //mouse & keyboard

@@ -16,7 +16,7 @@
 
 void brewing_station_loop();
 void brewing_station_main();
-void init_compiled_assets();
+u32 init_compiled_assets();
 LRESULT CALLBACK brewing_station_main_window_callback( HWND window, UINT message, WPARAM wParam, LPARAM lParam );
 
 
@@ -52,7 +52,8 @@ void brewing_station_loop()
           }
           case WM_MOUSEWHEEL:
           {
-            //TODO
+            input.mouseWheelDelta = GET_WHEEL_DELTA_WPARAM( message.wParam ) / WHEEL_DELTA;
+            DEBUG::scale -= float( input.mouseWheelDelta ) * 0.03f;
             break;
           }
           case WM_MOUSEMOVE:
@@ -277,7 +278,10 @@ void brewing_station_main()
   result = (s32) timeBeginPeriod( 1 );
   assert( result == TIMERR_NOERROR );
 
-  init_compiled_assets();
+  if ( !init_compiled_assets() )
+  {
+    return;
+  }
 
   #ifdef BS_RELEASE_BUILD
   {
@@ -287,7 +291,7 @@ void brewing_station_main()
     global::appDll.render = &bs::app_render;
     global::appDll.receive_udp_packet = &bs::app_receive_udp_packet;
 
-    //global::appDll.register_debug_callbacks = &platform::debug::app_register_debug_callbacks;
+    //platform::register_callbacks( win32::get_callbacks() );
   }
   #else
   {
@@ -315,11 +319,12 @@ void brewing_station_main()
 
 #include <compiled_assets>
 
-void init_compiled_assets()
+u32 init_compiled_assets()
 {
+  u32 result = 0;
   //switch to either initialize already compiled assets (1) or compile them (0)
   #if 1
-
+  //default font
   {
     char const chars[] = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
     global::defaultGlyphTable = bs::font::create_glyph_table_from_ttf( compiledasset::DEFAULT_FONT );
@@ -327,17 +332,39 @@ void init_compiled_assets()
     global::defaultGlyphSheet = bs::font::create_glyph_sheet( global::defaultGlyphTable, chars );
   }
 
+  //TODO
+  {
+    bs::file::Data h;
+    bs::file::Data vs;
+    bs::file::Data fs;
+    win32::load_file_into_memory( "w:/code/shader/test.h.glsl", &h );
+    win32::load_file_into_memory( "w:/code/shader/test.vs.glsl", &vs );
+    win32::load_file_into_memory( "w:/code/shader/test.fs.glsl", &fs );
+
+    global::defaultGlyphTable->shaderProgram = opengl::create_shader_program( h, vs, fs );
+  }
+
+
+  result = 1;
+
+  //////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////////
   #else
+  //////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////////
+
   bs::file::Data ttf;
   win32::load_file_into_memory( "w:/data/bs.ttf", &ttf );
 
   win32::AssetToCompile assets[] =
   {
-    {"DEFAULT_FONT", ttf.data,(u32) ttf.size},
+  {"DEFAULT_FONT", ttf.data,(u32) ttf.size},
   };
 
   win32::generate_compiled_assets_file( assets, array_count( assets ) );
   #endif
+
+  return result;
 }
 
 

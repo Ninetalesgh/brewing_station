@@ -34,20 +34,20 @@ namespace bs
     };
     struct TextArea
     {
-      font::GlyphTable* font;
+      font::GlyphTable* glyphTable;
       font::GlyphSheet* glyphSheet; //TODO
       TextLine* lines;
       s32 lineCount;
     };
 
-    TextArea* create_text_area_from_text( char const* text, font::GlyphTable* font, float2 dimensions )
+    TextArea* create_text_area_from_text( char const* text, font::GlyphTable* glyphTable, float2 dimensions )
     {
       s32 lineCount = string::line_count( text );
       s32 totalTextLength = string::length_utf8( text ) + 1;
 
       u8* allocation = (u8*) memory::allocate( sizeof( TextArea ) + sizeof( TextLine ) * lineCount + sizeof( s32 ) * totalTextLength );
       TextArea* resultArea = (TextArea*) allocation;
-      resultArea->font = font;
+      resultArea->glyphTable = glyphTable;
       resultArea->lines = (TextLine*) (allocation + sizeof( TextArea ));
       resultArea->lineCount = lineCount;
 

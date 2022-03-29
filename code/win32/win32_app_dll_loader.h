@@ -5,11 +5,31 @@
 #include "win32_opengl.h"
 #include <core/bsdebuglog.h>
 
-#define dll_log_info(...) log_info("[WIN32_DLL] ", ...)
-#define dll_log_error(...) log_error("[WIN32_DLL] ", ...)
-
 namespace win32
 {
+  platform::Callbacks get_callbacks()
+  {
+    platform::Callbacks result {};
+    result.ptr_debug_log = &win32::debug_log;
+    result.ptr_push_async_task = &win32::push_async_task;
+    result.ptr_push_synced_task = &win32::push_synced_task;
+    result.ptr_complete_synced_tasks = &win32::complete_synced_tasks;
+    result.ptr_get_file_info = &win32::get_file_info;
+    result.ptr_load_file_into_memory = &win32::load_file_into_memory;
+    result.ptr_write_file = &win32::write_file;
+    result.ptr_allocate_texture = &opengl::allocate_texture;
+    result.ptr_free_texture = &opengl::free_texture;
+    result.ptr_render = &opengl::render;
+    result.mainArena = global::defaultArena;
+
+    //TODO
+    //  prm.send_udp = &win32::send_udp;
+    //  prm.send_tcp = &win32::send_tcp;
+    return result;
+  }
+
+
+
   using for_all_threadfn = void( threadfn* );
   struct PrmThreadDllLoader
   {
@@ -91,27 +111,7 @@ namespace win32
               FreeLibrary( currentApp.dll );
               currentApp = newApp;
 
-              platform::Callbacks prm {};
-
-              prm.ptr_debug_log = &win32::debug_log;
-              prm.ptr_push_async_task = &win32::push_async_task;
-              prm.ptr_push_synced_task = &win32::push_synced_task;
-              prm.ptr_complete_synced_tasks = &win32::complete_synced_tasks;
-              prm.ptr_get_file_info = &win32::get_file_info;
-              prm.ptr_load_file_into_memory = &win32::load_file_into_memory;
-              prm.ptr_write_file = &win32::write_file;
-
-              prm.ptr_allocate_texture = &opengl::allocate_texture;
-              prm.ptr_free_texture = &opengl::free_texture;
-              prm.ptr_render = &opengl::render;
-
-              //TODO
-              //  prm.send_udp = &win32::send_udp;
-              //  prm.send_tcp = &win32::send_tcp;
-
-
-              prm.mainArena = global::defaultArena;
-
+              platform::Callbacks prm = get_callbacks();
               currentApp.register_callbacks( prm );
 
               // TODO: maybe this not here? 

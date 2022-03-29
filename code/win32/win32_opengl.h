@@ -6,11 +6,13 @@
 #include <ui/bstextarea.h>
 #include <core/bsgraphics.h>
 
-#include <opengl_ext.h>
+#include <core/bsfile.h>
 #include <core/bsfont.h>
 #include <core/bsmemory.h>
 #include <common/bscolor.h>
 #include <common/bscommon.h>
+
+#include <opengl_ext.h>
 #include <windows.h>
 #ifdef min
 # undef min
@@ -43,50 +45,13 @@ namespace opengl
 
   bs::graphics::TextureID allocate_texture( u32 const* pixel, s32 width, s32 height );
   void free_texture( bs::graphics::TextureID texture );
+
+  using ProgramID = u32;
+  using ShaderID = u32;
+  // ProgramID create_shader_program( char const* headerSource, char const* vertexSource, char const* fragmentSource );
+  ProgramID create_shader_program( bs::file::Data headerFileData, bs::file::Data vsFileData, bs::file::Data fsFileData );
+
   void render( bs::graphics::RenderTarget*, bs::graphics::RenderGroup*, bs::graphics::Camera* );
-};
-
-
-class Shader
-{
-  void create( char const* headerSource, char const* vertexSource, char const* fragmentSource )
-  {
-    GLint shaderCodeLengths[] = { -1,-1 };
-
-    GLuint vsID = glCreateShader( GL_VERTEX_SHADER );
-    GLchar const* vsCode[] =
-    {
-      headerSource,
-      vertexSource
-    };
-    glShaderSource( vsID, array_count( vsCode ), vsCode, shaderCodeLengths );
-    glCompileShader( vsID );
-
-    GLuint fsID = glCreateShader( GL_FRAGMENT_SHADER );
-    GLchar const* fsCode[] =
-    {
-      headerSource,
-      fragmentSource
-    };
-    glShaderSource( fsID, array_count( fsCode ), fsCode, shaderCodeLengths );
-    glCompileShader( fsID );
-
-    GLuint programID = glCreateProgram();
-    glAttachShader( programID, vsID );
-    glAttachShader( programID, fsID );
-    glLinkProgram( programID );
-
-
-    //glCompileShader
-    //glLinkProgram
-    //glUniform
-    //glShaderSource
-
-  }
-
-  void bind();
-
-  u32 rendererID;
 };
 
 class VertexBuffer
@@ -307,9 +272,13 @@ namespace opengl
     }
 
     resize_viewport();
-    glClearColor( 1.0f, 0.0f, 1.0f, 0.0f );
-    glClear( GL_COLOR_BUFFER_BIT );
 
+    glEnable( GL_DEPTH_TEST );
+    glDepthFunc( GL_LESS );
+
+    float4 bg = color::float4_from_rgba( color::rgba( 30, 30, 30, 255 ) );
+    glClearColor( bg.x * bg.x, bg.y * bg.y, bg.z * bg.z, bg.w );
+    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     return 1;
   }
 
@@ -338,7 +307,7 @@ namespace opengl
     //  render( nullptr, nullptr, nullptr );
 
     SwapBuffers( global::deviceContext );
-    glClear( GL_COLOR_BUFFER_BIT );
+    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
   }
 
   bs::graphics::TextureID allocate_texture( u32 const* pixel, s32 width, s32 height )
@@ -368,7 +337,7 @@ namespace opengl
   {
     bs::font::GlyphSheet* glyphSheet = ::global::defaultGlyphSheet;
     bs::font::GlyphTable* glyphTable = ::global::defaultGlyphTable;
-
+    int2 screenSize = ::global::mainWindow.size;
     glEnable( GL_TEXTURE_2D );
     glBindTexture( GL_TEXTURE_2D, glyphSheet->textureID );
 
@@ -379,15 +348,19 @@ namespace opengl
     glMatrixMode( GL_MODELVIEW );
     glLoadIdentity();
 
-    float matrix[] = {
-    1,0,0,0,
-    0,1,0,0,
-    0,0,1,0,
-    0,0,0,1,
+    float mvMat[] = {
+     1.0f, 0.0f, 0.0f, 0.0f,
+     0.0f, 1.0f, 0.0f, 0.0f,
+     0.0f, 0.0f, 1.0f, 0.0f,
+     0.0f, 0.0f, 0.0f, 1.0f,
     };
-    glLoadMatrixf( matrix );
+    glLoadMatrixf( mvMat );
+    glScalef( DEBUG::scale, DEBUG::scale, 1.0f );
+
+
     glMatrixMode( GL_PROJECTION );
     glLoadIdentity();
+    glOrtho( 0.f, screenSize.x, screenSize.y, 0.f, 0.f, 1.f );
 
     glEnable( GL_BLEND );
     glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
@@ -399,11 +372,14 @@ namespace opengl
     float2 invScreenSize = ::global::mainWindow.size;
     invScreenSize = { 1.0f / invScreenSize.x, 1.0f / invScreenSize.y };
 
-    float2 textAreaOrigin = { 0, 0 };
-    float2 currentPos = { 0, 0 };
+    float2 textAreaOrigin = { 0.0f, 0.0f };
+    float2 lineOrigin = textAreaOrigin;
 
     for ( s32 lineIndex = 0; lineIndex < textArea->lineCount; ++lineIndex )
     {
+      lineOrigin.y += glyphTable->scale;
+      float2 currentPos = lineOrigin;
+
       bs::ui::TextLine& textLine = textArea->lines[lineIndex];
 
       s32 const end = lineIndex == textArea->lineCount - 1 ? (s32) '\0' : (s32) '\n';
@@ -413,54 +389,43 @@ namespace opengl
         bs::font::Glyph* glyph = get_glyph_for_codepoint( glyphSheet, *reader );
         ++reader;
 
-        // float2 rectMin = currentPos;
-        // float2 rectMax = rectMin + glyph->uvSize;
-
         {
-          // float2 min = currentPos;
-
-          float scale = glyphTable->scale;
           float2 min = textAreaOrigin + float2 { currentPos.x + glyph->offsetX, currentPos.y + glyph->offsetY };
-          float2 max = { min.x + (float) glyph->uvSize.x, (float) glyph->uvSize.y };
-
-          min = float2 { min.x * invScreenSize.x, min.y * invScreenSize.y };
-          max = float2 { max.x * invScreenSize.x, max.y * invScreenSize.y };
+          float2 max = { min.x + (float) glyph->uvSize.x,  min.y + (float) glyph->uvSize.y };
 
           currentPos.x += glyph->advance;
-          //float2 minuv = { glyph->uvBegin.x / glyphSheet->width, glyph->uvBegin.y / glyphSheet->height };
-          //float2 maxuv = minuv + float2 { glyph->uvSize.x / glyphSheet->width, glyph->uvSize.y / glyphSheet->height };
           float2 minuv = glyph->uvBegin;
           float2 maxuv = glyph->uvBegin + glyph->uvSize;
 
-          // min = { 0,0 };
-          // max = { 1,1 };
           // minuv = { 0, 0 };
-         // maxuv = { glyphSheet->width, glyphSheet->height };
+          // maxuv = { 1,1 };
+          // min = { 0,0 };
+          // max = { 1, 1 };
 
           glTexCoord2f( minuv.x, maxuv.y );
-          glVertex2f( min.x, min.y );
+          glVertex2f( min.x, max.y );
 
           glTexCoord2f( maxuv.x, maxuv.y );
+          glVertex2f( max.x, max.y );
+
+          glTexCoord2f( maxuv.x, minuv.y );
           glVertex2f( max.x, min.y );
 
-          glTexCoord2f( maxuv.x, minuv.y );
-          glVertex2f( max.x, max.y );
-
           glTexCoord2f( minuv.x, maxuv.y );
-          glVertex2f( min.x, min.y );
+          glVertex2f( min.x, max.y );
 
           glTexCoord2f( maxuv.x, minuv.y );
-          glVertex2f( max.x, max.y );
+          glVertex2f( max.x, min.y );
 
           glTexCoord2f( minuv.x, minuv.y );
-          glVertex2f( min.x, max.y );
+          glVertex2f( min.x, min.y );
         }
       }
+
     }
-
-
-
     glEnd();
+
+
   }
 
   void render( bs::graphics::RenderTarget* target, bs::graphics::RenderGroup* group, bs::graphics::Camera* camera )
@@ -469,7 +434,7 @@ namespace opengl
     {
       case bs::graphics::RenderGroup::TEXT_AREA:
       {
-        render_text_area( target, (bs::ui::TextArea*) group->renderObject );
+        //  render_text_area( target, (bs::ui::TextArea*) group->renderObject );
         break;
       }
       default:
@@ -479,62 +444,140 @@ namespace opengl
       }
     }
 
-    // static bs::graphics::TextureID f = ::global::defaultGlyphSheet->textureID;
-    // static bs::font::Glyph* test2 = ::global::defaultGlyphSheet->glyphs + 1;
-    // static s32 counter = 0;
-    // bs::font::Glyph* test = test2 + counter++;
-    // if ( counter > 90 ) counter = 0;
+    static const GLfloat g_vertex_buffer_data[] = {
+       -1.0f, -1.0f, 0.0f,
+       1.0f, -1.0f, 0.0f,
+       0.0f,  1.0f, 0.0f,
+    };
+    GLuint VertexArrayID;
+    GLuint vertexbuffer;
+    //static ProgramID programID = ::global::defaultGlyphTable->shaderProgram;
+    static int firsttime = 1;
+    if ( firsttime-- )
+    {
+      glGenVertexArrays( 1, &VertexArrayID );
+      glBindVertexArray( VertexArrayID );
+
+      glGenBuffers( 1, &vertexbuffer );
+      glBindBuffer( GL_ARRAY_BUFFER, vertexbuffer );
+      glBufferData( GL_ARRAY_BUFFER, sizeof( g_vertex_buffer_data ), g_vertex_buffer_data, GL_STATIC_DRAW );
+
+      /*
+cpp:
+// Get a handle for our "MVP" uniform
+// Only during the initialisation
+GLuint MatrixID = glGetUniformLocation(programID, "MVP");
+
+// Send our transformation to the currently bound shader, in the "MVP" uniform
+// This is done in the main loop since each model will have a different MVP matrix (At least for the M part)
+glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &mvp[0][0]);
+
+
+      shader:
+      uniform mat4 MVP;
 
 
 
+      */
 
+    }
 
+    glUseProgram( ::global::defaultGlyphTable->shaderProgram );
+    glEnableVertexAttribArray( 0 );
+    glBindBuffer( GL_ARRAY_BUFFER, vertexbuffer );
+    glVertexAttribPointer(
+       0,                  // attribute 0. match shader
+       3,                  // size
+       GL_FLOAT,           // type
+       GL_FALSE,           // normalized?
+       0,                  // stride
+       (void*) 0            // array buffer offset
+    );
+    // Draw the triangle !
+    glDrawArrays( GL_TRIANGLES, 0, 3 ); // Starting from vertex 0; 3 vertices total -> 1 triangle
+    glDisableVertexAttribArray( 0 );
+  }
 
-    // //rendertarget stuff:
-    // glViewport( , , , );
+  u32 validate_shader( ShaderID shaderID )
+  {
+    constexpr s32 MAX_INFO_LOG_LENGTH = 512;
+    char infoLog[MAX_INFO_LOG_LENGTH];
+    GLint result = GL_FALSE;
+    s32 infoLogLength = 0;
+    glGetShaderiv( shaderID, GL_COMPILE_STATUS, &result );
+    if ( result != GL_TRUE )
+    {
+      glGetShaderiv( shaderID, GL_INFO_LOG_LENGTH, &infoLogLength );
+      glGetShaderInfoLog( shaderID, min( infoLogLength, MAX_INFO_LOG_LENGTH ), NULL, infoLog );
+      log_error( "[OGL] Errors: \n", infoLog );
+      BREAK;
+    }
+    return result == GL_TRUE;
+  }
 
-    // //rendergroup stuff:
-    // glBindTexture( GL_TEXTURE_2D, f );
-    // glEnable( GL_TEXTURE_2D );
+  u32 validate_program( ProgramID programID )
+  {
+    constexpr s32 MAX_INFO_LOG_LENGTH = 512;
+    char infoLog[MAX_INFO_LOG_LENGTH];
+    GLint result = GL_FALSE;
+    s32 infoLogLength = 0;
+    glGetProgramiv( programID, GL_LINK_STATUS, &result );
+    if ( result != GL_TRUE )
+    {
+      glGetProgramiv( programID, GL_INFO_LOG_LENGTH, &infoLogLength );
+      glGetProgramInfoLog( programID, min( infoLogLength, MAX_INFO_LOG_LENGTH ), NULL, infoLog );
+      log_error( "[OGL] Errors: \n", infoLog );
+      BREAK;
+    }
+    return result == GL_TRUE;
+  }
 
-    // glClear( GL_COLOR_BUFFER_BIT );
-    // glBegin( GL_TRIANGLES );
+  ProgramID create_shader_program( bs::file::Data headerFileData, bs::file::Data vsFileData, bs::file::Data fsFileData )
+  {
+    log_info( "[OGL] Compiling shader." );
 
-    // glMatrixMode( GL_TEXTURE );
-    // glLoadIdentity();
+    GLint shaderCodeLengths[] = { (s32) headerFileData.size, (s32) vsFileData.size };
 
-    // glMatrixMode( GL_MODELVIEW );
-    // glLoadIdentity();
+    ShaderID vsID = glCreateShader( GL_VERTEX_SHADER );
+    GLchar const* vsCode[] =
+    {
+      (char const*) headerFileData.data,
+      (char const*) vsFileData.data
+    };
+    glShaderSource( vsID, array_count( vsCode ), vsCode, shaderCodeLengths );
+    glCompileShader( vsID );
 
-    // glMatrixMode( GL_PROJECTION );
-    // glLoadIdentity();
+    validate_shader( vsID );
 
-    // glEnable( GL_BLEND );
-    // glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+    shaderCodeLengths[1] = (s32) fsFileData.size;
 
-    // {
-    //   float2 min = test->uvBegin;
-    //   float2 max = test->uvBegin + test->uvSize;
+    ShaderID fsID = glCreateShader( GL_FRAGMENT_SHADER );
+    GLchar const* fsCode[] =
+    {
+      (char const*) headerFileData.data,
+      (char const*) fsFileData.data
+    };
+    glShaderSource( fsID, array_count( fsCode ), fsCode, shaderCodeLengths );
+    glCompileShader( fsID );
 
-    //   glTexCoord2f( min.x, max.y );
-    //   glVertex2f( -p, -p );
+    validate_shader( fsID );
 
-    //   glTexCoord2f( max.x, max.y );
-    //   glVertex2f( p, -p );
+    log_info( "[OGL] Linking program." );
 
-    //   glTexCoord2f( max.x, min.y );
-    //   glVertex2f( p, p );
+    GLuint programID = glCreateProgram();
+    glAttachShader( programID, vsID );
+    glAttachShader( programID, fsID );
+    glLinkProgram( programID );
 
-    //   glTexCoord2f( min.x, max.y );
-    //   glVertex2f( -p, -p );
+    validate_program( programID );
 
-    //   glTexCoord2f( max.x, min.y );
-    //   glVertex2f( p, p );
+    glDetachShader( programID, vsID );
+    glDetachShader( programID, fsID );
 
-    //   glTexCoord2f( min.x, min.y );
-    //   glVertex2f( -p, p );
-    // }
+    glDeleteShader( vsID );
+    glDeleteShader( fsID );
 
+    return programID;
   }
 };
 

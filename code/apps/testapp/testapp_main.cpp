@@ -18,10 +18,9 @@ namespace bs
   {
 
     //char const* text = "hello\ntest";
-    char const* text = "hello klara";
+    //char const* text = "hello Klara\nhello Camillo.";
+    char const* text = "dobiieboo\nhello Klara, my email is:\ncamillolukesch@gmail.com\nPlease mail me. <3.";
     testArea = ui::create_text_area_from_text( text, nullptr, { 0,0 } );
-
-
   }
 
   void app_tick( PrmAppTick prm )
