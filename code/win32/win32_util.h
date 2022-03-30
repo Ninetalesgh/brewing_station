@@ -5,6 +5,8 @@
 #include "win32_global.h"
 
 
+#include <stdio.h>
+
 namespace win32
 {
   struct WindowInitParameter
@@ -62,7 +64,8 @@ namespace win32
     //wchar_t wideChars[bs::debug::MAX_DEBUG_MESSAGE_LENGTH];
    // utf8_to_wchar( string, wideChars, array_count( wideChars ) );
 
-    OutputDebugStringA( string );
+   // OutputDebugStringA( string );
+    printf( string );
     if ( flags & bs::debug::DebugLogFlags::WRITE_TO_DEBUG_LOG_FILE )
     {
       static HANDLE debug_log_file = CreateFileW( L"debug.log", GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0 );

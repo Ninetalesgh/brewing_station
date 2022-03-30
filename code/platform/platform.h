@@ -5,11 +5,15 @@
 #include <core/bsinput.h>
 #include <core/bsnet.h>
 
+
+#define DEFAULT_WINDOW_SIZE int2{ 1024, 780 }
+
 namespace bs
 {
   struct AppData
   {
     u64 currentFrameIndex;
+    float deltaTime;
     input::State input;
     net::NetworkData network;
   };
@@ -35,14 +39,6 @@ namespace bs
     //BackBuffer* backBuffer;
   };
   extern "C" void app_tick( PrmAppTick );
-
-  struct PrmAppRender
-  {
-    //PlatformData const* platformData;
-    AppData* appData;
-    //BackBuffer* backBuffer;
-  };
-  extern "C" void app_render( PrmAppRender );
 
   struct PrmAppReceiveUDPPacket
   {

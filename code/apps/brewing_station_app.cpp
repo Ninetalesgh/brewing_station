@@ -1,8 +1,10 @@
-#define BUILD_TESTAPP
+//#define BUILD_TESTAPP
+#define BUILD_FIRST_APP
 
 #ifdef BUILD_TESTAPP
 #include "testapp/testapp_main.cpp"
-#else
+#elif defined(BUILD_FIRST_APP)
+#include "first_app/first_app_main.cpp"
 
 #endif
 

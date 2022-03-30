@@ -277,6 +277,9 @@ namespace opengl
 
     resize_viewport();
 
+    glEnable( GL_CULL_FACE );
+    glCullFace( GL_BACK );
+
     glEnable( GL_DEPTH_TEST );
     glDepthFunc( GL_LESS );
 
@@ -325,6 +328,7 @@ namespace opengl
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
+    //glGenerateMipmap(GL_TEXTURE_2D); set filter to mipmap if want
     glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
     glBindTexture( GL_TEXTURE_2D, 0 );
 
@@ -337,7 +341,7 @@ namespace opengl
     glDeleteTextures( 1, &handle );
   }
 
-  void render_text_area( bs::graphics::RenderTarget* target, bs::ui::TextArea* textArea )
+  void render_text_area_fixed_pipeline( bs::graphics::RenderTarget* target, bs::ui::TextArea* textArea )
   {
     bs::font::GlyphSheet* glyphSheet = ::global::defaultGlyphSheet;
     bs::font::GlyphTable* glyphTable = ::global::defaultGlyphTable;
@@ -431,22 +435,8 @@ namespace opengl
     glEnd();
   }
 
-  void render( bs::graphics::RenderTarget* target, bs::graphics::RenderGroup* group, bs::graphics::Camera* camera )
+  void render_testDEBUG( bs::graphics::RenderTarget* target, bs::graphics::RenderGroup* group, bs::graphics::Camera* camera )
   {
-    switch ( group->type )
-    {
-      case bs::graphics::RenderGroup::TEXT_AREA:
-      {
-        // render_text_area( target, (bs::ui::TextArea*) group->renderObject );
-        break;
-      }
-      default:
-      {
-        BREAK;
-        break;
-      }
-    }
-
     static const GLfloat g_vertex_buffer_data[] = {
         -1.0f,-1.0f,-1.0f, // triangle 1 : begin
         -1.0f,-1.0f, 1.0f,
@@ -485,7 +475,6 @@ namespace opengl
         -1.0f, 1.0f, 1.0f,
         1.0f,-1.0f, 1.0f
     };
-
     static const GLfloat g_color_buffer_data[] = {
         0.583f,  0.771f,  0.014f,
         0.609f,  0.115f,  0.436f,
@@ -524,7 +513,6 @@ namespace opengl
         0.820f,  0.883f,  0.371f,
         0.982f,  0.099f,  0.879f
     };
-
     static GLuint vertexbuffer;
     static GLuint colorbuffer;
 
@@ -588,7 +576,76 @@ namespace opengl
 
     // glDisableVertexAttribArray( 0 );
     // glDisableVertexAttribArray( 1 );
+  }
 
+  void render_custom_bitmap( bs::graphics::RenderTarget* target, bs::graphics::Bitmap* bmp )
+  {
+
+    int2 screenSize = ::global::mainWindow.size;
+    bs::graphics::TextureID id = allocate_texture( bmp->pixel, bmp->width, bmp->height );
+    glEnable( GL_TEXTURE_2D );
+    glBindTexture( GL_TEXTURE_2D, id );
+
+    glMatrixMode( GL_TEXTURE );
+    glLoadIdentity();
+    glMatrixMode( GL_MODELVIEW );
+    glLoadIdentity();
+    glMatrixMode( GL_PROJECTION );
+    glLoadIdentity();
+    glOrtho( 0.f, screenSize.x, screenSize.y, 0.f, 0.f, 10.f );
+
+    glEnable( GL_BLEND );
+    glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+
+    glBegin( GL_TRIANGLES );
+
+    float2 min = { -1, -1 };
+    float2 max = { (float) bmp->width, (float) bmp->height };
+    glTexCoord2f( 0.0f, 1.0f );
+    glVertex2f( min.x, max.y );
+
+    glTexCoord2f( 1.0f, 1.0f );
+    glVertex2f( max.x, max.y );
+
+    glTexCoord2f( 1.0f, 0.0f );
+    glVertex2f( max.x, min.y );
+
+    glTexCoord2f( 0.0f, 1.0f );
+    glVertex2f( min.x, max.y );
+
+    glTexCoord2f( 1.0f, 0.0f );
+    glVertex2f( max.x, min.y );
+
+    glTexCoord2f( 0.0f, 0.0f );
+    glVertex2f( min.x, min.y );
+
+    glBindTexture( GL_TEXTURE_2D, 0 );
+    glEnd();
+
+    //free_texture( id );
+  }
+
+
+  void render( bs::graphics::RenderTarget* target, bs::graphics::RenderGroup* group, bs::graphics::Camera* camera )
+  {
+    switch ( group->type )
+    {
+      case bs::graphics::RenderGroup::TEXT_AREA:
+      {
+        render_text_area_fixed_pipeline( target, (bs::ui::TextArea*) group->renderObject );
+        break;
+      }
+      case bs::graphics::RenderGroup::CUSTOM_BITMAP:
+      {
+        render_custom_bitmap( target, (bs::graphics::Bitmap*) group->renderObject );
+        break;
+      }
+      default:
+      {
+        render_testDEBUG( target, group, camera );
+        break;
+      }
+    }
   }
 
   u32 validate_shader( ShaderID shaderID )

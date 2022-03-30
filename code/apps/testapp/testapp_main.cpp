@@ -3,8 +3,10 @@
 
 #include <core/bsgraphics.h>
 #include <core/bsmemory.h>
+#include <common/bscolor.h>
 
 #include <platform/platform.h>
+
 namespace bs
 {
   void app_sample_sound( PrmAppSampleSound prm )
@@ -16,26 +18,17 @@ namespace bs
 
   void app_on_load( PrmAppOnLoad prm )
   {
-
-    //char const* text = "hello\ntest";
-    //char const* text = "hello Klara\nhello Camillo.";
     char const* text = "dobiieboo\nhello Klara, my email is:\ncamillolukesch@gmail.com\nPlease mail me. <3.";
     testArea = ui::create_text_area_from_text( text, nullptr, { 0,0 } );
   }
 
   void app_tick( PrmAppTick prm )
   {
-    graphics::RenderGroup rg = graphics::get_text_area_render_group( testArea );
+    graphics::RenderGroup rg = graphics::render_group_from_text_area( testArea );
 
     platform::render( nullptr, &rg, nullptr );
-
-    // BREAK;
-
   }
-  void app_render( PrmAppRender prm )
-  {
-    BREAK;
-  }
+
   void app_receive_udp_packet( PrmAppReceiveUDPPacket prm )
   {
     BREAK;

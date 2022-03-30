@@ -240,8 +240,8 @@ void brewing_station_main()
   {
     win32::WindowInitParameter parameter {};
     parameter.windowName = L"tmp_window_name";
-    parameter.width = 1024;
-    parameter.height = 600;
+    parameter.width = DEFAULT_WINDOW_SIZE.x;
+    parameter.height = DEFAULT_WINDOW_SIZE.y;
     parameter.x = -parameter.width - 200;
     parameter.y = 200;
     parameter.wndClass.cbSize        = sizeof( WNDCLASSEX );
@@ -288,7 +288,6 @@ void brewing_station_main()
     global::appDll.sample_sound = &bs::app_sample_sound;
     global::appDll.on_load = &bs::app_on_load;
     global::appDll.tick = &bs::app_tick;
-    global::appDll.render = &bs::app_render;
     global::appDll.receive_udp_packet = &bs::app_receive_udp_packet;
 
     //platform::register_callbacks( win32::get_callbacks() );

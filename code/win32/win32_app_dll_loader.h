@@ -79,11 +79,10 @@ namespace win32
               newApp.sample_sound = (win32_app_sample_sound*) GetProcAddress( newApp.dll, "app_sample_sound" );
               newApp.on_load = (win32_app_on_load*) GetProcAddress( newApp.dll, "app_on_load" );
               newApp.tick = (win32_app_tick*) GetProcAddress( newApp.dll, "app_tick" );
-              newApp.render = (win32_app_render*) GetProcAddress( newApp.dll, "app_render" );
               newApp.receive_udp_packet = (win32_app_receive_udp_packet*) GetProcAddress( newApp.dll, "app_receive_udp_packet" );
               newApp.register_callbacks = (win32_app_register_callbacks*) GetProcAddress( newApp.dll, "register_callbacks" );
 
-              if ( newApp.sample_sound && newApp.on_load && newApp.tick && newApp.receive_udp_packet && newApp.render && newApp.register_callbacks )
+              if ( newApp.sample_sound && newApp.on_load && newApp.tick && newApp.receive_udp_packet && newApp.register_callbacks )
               {
                 successfulLoad = true;
                 //dll_log_info( "Loaded ", TMP_APP_CODE_FILENAME[currentDllIndex], ".\n" );

@@ -12,20 +12,27 @@ uniform mat4 MVP;
 
 out vec3 fragmentColor;
 
+//out vec2 uv;
+
 void main()
 {                                                   
   gl_Position = MVP * vec4(vertexPosition_modelspace, 1);    
   fragmentColor = vertexColor;
+  //uv = vertexUV;
 }
 
 
 #fs
 
+//in vec2 uv;
 in vec3 fragmentColor;
+
 out vec3 color;  
+
+//uniform sampler2D textureSampler;
 
 void main()
 {                           
   color = fragmentColor;  
- // color = vec3(0,0,1);                          
+  //color = texture(textureSampler, uv).rgb;
 }
