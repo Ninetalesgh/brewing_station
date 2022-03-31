@@ -37,13 +37,15 @@ void brewing_station_loop()
       MSG message;
       while ( PeekMessage( &message, 0, 0, 0, PM_REMOVE ) )
       {
+        input.mousePos[0].start = input.mousePos[0].end;
+
         switch ( message.message )
         {
           case WM_XBUTTONDOWN:
           case WM_XBUTTONUP:
           {
             assert( message.wParam == 65568 || message.wParam == 131136 );
-            u8 code = message.wParam == 65568 ? bs::input::MOUSE_4 : bs::input::MOUSE_5;
+            u32 code = message.wParam == 65568 ? bs::input::MOUSE_4 : bs::input::MOUSE_5;
             u8 isDown = (u8) !(message.lParam & (1 << 31));
             u8 wasDown = input.held[code];
             input.down[code] = ((!wasDown) && isDown);
@@ -58,7 +60,6 @@ void brewing_station_loop()
           }
           case WM_MOUSEMOVE:
           {
-            input.mousePos[0].start = input.mousePos[0].end;
             input.mousePos[0].min
               = input.mousePos[0].max
               = input.mousePos[0].end
@@ -77,7 +78,7 @@ void brewing_station_loop()
           case WM_KEYUP:
           {
             assert( message.wParam < bs::input::STATE_COUNT );
-            u64 code = message.wParam;
+            u32 code = (u32) message.wParam;
 
             u8 isDown = (u8) !(message.lParam & (1 << 31));
             u8 wasDown = input.held[code];
@@ -207,6 +208,15 @@ LRESULT CALLBACK brewing_station_main_window_callback( HWND window, UINT message
     case WM_DESTROY:
     {
       global::running = false;
+      break;
+    }
+    case WM_ACTIVATE:
+    case WM_ACTIVATEAPP:
+    {
+      if ( !wParam )
+      {
+        memset( global::appData.input.held, 0, bs::input::STATE_COUNT );
+      }
       break;
     }
     default:

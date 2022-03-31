@@ -3,23 +3,7 @@
 #include "bscommon.h"
 
 
-#if 1
 #include <math.h>
-#else
-float sqrtf( float value )
-{
-  return 0.0f;
-}
-float cosf( float value )
-{
-  return 0.0f;
-}
-float sinf( float value )
-{
-  return 0.0f;
-}
-
-#endif
 
 //                     |1.5707963|2679..
 constexpr float PIx05 = 1.57079637f;
@@ -27,6 +11,39 @@ constexpr float PIx05 = 1.57079637f;
 constexpr float PI    = 3.14159274f;
 //                     |6.283185|30718..
 constexpr float PIx2  = 6.28318548f;
+
+
+#define S32_MAX 0x7fffffff
+#define U32_MAX 0xffffffff
+#define FLOAT_E 0.00000011920928955078125f
+
+
+
+INLINE u32 is_negative( float x ) { return (*(u32*) &x) & 0x80000000; }
+INLINE u32 is_negative( s32 x ) { return (*(u32*) &x) & 0x80000000; }
+
+INLINE s32   get_sign( s32 x ) { return is_negative( x ) ? -1 : 1; }
+INLINE float get_sign( float x ) { return is_negative( x ) ? -1.0f : 1.0f; }
+
+INLINE u32 sign_match( s32 a, s32 b ) { return (a ^ b) >= 0; }
+INLINE u32 sign_match( float a, float b ) { return ((*(s32*) &a) ^ (*(s32*) &b)) >= 0; }
+
+INLINE float to_radians( float degrees ) { return degrees * 0.01745329251f; }
+INLINE float to_degrees( float radians ) { return radians * 57.2957795131f; }
+
+//thanks, quake III
+float inv_sqrt( float number )
+{
+  union {
+    float f;
+    s32 i;
+  } conv;
+  conv.f = number;
+  conv.i  = 0x5f3759df - (conv.i >> 1);
+  conv.f *= 1.5F - (number * 0.5F * conv.f * conv.f);
+  return conv.f;
+}
+
 
 struct int2
 {
@@ -61,7 +78,7 @@ struct float2
   float2( float xy ) : x( xy ), y( xy ) {}
   float2( float x, float y ) : x( x ), y( y ) {}
   float2( s32 x, s32 y ) : x( float( x ) ), y( float( y ) ) {}
-  float2( int2 _int2 ) : x( float( _int2.x ) ), y( float( _int2.y ) ) {}
+  float2( int2 const& other ) : x( float( other.x ) ), y( float( other.y ) ) {}
 
   union
   {
@@ -90,7 +107,6 @@ struct float3
   float3() {}
   float3( float xyz ) : x( xyz ), y( xyz ), z( xyz ) {}
   float3( float x, float y, float z ) : x( x ), y( y ), z( z ) {}
-  float3( float3 const& other ) : x( other.x ), y( other.y ), z( other.z ) {}
   union
   {
     float elements[3];
@@ -99,6 +115,7 @@ struct float3
 
   INLINE float& operator[]( int i ) { return elements[i]; }
   INLINE float  operator[]( int i ) const { return elements[i]; }
+  INLINE float3	 operator-() { return float3 { -x, -y, -z }; }
 
   INLINE float3 friend operator +( float3 const& a, float3 const& b ) { return { a.x + b.x, a.y + b.y, a.z + b.z }; }
   INLINE float3 friend operator -( float3 const& a, float3 const& b ) { return { a.x - b.x, a.y - b.y, a.z - b.z }; }
@@ -115,22 +132,26 @@ struct float4
 {
   float4() {}
   float4( float x, float y, float z, float w ) : x( x ), y( y ), z( z ), w( w ) {}
+  float4( float3 const& v3, float w ) : x( v3.x ), y( v3.y ), z( v3.z ), w( w ) {}
   float4( float xyzw ) : x( xyzw ), y( xyzw ), z( xyzw ), w( xyzw ) {}
   union
   {
     float elements[4];
     struct { float x; float y; float z; float w; };
+    float3 xyz;
   };
 
   INLINE float& operator[]( int i ) { return elements[i]; }
   INLINE float  operator[]( int i ) const { return elements[i]; }
 
+  INLINE float4 friend operator +( float4 const& a, float3 const& b ) { return { a.x + b.x, a.y + b.y, a.z + b.z, a.w }; }
   INLINE float4 friend operator +( float4 const& a, float4 const& b ) { return { a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w }; }
   INLINE float4 friend operator -( float4 const& a, float4 const& b ) { return { a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w }; }
   INLINE float4 friend operator *( float f, float4 const& v ) { return { f * v.x, f * v.y, f * v.z, f * v.w }; }
   INLINE float4 friend operator *( float4 const& v, float f ) { return { f * v.x, f * v.y, f * v.z, f * v.w }; }
   INLINE float4 friend operator /( float4 const& v, float f ) { f = 1.0f / f; return v * f; }
 
+  INLINE float4 const& operator+=( float3 const& other ) { return *this = *this + other; }
   INLINE float4 const& operator+=( float4 const& other ) { return *this = *this + other; }
   INLINE float4 const& operator-=( float4 const& other ) { return *this = *this - other; }
   INLINE float4 const& operator*=( float other ) { return *this = *this * other; }
@@ -168,6 +189,7 @@ public:
   INLINE friend float2x2 operator*( float f, float2x2 const& m ) { return float2x2 { m.j0 * f, m.j1 * f }; }
   INLINE friend float2x2 operator*( float2x2 const& m, float f ) { return float2x2 { m.j0 * f, m.j1 * f }; }
   INLINE friend float2x2 operator/( float2x2 const& m, float f ) { f = 1.0f / f; return m * f; }
+
   INLINE friend float2x2 operator* ( float2x2 const& a, float2x2 const& b )
   {
     return float2x2 {
@@ -187,79 +209,77 @@ public:
 
 struct float4x4
 {
-  float4x4()
-    : i0j0( 1.f ), i1j0( 0.f ), i2j0( 0.f ), i3j0( 0.f )
-    , i0j1( 0.f ), i1j1( 1.f ), i2j1( 0.f ), i3j1( 0.f )
-    , i0j2( 0.f ), i1j2( 0.f ), i2j2( 1.f ), i3j2( 0.f )
-    , i0j3( 0.f ), i1j3( 0.f ), i2j3( 0.f ), i3j3( 1.f )
-  {}
-  float4x4( float4x4 const& other )
-    : i0j0( other.i0j0 ), i1j0( other.i1j0 ), i2j0( other.i2j0 ), i3j0( other.i3j0 )
-    , i0j1( other.i0j1 ), i1j1( other.i1j1 ), i2j1( other.i2j1 ), i3j1( other.i3j1 )
-    , i0j2( other.i0j2 ), i1j2( other.i1j2 ), i2j2( other.i2j2 ), i3j2( other.i3j2 )
-    , i0j3( other.i0j3 ), i1j3( other.i1j3 ), i2j3( other.i2j3 ), i3j3( other.i3j3 )
-  {}
-  float4x4( float4 const& j0, float4 const& j1, float4 const& j2, float4 const& j3 )
-    : j0( j0 ), j1( j1 ), j2( j2 ), j3( j3 )
+  float4x4() {}
+  float4x4( float4 const& xAxis, float4 const& yAxis, float4 const& zAxis, float4 const& pos )
+    : xAxis( xAxis ), yAxis( yAxis ), zAxis( zAxis ), pos( pos )
   {}
 
-  float4x4( float i0j0, float i1j0, float i2j0, float i3j0,
-            float i0j1, float i1j1, float i2j1, float i3j1,
-            float i0j2, float i1j2, float i2j2, float i3j2,
-            float i0j3, float i1j3, float i2j3, float i3j3 )
-    : i0j0( i0j0 ), i1j0( i1j0 ), i2j0( i2j0 ), i3j0( i3j0 )
-    , i0j1( i0j1 ), i1j1( i1j1 ), i2j1( i2j1 ), i3j1( i3j1 )
-    , i0j2( i0j2 ), i1j2( i1j2 ), i2j2( i2j2 ), i3j2( i3j2 )
-    , i0j3( i0j3 ), i1j3( i1j3 ), i2j3( i2j3 ), i3j3( i3j3 )
+  float4x4( float xAxisx, float xAxisy, float xAxisz, float xAxisw,
+            float yAxisx, float yAxisy, float yAxisz, float yAxisw,
+            float zAxisx, float zAxisy, float zAxisz, float zAxisw,
+            float posx, float posy, float posz, float posw )
+    :
+    m00( xAxisx ), m01( xAxisy ), m02( xAxisz ), m03( xAxisw ),
+    m10( yAxisx ), m11( yAxisy ), m12( yAxisz ), m13( yAxisw ),
+    m20( zAxisx ), m21( zAxisy ), m22( zAxisz ), m23( zAxisw ),
+    m30( posx ), m31( posy ), m32( posz ), m33( posw )
   {}
-
   union
   {
-    struct { float4 j0, j1, j2, j3; };
-    struct { float4 col[4]; };
-    struct { float data[16]; };
     struct
     {
-      float i0j0, i1j0, i2j0, i3j0;
-      float i0j1, i1j1, i2j1, i3j1;
-      float i0j2, i1j2, i2j2, i3j2;
-      float i0j3, i1j3, i2j3, i3j3;
+      float m00, m01, m02, m03;
+      float m10, m11, m12, m13;
+      float m20, m21, m22, m23;
+      float m30, m31, m32, m33;
+    };
+    struct { float4 row[4]; };
+    struct
+    {
+      float4 xAxis;
+      float4 yAxis;
+      float4 zAxis;
+      float4 pos;
     };
   };
 
-  INLINE float4  operator[]( int i ) const { return col[i]; }
-  INLINE float4& operator[]( int i ) { return col[i]; }
+  INLINE float4  operator[]( int i ) const { return row[i]; }
+  INLINE float4& operator[]( int i ) { return row[i]; }
 
-  INLINE float4x4 operator-() { return float4x4( -i0j0, -i1j0, -i2j0, -i3j0, -i0j1, -i1j1, -i2j1, -i3j1, -i0j2, -i1j2, -i2j2, -i3j2, -i0j3, -i1j3, -i2j3, -i3j3 ); }
-  INLINE friend float4x4 operator+ ( float4x4 const& a, float4x4 const& b ) { return float4x4( a.j0 + b.j0, a.j1 + b.j1, a.j2 + b.j2, a.j3 + b.j3 ); }
-  INLINE friend float4x4 operator- ( float4x4 const& a, float4x4 const& b ) { return float4x4( a.j0 - b.j0, a.j1 - b.j1, a.j2 - b.j2, a.j3 - b.j3 ); }
+  INLINE float4x4 operator-() { return float4x4 { -m00, -m01, -m02, -m03, -m10, -m11, -m12, -m13, -m20, -m21, -m22, -m23, -m30, -m31, -m32, -m33 }; }
+  INLINE friend float4x4 operator+ ( float4x4 const& a, float4x4 const& b ) { return float4x4( a.xAxis + b.xAxis, a.yAxis + b.yAxis, a.zAxis + b.zAxis, a.pos + b.pos ); }
+  INLINE friend float4x4 operator- ( float4x4 const& a, float4x4 const& b ) { return float4x4( a.xAxis - b.xAxis, a.yAxis - b.yAxis, a.zAxis - b.zAxis, a.pos - b.pos ); }
+  //INLINE friend float4x4 operator*( float f, float4x4 const& m ) { return float4x4 { m.xAxis * f, m.yAxis * f, m.zAxis * f, m.pos * f }; }
+  //INLINE friend float4x4 operator/( float4x4 const& m, float f ) { f = 1.0f / f; return m * f; }
 
-  INLINE friend float4x4 operator*( float f, float4x4 const& m ) { return float4x4 { m.j0 * f, m.j1 * f, m.j2 * f, m.j3 * f }; }
-  INLINE friend float4x4 operator*( float4x4 const& m, float f ) { return float4x4 { m.j0 * f, m.j1 * f, m.j2 * f, m.j3 * f }; }
-  INLINE friend float4x4 operator/( float4x4 const& m, float f ) { f = 1.0f / f; return m * f; }
+  INLINE friend float4 operator*( float4 const& v, float4x4 const& m )
+  {
+    return float4
+    {
+      v.x * m.xAxis.x + v.y * m.yAxis.x + v.z * m.zAxis.x + v.w * m.pos.x,
+      v.x * m.xAxis.y + v.y * m.yAxis.y + v.z * m.zAxis.y + v.w * m.pos.y,
+      v.x * m.xAxis.z + v.y * m.yAxis.z + v.z * m.zAxis.z + v.w * m.pos.z,
+      v.x * m.xAxis.w + v.y * m.yAxis.w + v.z * m.zAxis.w + v.w * m.pos.w
+    };
+  }
+
   INLINE friend float4x4 operator* ( float4x4 const& a, float4x4 const& b )
   {
-    return float4x4( \
-      //column 0     
-      a.data[0] * b.data[0] + a.data[4] * b.data[1] + a.data[8] * b.data[2] + a.data[12] * b.data[3], \
-      a.data[1] * b.data[0] + a.data[5] * b.data[1] + a.data[9] * b.data[2] + a.data[13] * b.data[3], \
-      a.data[2] * b.data[0] + a.data[6] * b.data[1] + a.data[10] * b.data[2] + a.data[14] * b.data[3], \
-      a.data[3] * b.data[0] + a.data[7] * b.data[1] + a.data[11] * b.data[2] + a.data[15] * b.data[3], \
-      //column 1  					    				  	    
-      a.data[0] * b.data[4] + a.data[4] * b.data[5] + a.data[8] * b.data[6] + a.data[12] * b.data[7], \
-      a.data[1] * b.data[4] + a.data[5] * b.data[5] + a.data[9] * b.data[6] + a.data[13] * b.data[7], \
-      a.data[2] * b.data[4] + a.data[6] * b.data[5] + a.data[10] * b.data[6] + a.data[14] * b.data[7], \
-      a.data[3] * b.data[4] + a.data[7] * b.data[5] + a.data[11] * b.data[6] + a.data[15] * b.data[7], \
-      //column 2	 					    
-      a.data[0] * b.data[8] + a.data[4] * b.data[9] + a.data[8] * b.data[10] + a.data[12] * b.data[11], \
-      a.data[1] * b.data[8] + a.data[5] * b.data[9] + a.data[9] * b.data[10] + a.data[13] * b.data[11], \
-      a.data[2] * b.data[8] + a.data[6] * b.data[9] + a.data[10] * b.data[10] + a.data[14] * b.data[11], \
-      a.data[3] * b.data[8] + a.data[7] * b.data[9] + a.data[11] * b.data[10] + a.data[15] * b.data[11], \
-      //column 3
-      a.data[0] * b.data[12] + a.data[4] * b.data[13] + a.data[8] * b.data[14] + a.data[12] * b.data[15], \
-      a.data[1] * b.data[12] + a.data[5] * b.data[13] + a.data[9] * b.data[14] + a.data[13] * b.data[15], \
-      a.data[2] * b.data[12] + a.data[6] * b.data[13] + a.data[10] * b.data[14] + a.data[14] * b.data[15], \
-      a.data[3] * b.data[12] + a.data[7] * b.data[13] + a.data[11] * b.data[14] + a.data[15] * b.data[15] );
+    return float4x4
+    {
+      a.xAxis * b,
+      a.yAxis * b,
+      a.zAxis * b,
+      a.pos * b
+    };
+  }
+
+  INLINE static float4x4 transpose( float4x4 const& m )
+  {
+    return float4x4 { m.xAxis.x, m.yAxis.x, m.zAxis.x, m.pos.x,
+                      m.xAxis.y, m.yAxis.y, m.zAxis.y, m.pos.y,
+                      m.xAxis.z, m.yAxis.z, m.zAxis.z, m.pos.z,
+                      m.xAxis.w, m.yAxis.w, m.zAxis.w, m.pos.w };
   }
 
   INLINE static float4x4 const& identity()
@@ -277,15 +297,15 @@ struct quaternion
     : t( real ), v( imaginary ) {}
   quaternion( float real, float imaginary1, float imaginary2, float imaginary3 )
     : t( real ), x( imaginary1 ), y( imaginary2 ), z( imaginary3 ) {}
-  quaternion( float3 const& euler )
-  {
-    float3 c { cosf( euler.x * .5f ), cosf( euler.y * .5f ), cosf( euler.z * .5f ) };
-    float3 s { sinf( euler.x * .5f ), sinf( euler.y * .5f ), sinf( euler.z * .5f ) };
-    t = c.x * c.y * c.z + s.x * s.y * s.z;
-    x = s.x * c.y * c.z - c.x * s.y * s.z;
-    y = c.x * s.y * c.z + s.x * c.y * s.z;
-    z = c.x * c.y * s.z - s.x * s.y * c.z;
-  }
+  // quaternion( float3 const& euler )
+  // {
+  //   float3 c { cosf( euler.x * .5f ), cosf( euler.y * .5f ), cosf( euler.z * .5f ) };
+  //   float3 s { sinf( euler.x * .5f ), sinf( euler.y * .5f ), sinf( euler.z * .5f ) };
+  //   t = c.x * c.y * c.z + s.x * s.y * s.z;
+  //   x = s.x * c.y * c.z - c.x * s.y * s.z;
+  //   y = c.x * s.y * c.z + s.x * c.y * s.z;
+  //   z = c.x * c.y * s.z - s.x * s.y * c.z;
+  // }
 
   union
   {
@@ -301,8 +321,7 @@ struct quaternion
     struct { float data[4]; };
   };
 
-  friend INLINE quaternion operator / ( quaternion const& a, float b ) { return quaternion( a.t / b, a.x / b, a.y / b, a.z / b ); }
-
+  friend INLINE quaternion operator / ( quaternion const& a, float b ) { return quaternion { a.t / b, a.x / b, a.y / b, a.z / b }; }
   friend INLINE quaternion operator* ( quaternion const& a, quaternion const& b )
   { 						  //Euler's Four Square Identity            (practically)
     return quaternion( (a.t * b.t) - (a.x * b.x) - (a.y * b.y) - (a.z * b.z),
@@ -312,7 +331,6 @@ struct quaternion
   }
 };
 
-
 INLINE int2   min( int2 const& a, int2 const& b ) { return { a.x < b.x ? a.x : b.x , a.y < b.y ? a.y : b.y }; }
 INLINE int2   max( int2 const& a, int2 const& b ) { return { a.x > b.x ? a.x : b.x , a.y > b.y ? a.y : b.y }; }
 INLINE int2 clamp( int2 value, int2 low, int2 high ) { return max( min( value, high ), low ); }
@@ -320,7 +338,6 @@ INLINE int2 clamp( int2 value, int2 low, int2 high ) { return max( min( value, h
 INLINE float2   min( float2 const& a, float2 const& b ) { return { a.x < b.x ? a.x : b.x , a.y < b.y ? a.y : b.y }; }
 INLINE float2   max( float2 const& a, float2 const& b ) { return { a.x > b.x ? a.x : b.x , a.y > b.y ? a.y : b.y }; }
 INLINE float2 clamp( float2 value, float2 low, float2 high ) { return max( min( value, high ), low ); }
-
 
 INLINE float		  quadrant( float2 const& a ) { return (a.x * a.x + a.y * a.y); }
 INLINE float		  quadrant( float3 const& a ) { return (a.x * a.x + a.y * a.y + a.z * a.z); }
@@ -339,7 +356,39 @@ INLINE quaternion	normalize( quaternion const& a ) { return (a / magnitude( a ))
 
 INLINE float    dot( float2 const& a, float2 const& b ) { return a.x * b.x + a.y * b.y; }
 INLINE float    dot( float3 const& a, float3 const& b ) { return a.x * b.x + a.y * b.y + a.z * b.z; }
+INLINE float    dot( float4 const& a, float4 const& b ) { return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w; }
 INLINE float3 cross( float3 const& a, float3 const& b ) { return { a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x }; }
+
+INLINE float4x4 matrix_inverse_orthonormal( float4x4 const& m )
+{
+  return float4x4 { m.xAxis.x, m.yAxis.x, m.zAxis.x, 0.0f,
+                    m.xAxis.y, m.yAxis.y, m.zAxis.y, 0.0f,
+                    m.xAxis.z, m.yAxis.z, m.zAxis.z, 0.0f,
+                    -dot( m.pos, m.xAxis ), -dot( m.pos, m.yAxis ), -dot( m.pos, m.zAxis ), 1.0f };
+}
+
+float4x4 matrix_from_euler( float yaw, float pitch )
+{
+  float cx = cosf( pitch );
+  float sx = sinf( pitch );
+
+  float cy = cosf( yaw );
+  float sy = sinf( yaw );
+
+  return float4x4
+  {
+         cy, .0f,     -sy, 0.0f,
+    sx * sy,  cx, sx * cy, 0.0f,
+    cx * sy, -sx, cx * cy, 0.0f,
+       0.0f, .0f,    0.0f, 1.0f
+  };
+}
+
+float4x4 rotation_matrix_x( float x );
+
+float4x4 rotation_matrix_y( float y );
+
+float4x4 rotation_matrix_z( float z );
 
 
 INLINE quaternion	quaternion_conjugate( quaternion const& a ) { return quaternion { a.t, -a.x, -a.y, -a.z }; }
@@ -365,17 +414,6 @@ INLINE quaternion	quaternion_from_axis_angle( float3 const& a, float angle )
   return normalize( quaternion( w, x, y, z ) );
 }
 
-float4x4 look_at_matrix( float3 eye, float3 target, float3 up );
-
-float4x4 projection_matrix( float windowWidth, float windowHeight, float fovRadians, float zNear, float zFar );
-
-float4x4 rotation_matrix_x( float x );
-
-float4x4 rotation_matrix_y( float y );
-
-float4x4 rotation_matrix_z( float z );
-
-
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 //////////////////cpp//////////////////////////////////////////////////////
@@ -383,58 +421,53 @@ float4x4 rotation_matrix_z( float z );
 ///////////////////////////////////////////////////////////////////////////
 
 
-float4x4 look_at_matrix( float3 eye, float3 target, float3 up )
-{
-  const float3 f = normalize( target - eye );
-  const float3 s = normalize( cross( up, f ) );
-  const float3 u = cross( f, s );
-  float4x4 result;
-  result[0][0] = s.x;
-  result[1][0] = s.y;
-  result[2][0] = s.z;
-  result[3][0] = -dot( s, eye );
-  result[0][1] = u.x;
-  result[1][1] = u.y;
-  result[2][1] = u.z;
-  result[3][1] = -dot( u, eye );
-  result[0][2] = f.x;
-  result[1][2] = f.y;
-  result[2][2] = f.z;
-  result[3][2] = -dot( f, eye );
+// float4x4 look_at_matrix( float3 eye, float3 target, float3 up )
+// {
+//   const float3 f = normalize( eye - target );
+//   const float3 s = normalize( cross( up, f ) );
+//   const float3 u = cross( f, s );
+//   float4x4 result;
+//   result[0][0] = s.x;
+//   result[0][1] = u.x;
+//   result[0][2] = f.x;
+//   result[0][3] = 0.0f;
+//   result[1][0] = s.y;
+//   result[1][1] = u.y;
+//   result[1][2] = f.y;
+//   result[1][3] = 0.0f;
+//   result[2][0] = s.z;
+//   result[2][1] = u.z;
+//   result[2][2] = f.z;
+//   result[2][3] = 0.0f;
+//   result[3][0] = -dot( s, eye );
+//   result[3][1] = -dot( u, eye );
+//   result[3][2] = -dot( f, eye );
+//   result[3][3] = 1.0f;
 
-  result[0][3] = 0;
-  result[1][3] = 0;
-  result[2][3] = 0;
-  result[3][3] = 1;
+//   return result;
+// }
 
-  return result;
-}
-
-float4x4 projection_matrix( float windowWidth, float windowHeight, float fovRadians, float zNear, float zFar )
-{
-  float tanHalfFovy = tanf( fovRadians * 0.5f );
-  float aspectRatio = windowWidth / windowHeight;
-
-  float4x4 m = float4x4( 1.0f, 0.0f, 0.0f, 0.0f,
-                         0.0f, 1.0f, 0.0f, 0.0f,
-                         0.0f, 0.0f, 1.0f, 0.0f,
-                         0.0f, 0.0f, 0.0f, 1.0f );
-
-  m[0][0] = 1.0f / (aspectRatio * tanHalfFovy);
-  m[1][1] = 1.0f / (tanHalfFovy);
-  m[2][2] = (zFar) / (zFar - zNear);
-  m[2][3] = 1.0f;//copy z value to w for perspective divide
-  m[3][2] = -(zFar * zNear) / (zFar - zNear);
-  m[3][3] = 0.0f;
-  return m;
-}
+// float4x4 projection_matrix( float windowWidth, float windowHeight, float fovRadians, float zNear, float zFar )
+// {
+//   float tanHalfFovx = 1.0f / tanf( fovRadians * 0.5f );
+//   float aspectRatio = windowWidth / windowHeight;
+//   float z = 1.0f / (zFar - zNear);
+//   float4x4 m = float4x4::identity();
+//   m.m00 = tanHalfFovx;
+//   m.m11 = aspectRatio * tanHalfFovx;
+//   m.m22 = -zFar * z;
+//   m.m23 = -1.0f;
+//   m.m32 = -(zFar * zNear) * z;
+//   m.m33 = 0.0f;
+//   return m;
+// }
 
 float4x4 rotation_matrix_x( float angle )
 {
   float4x4 res = float4x4(
     1.0f, 0.0f, 0.0f, 0.0f,
-    0.0f, cosf( angle ), -sinf( angle ), 0.0f,
-    0.0f, sinf( angle ), cosf( angle ), 0.0f,
+    0.0f, cosf( angle ), sinf( angle ), 0.0f,
+    0.0f, -sinf( angle ), cosf( angle ), 0.0f,
     0.0f, 0.0f, 0.0f, 1.0f );
   return res;
 }
@@ -442,9 +475,9 @@ float4x4 rotation_matrix_x( float angle )
 float4x4 rotation_matrix_y( float angle )
 {
   float4x4 res = float4x4(
-    cosf( angle ), 0.0f, sinf( angle ), 0.0f,
+    cosf( angle ), 0.0f, -sinf( angle ), 0.0f,
     0.0f, 1.0f, 0.0f, 0.0f,
-    -sinf( angle ), 0.0f, cosf( angle ), 0.0f,
+    sinf( angle ), 0.0f, cosf( angle ), 0.0f,
     0.0f, 0.0f, 0.0f, 1.0f );
   return res;
 }
@@ -452,8 +485,8 @@ float4x4 rotation_matrix_y( float angle )
 float4x4 rotation_matrix_z( float angle )
 {
   float4x4 res = float4x4(
-    cosf( angle ), -sinf( angle ), 0.0f, 0.0f,
-    sinf( angle ), cosf( angle ), 0.0f, 0.0f,
+    cosf( angle ), sinf( angle ), 0.0f, 0.0f,
+    -sinf( angle ), cosf( angle ), 0.0f, 0.0f,
     0.0f, 0.0f, 1.0f, 0.0f,
     0.0f, 0.0f, 0.0f, 1.0f );
   return res;

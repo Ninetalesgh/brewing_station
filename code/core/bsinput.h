@@ -5,7 +5,7 @@ namespace bs
 {
   namespace input
   {
-    enum : u8
+    enum : u32
     {
       MOUSE_PRIMARY            = 1,
       MOUSE_SECONDARY          = 2,

@@ -107,6 +107,8 @@ class OpenGlVertexBuffer
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include<common/bsmatrix.h>
+
 namespace opengl
 {
   namespace global
@@ -277,8 +279,8 @@ namespace opengl
 
     resize_viewport();
 
-    glEnable( GL_CULL_FACE );
-    glCullFace( GL_BACK );
+    // glEnable( GL_CULL_FACE );
+    // glCullFace( GL_BACK );
 
     glEnable( GL_DEPTH_TEST );
     glDepthFunc( GL_LESS );
@@ -435,35 +437,42 @@ namespace opengl
     glEnd();
   }
 
+
   void render_testDEBUG( bs::graphics::RenderTarget* target, bs::graphics::RenderGroup* group, bs::graphics::Camera* camera )
   {
     static const GLfloat g_vertex_buffer_data[] = {
         -1.0f,-1.0f,-1.0f, // triangle 1 : begin
         -1.0f,-1.0f, 1.0f,
         -1.0f, 1.0f, 1.0f, // triangle 1 : end
+
         1.0f, 1.0f,-1.0f, // triangle 2 : begin
         -1.0f,-1.0f,-1.0f,
         -1.0f, 1.0f,-1.0f, // triangle 2 : end
-        1.0f,-1.0f, 1.0f,
+
+        2.0f,-1.0f, 2.0f,
         -1.0f,-1.0f,-1.0f,
-        1.0f,-1.0f,-1.0f,
-        1.0f, 1.0f,-1.0f,
-        1.0f,-1.0f,-1.0f,
+        2.0f,-1.0f,-1.0f,
+
+        2.0f, 1.0f,-1.0f,
+        2.0f,-1.0f,-1.0f,
         -1.0f,-1.0f,-1.0f,
+
         -1.0f,-1.0f,-1.0f,
-        -1.0f, 1.0f, 1.0f,
-        -1.0f, 1.0f,-1.0f,
-        1.0f,-1.0f, 1.0f,
+        -1.0f, 2.0f, 1.0f,
+        -1.0f, 2.0f,-1.0f,
+
+        2.0f,-1.0f, 1.0f,
         -1.0f,-1.0f, 1.0f,
         -1.0f,-1.0f,-1.0f,
+
         -1.0f, 1.0f, 1.0f,
         -1.0f,-1.0f, 1.0f,
         1.0f,-1.0f, 1.0f,
-        1.0f, 1.0f, 1.0f,
+        1.0f, 2.0f, 1.0f,
         1.0f,-1.0f,-1.0f,
-        1.0f, 1.0f,-1.0f,
+        1.0f, 2.0f,-1.0f,
         1.0f,-1.0f,-1.0f,
-        1.0f, 1.0f, 1.0f,
+        1.0f, 2.0f, 1.0f,
         1.0f,-1.0f, 1.0f,
         1.0f, 1.0f, 1.0f,
         1.0f, 1.0f,-1.0f,
@@ -538,16 +547,15 @@ namespace opengl
       glBindVertexArray( 0 );
     }
 
-
-    float4x4 projection = projection_matrix( (float)::global::mainWindow.size.x, (float)::global::mainWindow.size.y, 45.0f, 0.1f, 100.0f );
-
-    float4x4 view = look_at_matrix( float3 { 4,3,3 }, float3 { 0,0,0 }, float3 { 0,1,0 } );
-
+    static float modelposy = 0.0f;
+    modelposy += 0.02f;
     float4x4 model = float4x4::identity();
-    float4x4 mvp = projection * view * model;
+    model.pos = float4 { 0,2.0f * sinf( modelposy ), 0, 1 };
 
+    float4x4 vp = bs::graphics::get_camera_view_projection_matrix( camera, (float)::global::mainWindow.size.x, (float)::global::mainWindow.size.y, 45.0f, 0.1f, 100.0f );
+    float4x4 mvp = model * vp;
     uniformID mvpID = glGetUniformLocation( ::global::defaultGlyphTable->shaderProgram, "MVP" );
-    glUniformMatrix4fv( mvpID, 1, GL_FALSE, &mvp[0][0] );
+    glUniformMatrix4fv( mvpID, 1, GL_FALSE, &mvp.m00 );
 
     glUseProgram( ::global::defaultGlyphTable->shaderProgram );
     glEnableVertexAttribArray( 0 );
@@ -558,7 +566,7 @@ namespace opengl
        GL_FLOAT,           // type
        GL_FALSE,           // normalized?
        0,                  // stride
-       (void*) 0            // array buffer offset
+       (void*) 0           // array buffer offset
     );
     // Draw the triangle !
     glDrawArrays( GL_TRIANGLES, 0, 3 * 12 ); // Starting from vertex 0; 3 vertices total -> 1 triangle
@@ -571,7 +579,7 @@ namespace opengl
         GL_FLOAT,                         // type
         GL_FALSE,                         // normalized?
         0,                                // stride
-        (void*) 0                          // array buffer offset
+        (void*) 0                         // array buffer offset
     );
 
     // glDisableVertexAttribArray( 0 );
@@ -580,7 +588,6 @@ namespace opengl
 
   void render_custom_bitmap( bs::graphics::RenderTarget* target, bs::graphics::Bitmap* bmp )
   {
-
     int2 screenSize = ::global::mainWindow.size;
     bs::graphics::TextureID id = allocate_texture( bmp->pixel, bmp->width, bmp->height );
     glEnable( GL_TEXTURE_2D );
@@ -628,11 +635,13 @@ namespace opengl
 
   void render( bs::graphics::RenderTarget* target, bs::graphics::RenderGroup* group, bs::graphics::Camera* camera )
   {
+    render_testDEBUG( target, group, camera );
+
     switch ( group->type )
     {
       case bs::graphics::RenderGroup::TEXT_AREA:
       {
-        render_text_area_fixed_pipeline( target, (bs::ui::TextArea*) group->renderObject );
+        //    render_text_area_fixed_pipeline( target, (bs::ui::TextArea*) group->renderObject );
         break;
       }
       case bs::graphics::RenderGroup::CUSTOM_BITMAP:
