@@ -115,7 +115,7 @@ namespace bs
       float2 mouseDelta = float2 { input.mousePos[0].end - input.mousePos[0].start };
       if ( input.held[input::KEY_CTRL] )
       {
-        float factor = 0.008f;
+        float factor = 0.005f;
         camera->yaw -= factor * mouseDelta.x;
         camera->pitch -= factor * mouseDelta.y;
       }

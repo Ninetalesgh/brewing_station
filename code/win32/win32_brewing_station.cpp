@@ -191,7 +191,10 @@ LRESULT CALLBACK brewing_station_main_window_callback( HWND window, UINT message
     {
       global::mainWindow.size.x = s32( LOWORD( lParam ) );
       global::mainWindow.size.y = s32( HIWORD( lParam ) );
-
+      if ( wParam == SIZE_MAXIMIZED || wParam == SIZE_MINIMIZED )
+      {
+        opengl::resize_viewport();
+      }
       break;
     }
     case WM_MOVE:
@@ -200,6 +203,7 @@ LRESULT CALLBACK brewing_station_main_window_callback( HWND window, UINT message
       global::mainWindow.pos.y = s32( HIWORD( lParam ) );
       break;
     }
+    case WM_DISPLAYCHANGE:
     case WM_EXITSIZEMOVE:
     {
       opengl::resize_viewport();
@@ -344,7 +348,8 @@ u32 init_compiled_assets()
   //TODO
   {
     bs::file::Data test;
-    win32::load_file_into_memory( "w:/code/shader/test.glsl", &test );
+    //win32::load_file_into_memory( "w:/code/shader/test.glsl", &test );
+    win32::load_file_into_memory( "w:/code/shader/test_texture.glsl", &test );
 
     global::defaultGlyphTable->shaderProgram = opengl::create_shader_program( test );
   }

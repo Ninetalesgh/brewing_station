@@ -274,14 +274,6 @@ struct float4x4
     };
   }
 
-  INLINE static float4x4 transpose( float4x4 const& m )
-  {
-    return float4x4 { m.xAxis.x, m.yAxis.x, m.zAxis.x, m.pos.x,
-                      m.xAxis.y, m.yAxis.y, m.zAxis.y, m.pos.y,
-                      m.xAxis.z, m.yAxis.z, m.zAxis.z, m.pos.z,
-                      m.xAxis.w, m.yAxis.w, m.zAxis.w, m.pos.w };
-  }
-
   INLINE static float4x4 const& identity()
   {
     static float4x4 id = float4x4 { 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1 };
@@ -321,7 +313,8 @@ struct quaternion
     struct { float data[4]; };
   };
 
-  friend INLINE quaternion operator / ( quaternion const& a, float b ) { return quaternion { a.t / b, a.x / b, a.y / b, a.z / b }; }
+  friend INLINE quaternion operator * ( quaternion const& a, float b ) { return quaternion { a.t * b, a.x * b, a.y * b, a.z * b }; }
+  friend INLINE quaternion operator / ( quaternion const& a, float b ) { float inv = 1.0f / b; return quaternion { a.t * inv, a.x * inv, a.y * inv, a.z * inv }; }
   friend INLINE quaternion operator* ( quaternion const& a, quaternion const& b )
   { 						  //Euler's Four Square Identity            (practically)
     return quaternion( (a.t * b.t) - (a.x * b.x) - (a.y * b.y) - (a.z * b.z),
@@ -352,12 +345,21 @@ INLINE float      magnitude( quaternion const& a ) { return sqrtf( a.t * a.t + a
 INLINE float2	  	normalize( float2 const& a ) { float invm = 1.0f / magnitude( a ); return a * invm; }
 INLINE float3		  normalize( float3 const& a ) { float invm = 1.0f / magnitude( a ); return a * invm; }
 INLINE float4		  normalize( float4 const& a ) { float invm = 1.0f / magnitude( a ); return a * invm; }
-INLINE quaternion	normalize( quaternion const& a ) { return (a / magnitude( a )); }
+INLINE quaternion	normalize( quaternion const& a ) { float invm = 1.0f / magnitude( a ); return a * invm; }
 
 INLINE float    dot( float2 const& a, float2 const& b ) { return a.x * b.x + a.y * b.y; }
 INLINE float    dot( float3 const& a, float3 const& b ) { return a.x * b.x + a.y * b.y + a.z * b.z; }
 INLINE float    dot( float4 const& a, float4 const& b ) { return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w; }
 INLINE float3 cross( float3 const& a, float3 const& b ) { return { a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x }; }
+
+
+INLINE float4x4 matrix_transpose( float4x4 const& m )
+{
+  return float4x4 { m.xAxis.x, m.yAxis.x, m.zAxis.x, m.pos.x,
+                    m.xAxis.y, m.yAxis.y, m.zAxis.y, m.pos.y,
+                    m.xAxis.z, m.yAxis.z, m.zAxis.z, m.pos.z,
+                    m.xAxis.w, m.yAxis.w, m.zAxis.w, m.pos.w };
+}
 
 INLINE float4x4 matrix_inverse_orthonormal( float4x4 const& m )
 {
@@ -365,6 +367,80 @@ INLINE float4x4 matrix_inverse_orthonormal( float4x4 const& m )
                     m.xAxis.y, m.yAxis.y, m.zAxis.y, 0.0f,
                     m.xAxis.z, m.yAxis.z, m.zAxis.z, 0.0f,
                     -dot( m.pos, m.xAxis ), -dot( m.pos, m.yAxis ), -dot( m.pos, m.zAxis ), 1.0f };
+}
+
+float4x4 matrix_from_euler_x( float pitch );
+float4x4 matrix_from_euler_y( float yaw );
+float4x4 matrix_from_euler_z( float roll );
+float4x4 matrix_from_euler( float yaw, float pitch );
+float4x4 matrix_from_euler( float yaw, float pitch, float roll );
+
+
+INLINE quaternion	quaternion_conjugate( quaternion const& a ) { return quaternion { a.t, -a.x, -a.y, -a.z }; }
+INLINE quaternion	quaternion_inverse( quaternion const& a ) { return quaternion { quaternion_conjugate( a ) / quadrant( a ) }; }
+
+
+// quaternion( b * a * quaternion_inverse( b ) ); }
+
+INLINE float3	    quaternion_rotate( float3 const& v, quaternion const& q )
+{
+  return 2.0f * dot( q.v, v ) * q.v
+    + (q.t * q.t - dot( q.v, q.v )) * v
+    + 2.0f * q.t * cross( q.v, v );
+
+}
+INLINE float3 quaternion_rotate( quaternion const& q, float3 const& v ) { return quaternion_rotate( v, q ); }
+
+INLINE quaternion	quaternion_from_axis_angle( float3 const& axis, float angle )
+{
+  float tmp = sinf( angle / 2.0f );
+  float x = axis.x * tmp;
+  float y = axis.y * tmp;
+  float z = axis.z * tmp;
+  float w = cosf( angle / 2.0f );
+
+  return normalize( quaternion( w, x, y, z ) );
+}
+
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+//////////////////inl//////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+
+INLINE float4x4 matrix_from_euler_x( float angle )
+{
+  float4x4 res = float4x4(
+    1.0f, 0.0f, 0.0f, 0.0f,
+    0.0f, cosf( angle ), sinf( angle ), 0.0f,
+    0.0f, -sinf( angle ), cosf( angle ), 0.0f,
+    0.0f, 0.0f, 0.0f, 1.0f );
+  return res;
+}
+
+INLINE float4x4 matrix_from_euler_y( float angle )
+{
+  float4x4 res = float4x4(
+    cosf( angle ), 0.0f, -sinf( angle ), 0.0f,
+    0.0f, 1.0f, 0.0f, 0.0f,
+    sinf( angle ), 0.0f, cosf( angle ), 0.0f,
+    0.0f, 0.0f, 0.0f, 1.0f );
+  return res;
+}
+
+INLINE float4x4 matrix_from_euler_z( float angle )
+{
+  float4x4 res = float4x4(
+    cosf( angle ), sinf( angle ), 0.0f, 0.0f,
+    -sinf( angle ), cosf( angle ), 0.0f, 0.0f,
+    0.0f, 0.0f, 1.0f, 0.0f,
+    0.0f, 0.0f, 0.0f, 1.0f );
+  return res;
+}
+
+INLINE float4x4 matrix_from_euler( float yaw, float pitch, float roll )
+{
+  return matrix_from_euler_z( roll ) * matrix_from_euler( yaw, pitch );
 }
 
 float4x4 matrix_from_euler( float yaw, float pitch )
@@ -383,115 +459,6 @@ float4x4 matrix_from_euler( float yaw, float pitch )
        0.0f, .0f,    0.0f, 1.0f
   };
 }
-
-float4x4 rotation_matrix_x( float x );
-
-float4x4 rotation_matrix_y( float y );
-
-float4x4 rotation_matrix_z( float z );
-
-
-INLINE quaternion	quaternion_conjugate( quaternion const& a ) { return quaternion { a.t, -a.x, -a.y, -a.z }; }
-INLINE quaternion	quaternion_inverse( quaternion const& a ) { return quaternion { quaternion_conjugate( a ) / quadrant( a ) }; }
-//Rotate a around b						
-INLINE quaternion	quaternion_rotate( quaternion const& a, quaternion const& b ) { return quaternion( b * a * quaternion_inverse( b ) ); }
-//rotate a around b
-INLINE float3			quaternion_rotate( float3 const& a, quaternion const& b )
-{
-  quaternion c { 0, a };
-  c = b * c * quaternion_inverse( b );
-  return float3( c.x, c.y, c.z );
-}
-
-INLINE quaternion	quaternion_from_axis_angle( float3 const& a, float angle )
-{
-  float tmp = sinf( angle / 2.0f );
-  float x = a.x * tmp;
-  float y = a.y * tmp;
-  float z = a.z * tmp;
-  float w = cosf( angle / 2.0f );
-
-  return normalize( quaternion( w, x, y, z ) );
-}
-
-///////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////
-//////////////////cpp//////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////
-
-
-// float4x4 look_at_matrix( float3 eye, float3 target, float3 up )
-// {
-//   const float3 f = normalize( eye - target );
-//   const float3 s = normalize( cross( up, f ) );
-//   const float3 u = cross( f, s );
-//   float4x4 result;
-//   result[0][0] = s.x;
-//   result[0][1] = u.x;
-//   result[0][2] = f.x;
-//   result[0][3] = 0.0f;
-//   result[1][0] = s.y;
-//   result[1][1] = u.y;
-//   result[1][2] = f.y;
-//   result[1][3] = 0.0f;
-//   result[2][0] = s.z;
-//   result[2][1] = u.z;
-//   result[2][2] = f.z;
-//   result[2][3] = 0.0f;
-//   result[3][0] = -dot( s, eye );
-//   result[3][1] = -dot( u, eye );
-//   result[3][2] = -dot( f, eye );
-//   result[3][3] = 1.0f;
-
-//   return result;
-// }
-
-// float4x4 projection_matrix( float windowWidth, float windowHeight, float fovRadians, float zNear, float zFar )
-// {
-//   float tanHalfFovx = 1.0f / tanf( fovRadians * 0.5f );
-//   float aspectRatio = windowWidth / windowHeight;
-//   float z = 1.0f / (zFar - zNear);
-//   float4x4 m = float4x4::identity();
-//   m.m00 = tanHalfFovx;
-//   m.m11 = aspectRatio * tanHalfFovx;
-//   m.m22 = -zFar * z;
-//   m.m23 = -1.0f;
-//   m.m32 = -(zFar * zNear) * z;
-//   m.m33 = 0.0f;
-//   return m;
-// }
-
-float4x4 rotation_matrix_x( float angle )
-{
-  float4x4 res = float4x4(
-    1.0f, 0.0f, 0.0f, 0.0f,
-    0.0f, cosf( angle ), sinf( angle ), 0.0f,
-    0.0f, -sinf( angle ), cosf( angle ), 0.0f,
-    0.0f, 0.0f, 0.0f, 1.0f );
-  return res;
-}
-
-float4x4 rotation_matrix_y( float angle )
-{
-  float4x4 res = float4x4(
-    cosf( angle ), 0.0f, -sinf( angle ), 0.0f,
-    0.0f, 1.0f, 0.0f, 0.0f,
-    sinf( angle ), 0.0f, cosf( angle ), 0.0f,
-    0.0f, 0.0f, 0.0f, 1.0f );
-  return res;
-}
-
-float4x4 rotation_matrix_z( float angle )
-{
-  float4x4 res = float4x4(
-    cosf( angle ), sinf( angle ), 0.0f, 0.0f,
-    -sinf( angle ), cosf( angle ), 0.0f, 0.0f,
-    0.0f, 0.0f, 1.0f, 0.0f,
-    0.0f, 0.0f, 0.0f, 1.0f );
-  return res;
-}
-
 
 
 

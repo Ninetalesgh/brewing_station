@@ -31,6 +31,8 @@ using GLsizeiptr = s64;
 #define GL_SRGB8_ALPHA8                   0x8C43
 #define GL_FRAMEBUFFER_SRGB               0x8DB9
 
+#define GL_ELEMENT_ARRAY_BUFFER           0x8893
+
 #define WGL_DRAW_TO_WINDOW_ARB            0x2001
 #define WGL_SUPPORT_OPENGL_ARB            0x2010
 #define WGL_DOUBLE_BUFFER_ARB             0x2011

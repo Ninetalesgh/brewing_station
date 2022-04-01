@@ -632,16 +632,120 @@ namespace opengl
     //free_texture( id );
   }
 
+  void render_testDEBUG2( bs::graphics::RenderTarget* target, bs::graphics::RenderGroup* group, bs::graphics::Camera* camera )
+  {
+    static const GLfloat g_vertex_buffer_data[] = {
+        -1.0f,-1.0f, -1.0f,
+         1.0f,-1.0f, -1.0f,
+         1.0f, 1.0f, -1.0f,
+        -1.0f, 1.0f, -1.0f,
+    };
+    static const GLfloat g_uv_buffer_data[] = {
+    0.0f, 1.0f,
+    1.0f, 1.0f,
+    1.0f, 0.0f,
+    0.0f, 0.0f,
+    };
+
+    static const u16 g_index_buffer_data[] =
+    {
+      0,1,2,
+      0,2,3
+    };
+    // static const GLfloat g_uv_buffer_data[] = {
+    // 0.0f, 0.2f,
+    // 0.2f, 0.2f,
+    // 0.2f, 0.0f,
+    // 0.0f, 0.2f,
+    // 0.2f, 0.0f,
+    // 0.0f, 0.0f,
+    // };
+
+    static GLuint vertexbuffer;
+    static GLuint uvBuffer;
+    static GLuint indexBuffer;
+
+    static int firsttime = 1;
+    if ( firsttime-- )
+    {
+      GLuint VertexArrayID;
+      glGenVertexArrays( 1, &VertexArrayID );
+      glBindVertexArray( VertexArrayID );
+
+      glGenBuffers( 1, &vertexbuffer );
+      glBindBuffer( GL_ARRAY_BUFFER, vertexbuffer );
+      glBufferData( GL_ARRAY_BUFFER, sizeof( g_vertex_buffer_data ), g_vertex_buffer_data, GL_STATIC_DRAW );
+
+      GLuint uvArrayID;
+      glBindVertexArray( 0 );
+      glGenVertexArrays( 1, &uvArrayID );
+      glBindVertexArray( uvArrayID );
+
+      glGenBuffers( 1, &uvBuffer );
+      glBindBuffer( GL_ARRAY_BUFFER, uvBuffer );
+      glBufferData( GL_ARRAY_BUFFER, sizeof( g_uv_buffer_data ), g_uv_buffer_data, GL_STATIC_DRAW );
+      glBindVertexArray( 0 );
+
+      glGenBuffers( 1, &indexBuffer );
+      glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, indexBuffer );
+      glBufferData( GL_ELEMENT_ARRAY_BUFFER, sizeof( g_index_buffer_data ) * sizeof( u16 ), g_index_buffer_data, GL_STATIC_DRAW );
+
+    }
+
+    static float modelposy = 0.0f;
+    modelposy += 0.02f;
+    float4x4 model = float4x4::identity();
+    model.pos = float4 { 0,2.0f * sinf( modelposy ), 0, 1 };
+
+    float4x4 vp = bs::graphics::get_camera_view_projection_matrix( camera, (float)::global::mainWindow.size.x, (float)::global::mainWindow.size.y, 45.0f, 0.1f, 100.0f );
+    float4x4 mvp = model * vp;
+    uniformID mvpID = glGetUniformLocation( ::global::defaultGlyphTable->shaderProgram, "MVP" );
+    glUniformMatrix4fv( mvpID, 1, GL_FALSE, &mvp.m00 );
+
+    GLuint id= ::global::defaultGlyphSheet->textureID;
+    glBindTexture( GL_TEXTURE_2D, id );
+
+    glUseProgram( ::global::defaultGlyphTable->shaderProgram );
+    glEnableVertexAttribArray( 0 );
+    glBindBuffer( GL_ARRAY_BUFFER, vertexbuffer );
+    glVertexAttribPointer(
+       0,                  // attribute 0. match shader
+       3,                  // size
+       GL_FLOAT,           // type
+       GL_FALSE,           // normalized?
+       0,                  // stride
+       (void*) 0           // array buffer offset
+    );
+    // Draw the triangle !
+
+    glEnableVertexAttribArray( 1 );
+    glBindBuffer( GL_ARRAY_BUFFER, uvBuffer );
+    glVertexAttribPointer(
+        1,                                // attribute. match shader.
+        2,                                // size
+        GL_FLOAT,                         // type
+        GL_FALSE,                         // normalized?
+        0,                                // stride
+        (void*) 0                         // array buffer offset
+    );
+
+    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, indexBuffer );
+    glDrawElements( GL_TRIANGLES, sizeof( g_index_buffer_data ), GL_UNSIGNED_SHORT, (void*) 0 );
+    // glDrawArrays( GL_TRIANGLES, 0, 3 * 2 ); // Starting from vertex 0; 3 vertices total -> 1 triangle
+
+     // glDisableVertexAttribArray( 0 );
+     // glDisableVertexAttribArray( 1 );
+  }
 
   void render( bs::graphics::RenderTarget* target, bs::graphics::RenderGroup* group, bs::graphics::Camera* camera )
   {
-    render_testDEBUG( target, group, camera );
+    render_testDEBUG2( target, group, camera );
 
     switch ( group->type )
     {
       case bs::graphics::RenderGroup::TEXT_AREA:
       {
-        //    render_text_area_fixed_pipeline( target, (bs::ui::TextArea*) group->renderObject );
+        //render_text_area_fixed_pipeline( target, (bs::ui::TextArea*) group->renderObject );
         break;
       }
       case bs::graphics::RenderGroup::CUSTOM_BITMAP:

@@ -2,6 +2,8 @@
 
 #include "bsmath.h"
 
+//TODO
+
 namespace bs
 {
   struct Matrix
@@ -145,4 +147,48 @@ namespace bs
 
 // t = 2 * cross(q.xyz, v)
 // v' = v + q.w * t + cross(q.xyz, t)
+
+
+
+
+// float4x4 look_at_matrix( float3 eye, float3 target, float3 up )
+// {
+//   const float3 f = normalize( eye - target );
+//   const float3 s = normalize( cross( up, f ) );
+//   const float3 u = cross( f, s );
+//   float4x4 result;
+//   result[0][0] = s.x;
+//   result[0][1] = u.x;
+//   result[0][2] = f.x;
+//   result[0][3] = 0.0f;
+//   result[1][0] = s.y;
+//   result[1][1] = u.y;
+//   result[1][2] = f.y;
+//   result[1][3] = 0.0f;
+//   result[2][0] = s.z;
+//   result[2][1] = u.z;
+//   result[2][2] = f.z;
+//   result[2][3] = 0.0f;
+//   result[3][0] = -dot( s, eye );
+//   result[3][1] = -dot( u, eye );
+//   result[3][2] = -dot( f, eye );
+//   result[3][3] = 1.0f;
+
+//   return result;
+// }
+
+// float4x4 projection_matrix( float windowWidth, float windowHeight, float fovRadians, float zNear, float zFar )
+// {
+//   float tanHalfFovx = 1.0f / tanf( fovRadians * 0.5f );
+//   float aspectRatio = windowWidth / windowHeight;
+//   float z = 1.0f / (zFar - zNear);
+//   float4x4 m = float4x4::identity();
+//   m.m00 = tanHalfFovx;
+//   m.m11 = aspectRatio * tanHalfFovx;
+//   m.m22 = -zFar * z;
+//   m.m23 = -1.0f;
+//   m.m32 = -(zFar * zNear) * z;
+//   m.m33 = 0.0f;
+//   return m;
+// }
 

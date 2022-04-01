@@ -319,7 +319,8 @@ namespace bs
             for ( s32 x = 0; x < (s32) rects[i].uvSize.x; ++x )
             {
               s32 index = x + y * rawGlyphData->width;
-              *writer++ = color::rgba( 0xff, 0xff, 0xff, rawGlyphData->data[index] );
+              //*writer++ = color::rgba( 0xff, 0xff, 0xff, rawGlyphData->data[index] );
+              *writer++ = color::rgba( rawGlyphData->data[index], rawGlyphData->data[index], rawGlyphData->data[index], rawGlyphData->data[index] );
             }
           }
 
