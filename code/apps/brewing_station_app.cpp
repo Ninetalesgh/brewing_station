@@ -12,6 +12,7 @@
 #include <core/internal/bsfile.cpp>
 #include <core/internal/bstask.cpp>
 #include <core/internal/bsnet.cpp>
+#include <core/internal/bsgraphics.cpp>
 
 
 #include <platform/platform_callbacks_internal.h>
@@ -82,14 +83,24 @@ namespace platform
     platform::callbacks.mainArena->free( ptr );
   }
 
-  INLINE bs::graphics::TextureID allocate_texture( u32 const* pixel, s32 width, s32 height )
+  INLINE bs::graphics::TextureID allocate_texture( bs::graphics::TextureData const* textureData )
   {
-    return platform::callbacks.ptr_allocate_texture( pixel, width, height );
+    return platform::callbacks.ptr_allocate_texture( textureData );
   }
 
   INLINE void free_texture( bs::graphics::TextureID id )
   {
     return platform::callbacks.ptr_free_texture( id );
+  }
+
+  INLINE bs::graphics::Mesh allocate_mesh( bs::graphics::MeshData const* raw )
+  {
+    return platform::callbacks.ptr_allocate_mesh( raw );
+  }
+
+  INLINE void free_mesh( bs::graphics::Mesh mesh )
+  {
+    return platform::callbacks.ptr_free_mesh( mesh );
   }
 
   INLINE void render( bs::graphics::RenderTarget* rt, bs::graphics::RenderGroup* rg, bs::graphics::Camera* cam )

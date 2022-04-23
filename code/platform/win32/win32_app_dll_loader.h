@@ -2,7 +2,8 @@
 
 #include "win32_util.h"
 #include "win32_thread.h"
-#include "win32_opengl.h"
+//#include "win32_opengl.h"
+#include <platform/win32/win32_opengl.h>
 #include <core/bsdebuglog.h>
 
 namespace win32
@@ -17,9 +18,13 @@ namespace win32
     result.ptr_get_file_info = &win32::get_file_info;
     result.ptr_load_file_into_memory = &win32::load_file_into_memory;
     result.ptr_write_file = &win32::write_file;
-    result.ptr_allocate_texture = &opengl::allocate_texture;
-    result.ptr_free_texture = &opengl::free_texture;
-    result.ptr_render = &opengl::render;
+
+    // result.ptr_allocate_texture = &opengl::allocate_texture;
+    // result.ptr_free_texture = &opengl::free_texture;
+    // result.ptr_allocate_mesh = &opengl::allocate_mesh;
+    // result.ptr_free_mesh = &opengl::free_mesh;
+    // result.ptr_render = &opengl::render;
+
     result.mainArena = global::defaultArena;
 
     //TODO
@@ -28,12 +33,11 @@ namespace win32
     return result;
   }
 
-
-
   using for_all_threadfn = void( threadfn* );
   struct PrmThreadDllLoader
   {
     thread::ThreadInfo* threadInfo;
+    HGLRC renderContext;
     //char const* appFilename; //lul?
     AppDll* appDll;
   };
@@ -42,6 +46,8 @@ namespace win32
     PrmThreadDllLoader* parameter = (PrmThreadDllLoader*) void_parameter;
     thread::ThreadInfo* threadInfo = parameter->threadInfo;
     AppDll* appDll = parameter->appDll;
+
+    opengl::set_worker_thread_render_context( parameter->renderContext );
 
     thread::write_barrier();
     parameter->threadInfo = nullptr;

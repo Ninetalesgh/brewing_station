@@ -7,25 +7,96 @@ namespace bs
 {
   namespace input { struct State; }
   namespace ui { struct TextArea; }
+  namespace scene { struct Object; }
 
   namespace graphics
   {
     using TextureID = u32;
+    using VertexBufferID = u32;
+    using UVBufferID = u32;
+    using IndexBufferID = u32;
     using ShaderProgram = u32;
+    using RenderObjectID = u32;
+
     struct Bitmap;
+
+    enum class IndexFormat : u32
+    {
+      INVALID = 0,
+      U16 = 1,
+      U32 = 2,
+    };
+
+    struct MeshData
+    {
+      float3* vertices;
+      float2* uvs;
+      void* indices;
+      u32 vertexCount;
+      u32 indexCount;
+      IndexFormat indexFormat;
+    };
+
+    struct Mesh
+    {
+      VertexBufferID vb;
+      UVBufferID uvb;
+      IndexBufferID ib;
+      u32 indexCount;
+      IndexFormat indexFormat;
+    };
+
+    enum class TextureFormat : u32
+    {
+      INVALID = 0,
+      RGBA8 = 1,
+    };
+
+    struct TextureData
+    {
+      void* pixel;
+      TextureFormat format;
+      s32 width;
+      s32 height;
+    };
+
+    struct RenderObject
+    {
+      // enum : u16
+      // {
+      //   SCENE_OBJECT = 1,
+      // } type;
+      // enum : u8
+      // {
+      //   NONE = 0,
+      // } subtype;
+
+      // u32 flags;
+      RenderObjectID id;
+      TextureID diffuseTexture;
+      TextureID normalMap;
+      Mesh mesh;
+    };
 
     struct RenderGroup
     {
       enum : u32
       {
+        SCENE_OBJECTS,
         TEXT_AREA,
-        CUSTOM_BITMAP
+        CUSTOM_BITMAP,
       } type;
       void* renderObject;
+      u32 count;
     };
+
+    RenderObject* create_render_object( MeshData const* meshData, TextureData const* diffuseTextureData, TextureData const* normalMapData );
 
     RenderGroup render_group_from_text_area( ui::TextArea* ta );
     RenderGroup render_group_from_custom_bitmap( Bitmap* bmp );
+
+    RenderGroup render_group_from_scene_objects( scene::Object* objects, u32 objectCount );
+
 
     struct RenderTarget;
 
@@ -83,6 +154,15 @@ namespace bs
       RenderGroup result {};
       result.type = RenderGroup::CUSTOM_BITMAP;
       result.renderObject = bmp;
+      return result;
+    }
+
+    RenderGroup render_group_from_scene_objects( scene::Object* objects, u32 objectCount )
+    {
+      RenderGroup result {};
+      result.type = RenderGroup::SCENE_OBJECTS;
+      result.renderObject = objects;
+      result.count = objectCount;
       return result;
     }
 

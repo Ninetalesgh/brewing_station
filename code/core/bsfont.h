@@ -328,9 +328,15 @@ namespace bs
         }
       }
 
+      graphics::TextureData texData {};
+      texData.pixel = sheetBMP->pixel;
+      texData.width = sheetBMP->width;
+      texData.height = sheetBMP->height;
+      texData.format = graphics::TextureFormat::RGBA8;
+
       resultSheet->glyphs =     rects;
       resultSheet->glyphCount = glyphCount;
-      resultSheet->textureID =  platform::allocate_texture( sheetBMP->pixel, sheetBMP->width, sheetBMP->height );
+      resultSheet->textureID =  platform::allocate_texture( &texData );
       resultSheet->width =      sheetBMP->width;
       resultSheet->height =     sheetBMP->height;
 

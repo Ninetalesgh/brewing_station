@@ -61,8 +61,12 @@ namespace platform
   //graphics
   ///////////////////////////////////////////////////////////////////////////////
 
-  bs::graphics::TextureID allocate_texture( u32 const* pixel, s32 width, s32 height );
+  bs::graphics::TextureID allocate_texture( bs::graphics::TextureData const* );
   void free_texture( bs::graphics::TextureID );
+
+  bs::graphics::Mesh allocate_mesh( bs::graphics::MeshData const* );
+  void free_mesh( bs::graphics::Mesh );
+
   void render( bs::graphics::RenderTarget*, bs::graphics::RenderGroup*, bs::graphics::Camera* );
 
 };

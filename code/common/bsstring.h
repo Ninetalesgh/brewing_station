@@ -32,6 +32,11 @@ namespace bs
     //returns the next character in the string after parsing the codepoint
     char const* parse_utf8( char const* utf8String, s32* out_codepoint );
 
+    //returns the character after reading the expected value
+    char const* parse_value( char const* floatString, float* out_float );
+    char const* parse_value( char const* intString, s32* out_int );
+
+
     template<bool internal, typename Arg> INLINE s32 format( char* destination, s32 capacity, Arg value );
     template<typename Arg, typename... Args>
     INLINE s32 format( char* destination, s32 capacity, Arg arg, Args... args )
@@ -67,6 +72,8 @@ namespace bs
       }
       return bytesWritten + 1;
     }
+
+
   };
 };
 
@@ -602,5 +609,76 @@ namespace bs
       }
       return nextChar;
     }
+
+    char const* parse_value( char const* floatString, float* out_float )
+    {
+      float result = 0.0f;
+      float sign = 1.0f;
+      char const* reader = floatString;
+      float divisor = 0.0f;
+
+      while ( *reader == ' ' ) { ++reader; }
+      while ( *reader != ' ' && *reader != '\0' )
+      {
+        if ( *reader == '-' )
+        {
+          sign = -1.0f;
+        }
+        else if ( *reader == '.' && divisor == 0.0f )
+        {
+          divisor = 10.0f;
+        }
+        else if ( *reader == 'f' )
+        {
+          ++reader;
+          break;
+        }
+        else if ( *reader >= '0' && *reader <= '9' )
+        {
+          if ( divisor == 0.0f )
+          {
+            result *= 10.0f;
+            result += float( *reader - '0' );
+          }
+          else
+          {
+            result += float( *reader - '0' ) / divisor;
+            divisor *= 10.0f;
+          }
+        }
+
+        ++reader;
+      }
+
+      *out_float = result * sign;
+      return reader;
+    }
+
+    char const* parse_value( char const* intString, s32* out_int )
+    {
+      s32 result = 0;
+      s32 sign = 1;
+      char const* reader = intString;
+      while ( *reader == ' ' ) { ++reader; }
+      while ( *reader != ' ' && *reader != '\0' )
+      {
+        if ( *reader == '-' )
+        {
+          sign = -1;
+        }
+        else if ( *reader >= '0' && *reader <= '9' )
+        {
+          result *= 10;
+          result += s32( *reader - '0' );
+
+        }
+
+        ++reader;
+      }
+
+      *out_int = result * sign;
+      return reader;
+    }
+
   };
 };

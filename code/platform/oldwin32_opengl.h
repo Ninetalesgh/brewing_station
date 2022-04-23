@@ -4,8 +4,9 @@
 #pragma comment(lib,"opengl32.lib")
 
 #include <ui/bstextarea.h>
-#include <core/bsgraphics.h>
+#include <scene/bssceneobject.h>
 
+#include <core/bsgraphics.h>
 #include <core/bsfile.h>
 #include <core/bsfont.h>
 #include <core/bsmemory.h>
@@ -41,11 +42,15 @@ namespace opengl
   void tick();
 
   OpenGlInfo const* get_info();
-  void create_opengl_context_for_worker_thread();
+  //void create_opengl_context_for_worker_thread();
 
-  bs::graphics::TextureID allocate_texture( u32 const* pixel, s32 width, s32 height );
+  bs::graphics::TextureID allocate_texture( bs::graphics::TextureData const* );
   void free_texture( bs::graphics::TextureID texture );
 
+  bs::graphics::Mesh allocate_mesh( bs::graphics::MeshData const* );
+  void free_mesh( bs::graphics::Mesh );
+
+  using VertexArrayObjectID = u32;
   using ProgramID = u32;
   using ShaderID = u32;
   using uniformID = u32;
@@ -58,46 +63,6 @@ namespace opengl
   void render( bs::graphics::RenderTarget*, bs::graphics::RenderGroup*, bs::graphics::Camera* );
 };
 
-class VertexBuffer
-{
-  void Bind() const;
-  void Unbind() const;
-  void count();
-};
-
-class IndexBuffer
-{
-  void Bind() const;
-  void Unbind() const;
-  void count();
-
-};
-
-class OpenGlVertexBuffer
-{
-
-  void create( float* vertices, u32 count )
-  {
-    glCreateBuffers( 1, &rendererID );
-    glBufferData( GL_ARRAY_BUFFER, count, vertices, GL_STATIC_DRAW );
-
-    //GL_ELEMENT_ARRAY_BUFFER for the index buffer
-
-    //in bind
-    glBindBuffer( GL_ARRAY_BUFFER, rendererID );
-
-    //in unbind
-    glBindBuffer( GL_ARRAY_BUFFER, 0 );
-
-
-    //in delete
-    glDeleteBuffers( 1, &rendererID );
-
-  }
-
-  u32 rendererID;
-};
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -107,7 +72,6 @@ class OpenGlVertexBuffer
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include<common/bsmatrix.h>
 
 namespace opengl
 {
@@ -128,6 +92,7 @@ namespace opengl
   }
 
   OpenGlInfo const* get_info() { return &global::info; }
+  void check_gl_error();
 
   void init_opengl_info()
   {
@@ -288,18 +253,23 @@ namespace opengl
     float4 bg = color::float4_from_rgba( color::rgba( 30, 30, 30, 255 ) );
     glClearColor( bg.x * bg.x, bg.y * bg.y, bg.z * bg.z, bg.w );
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+    check_gl_error();
+
     return 1;
   }
 
-  void create_opengl_context_for_worker_thread()
+  HGLRC create_render_context_for_worker_thread()
   {
-    //needs to be called before worker threads hop online
-    HGLRC workerRenderContext = wglCreateContextAttribsARB( global::deviceContext, global::renderContext, global::rcAttributes );
-    if ( workerRenderContext )
-    {
-      wglMakeCurrent( global::deviceContext, workerRenderContext );
-    }
-    else
+    check_gl_error();
+    HGLRC rc = wglCreateContextAttribsARB( global::deviceContext, global::renderContext, global::rcAttributes );
+    check_gl_error();
+    return rc;
+  }
+
+  void set_worker_thread_render_context( HGLRC renderContext )
+  {
+    if ( !wglMakeCurrent( global::deviceContext, renderContext ) )
     {
       BREAK;
     }
@@ -313,19 +283,128 @@ namespace opengl
 
   void tick()
   {
-    //  render( nullptr, nullptr, nullptr );
-
     SwapBuffers( global::deviceContext );
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
   }
 
-  bs::graphics::TextureID allocate_texture( u32 const* pixel, s32 width, s32 height )
+  INLINE u32 get_size_for_index_format( bs::graphics::IndexFormat indexFormat ) { return indexFormat == bs::graphics::IndexFormat::U16 ? sizeof( u16 ) : sizeof( u32 ); }
+
+  INLINE GLenum get_gl_index_format( bs::graphics::IndexFormat indexFormat ) { return indexFormat == bs::graphics::IndexFormat::U16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT; }
+
+  VertexArrayObjectID init_vao_for_mesh( bs::graphics::Mesh const* mesh )
   {
-    //TODO use PBO to skip one copy step
+    VertexArrayObjectID vao;
+    BREAK;
+    //not working yet
+    check_gl_error();
+    glCreateVertexArrays( 1, &vao );
+
+    glVertexArrayVertexBuffer( vao, 0, mesh->vb, 0, 0 );
+    glVertexArrayVertexBuffer( vao, 1, mesh->uvb, 0, 0 );
+
+    glEnableVertexArrayAttrib( vao, 0 );
+    glVertexArrayAttribBinding( vao, 0, 0 );
+    glVertexArrayAttribFormat( vao, 0, 3, GL_FLOAT, GL_FALSE, 0 );
+
+    glEnableVertexArrayAttrib( vao, 1 );
+    glVertexArrayAttribBinding( vao, 1, 1 );
+    glVertexArrayAttribFormat( vao, 1, 2, GL_FLOAT, GL_FALSE, 0 );
+
+    glVertexArrayElementBuffer( vao, mesh->ib );
+
+    check_gl_error();
+    return vao;
+  }
+
+  void init_vao( bs::graphics::RenderObject* renderObject )
+  {
+    check_gl_error();
+
+    glGenVertexArrays( 1, &renderObject->id );
+    glBindVertexArray( renderObject->id );
+
+    glBindBuffer( GL_ARRAY_BUFFER, renderObject->mesh.vb );
+    glEnableVertexAttribArray( 0 );
+    glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0 );
+
+    glBindBuffer( GL_ARRAY_BUFFER, renderObject->mesh.uvb );
+    glEnableVertexAttribArray( 1 );
+    glVertexAttribPointer( 1, 2, GL_FLOAT, GL_FALSE, 0, (void*) 0 );
+
+    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, renderObject->mesh.ib );
+
+    check_gl_error();
+
+    glBindVertexArray( 0 );
+    glDisableVertexAttribArray( 0 );
+    glDisableVertexAttribArray( 1 );
+    glBindBuffer( GL_ARRAY_BUFFER, 0 );
+    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
+
+    check_gl_error();
+  }
+
+  void render_object( bs::graphics::RenderObject* renderObject, bs::graphics::ShaderProgram shaderProgram )
+  {
+    if ( !renderObject->id )
+    {
+      init_vao( renderObject );
+    }
+
+    glBindVertexArray( renderObject->id );
+
+    glUseProgram( shaderProgram );
+
+    u32 indexSize = get_size_for_index_format( renderObject->mesh.indexFormat );
+    GLenum glIndexFormat = get_gl_index_format( renderObject->mesh.indexFormat );
+    glDrawElements( GL_TRIANGLES, renderObject->mesh.indexCount * indexSize, glIndexFormat, (void*) 0 );
+
+    glUseProgram( 0 );
+    glBindVertexArray( 0 );
+  }
+
+  bs::graphics::Mesh allocate_mesh( bs::graphics::MeshData const* raw )
+  {
+    bs::graphics::Mesh resultMesh {};
+
+    u32 const vertexCount = raw->vertexCount;
+    u32 const indexCount = raw->indexCount;
+    bs::graphics::IndexFormat const indexFormat = raw->indexFormat;
+
+    if ( indexFormat == bs::graphics::IndexFormat::INVALID ) BREAK;
+
+    check_gl_error();
+
+    glCreateBuffers( 1, &resultMesh.vb );
+    glNamedBufferData( resultMesh.vb, vertexCount * sizeof( float3 ), raw->vertices, GL_STATIC_DRAW );
+
+    glCreateBuffers( 1, &resultMesh.uvb );
+    glNamedBufferData( resultMesh.uvb, vertexCount * sizeof( float2 ), raw->uvs, GL_STATIC_DRAW );
+
+    glCreateBuffers( 1, &resultMesh.ib );
+    glNamedBufferData( resultMesh.ib, indexCount * get_size_for_index_format( indexFormat ), raw->indices, GL_STATIC_DRAW );
+
+    check_gl_error();
+
+    resultMesh.indexCount = indexCount;
+    resultMesh.indexFormat = indexFormat;
+    return resultMesh;
+  }
+
+  void free_mesh( bs::graphics::Mesh mesh )
+  {
+    u32 buffers[] = { mesh.vb, mesh.uvb, mesh.ib };
+    glDeleteBuffers( 3, buffers );
+  }
+
+  bs::graphics::TextureID allocate_texture( bs::graphics::TextureData const* textureData )
+  {
+    u32 const* pixel = (u32 const*) textureData->pixel;
+    //TODO use PBO to skip one copy step ?
     GLuint textureHandle = 0;
     glGenTextures( 1, &textureHandle );
     glBindTexture( GL_TEXTURE_2D, textureHandle );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, pixel );
+    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, textureData->width, textureData->height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, pixel );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
@@ -342,6 +421,25 @@ namespace opengl
     GLuint handle = (GLuint) texture;
     glDeleteTextures( 1, &handle );
   }
+
+  void allocate_render_object()
+  {
+
+    //diffuse texture
+    //normal texture
+
+    //mesh
+
+    //animation data?
+  }
+
+  void free_render_object()
+  {
+
+    //free_texture();
+  }
+
+
 
   void render_text_area_fixed_pipeline( bs::graphics::RenderTarget* target, bs::ui::TextArea* textArea )
   {
@@ -589,7 +687,14 @@ namespace opengl
   void render_custom_bitmap( bs::graphics::RenderTarget* target, bs::graphics::Bitmap* bmp )
   {
     int2 screenSize = ::global::mainWindow.size;
-    bs::graphics::TextureID id = allocate_texture( bmp->pixel, bmp->width, bmp->height );
+
+    bs::graphics::TextureData texData {};
+    texData.pixel = bmp->pixel;
+    texData.width = bmp->width;
+    texData.height = bmp->height;
+    texData.format = bs::graphics::TextureFormat::RGBA8;
+
+    bs::graphics::TextureID id = allocate_texture( &texData );
     glEnable( GL_TEXTURE_2D );
     glBindTexture( GL_TEXTURE_2D, id );
 
@@ -632,6 +737,56 @@ namespace opengl
     //free_texture( id );
   }
 
+
+
+
+
+  struct PrmTest
+  {
+    thread::ThreadInfo* threadInfo;
+    bs::graphics::Mesh mesh;
+    HGLRC renderContext;
+  };
+  DWORD WINAPI thread_bullcrap( void* void_parameter )
+  {
+    PrmTest* parameter = (PrmTest*) void_parameter;
+    opengl::set_worker_thread_render_context( parameter->renderContext );
+
+    static float3 vertices[] = {
+              float3{-1.0f,-1.0f, -1.0f},
+              float3{ 1.0f,-1.0f, -1.0f},
+              float3{ 1.0f, 1.0f, -1.0f},
+              float3{-1.0f, 1.0f, -1.0f},
+    };
+
+    static  float2 uvs[] = {
+    float2{0.0f, 1.0f},
+    float2{1.0f, 1.0f},
+    float2{1.0f, 0.0f},
+    float2{0.0f, 0.0f},
+    };
+
+    static  u16 indices[] =
+    {
+      0,1,2,
+      0,2,3
+    };
+    bs::graphics::MeshData raw {};
+    raw.vertices = vertices;
+    raw.vertexCount = array_count( vertices );
+    raw.indices = indices;
+    raw.indexCount = array_count( indices );
+    raw.uvs = uvs;
+    raw.indexFormat = bs::graphics::IndexFormat::U16;
+    parameter->mesh = allocate_mesh( &raw );
+
+    check_gl_error();
+
+    thread::write_barrier();
+    parameter->threadInfo = nullptr;
+    return 0;
+  }
+
   void render_testDEBUG2( bs::graphics::RenderTarget* target, bs::graphics::RenderGroup* group, bs::graphics::Camera* camera )
   {
     static const GLfloat g_vertex_buffer_data[] = {
@@ -660,36 +815,68 @@ namespace opengl
     // 0.2f, 0.0f,
     // 0.0f, 0.0f,
     // };
+    check_gl_error();
+
+    static bs::graphics::Mesh meshFromThisThread {};
+    static bs::graphics::RenderObject* renderObject;
 
     static GLuint vertexbuffer;
     static GLuint uvBuffer;
     static GLuint indexBuffer;
+    static GLuint VertexArrayID;
 
-    static int firsttime = 1;
-    if ( firsttime-- )
+    static int firsttime = 0;
+    if ( !firsttime-- )
     {
-      GLuint VertexArrayID;
-      glGenVertexArrays( 1, &VertexArrayID );
-      glBindVertexArray( VertexArrayID );
+      static float3 vertices[] = {
+           float3{-1.0f,-1.0f, -1.0f},
+           float3{ 1.0f,-1.0f, -1.0f},
+           float3{ 1.0f, 1.0f, -1.0f},
+           float3{-1.0f, 1.0f, -1.0f},
+      };
 
-      glGenBuffers( 1, &vertexbuffer );
-      glBindBuffer( GL_ARRAY_BUFFER, vertexbuffer );
-      glBufferData( GL_ARRAY_BUFFER, sizeof( g_vertex_buffer_data ), g_vertex_buffer_data, GL_STATIC_DRAW );
+      static  float2 uvs[] = {
+      float2{0.0f, 1.0f},
+      float2{1.0f, 1.0f},
+      float2{1.0f, 0.0f},
+      float2{0.0f, 0.0f},
+      };
 
-      GLuint uvArrayID;
-      glBindVertexArray( 0 );
-      glGenVertexArrays( 1, &uvArrayID );
-      glBindVertexArray( uvArrayID );
+      static  u16 indices[] =
+      {
+        0,1,2,
+        0,2,3
+      };
 
-      glGenBuffers( 1, &uvBuffer );
-      glBindBuffer( GL_ARRAY_BUFFER, uvBuffer );
-      glBufferData( GL_ARRAY_BUFFER, sizeof( g_uv_buffer_data ), g_uv_buffer_data, GL_STATIC_DRAW );
-      glBindVertexArray( 0 );
+      bs::graphics::MeshData raw {};
+      raw.vertices = vertices;
+      raw.vertexCount = array_count( vertices );
+      raw.indices = indices;
+      raw.indexCount = array_count( indices );
+      raw.uvs = uvs;
+      raw.indexFormat = bs::graphics::IndexFormat::U16;
 
-      glGenBuffers( 1, &indexBuffer );
-      glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, indexBuffer );
-      glBufferData( GL_ELEMENT_ARRAY_BUFFER, sizeof( g_index_buffer_data ) * sizeof( u16 ), g_index_buffer_data, GL_STATIC_DRAW );
 
+      // meshFromThisThread = allocate_mesh( &raw );
+       //   glGenVertexArrays( 1, &VertexArrayID );
+        //  glBindVertexArray( VertexArrayID );
+      check_gl_error();
+
+      renderObject = (bs::graphics::RenderObject*) bs::memory::allocate_to_zero( sizeof( bs::graphics::RenderObject ) );
+      //  renderObject->mesh = allocate_mesh( &raw );
+
+
+      PrmTest poop = {};
+      thread::ThreadInfo dumbStandaloneThreadTest {};
+      poop.threadInfo = &dumbStandaloneThreadTest;
+      poop.renderContext = opengl::create_render_context_for_worker_thread();
+      check_gl_error();
+      CloseHandle( CreateThread( 0, 0, thread_bullcrap, &poop, 0, (LPDWORD) &poop.threadInfo->id ) );
+
+      //wait for the thread to shutdown
+      while ( poop.threadInfo != nullptr ) {}
+
+      renderObject->mesh = poop.mesh;
     }
 
     static float modelposy = 0.0f;
@@ -699,42 +886,102 @@ namespace opengl
 
     float4x4 vp = bs::graphics::get_camera_view_projection_matrix( camera, (float)::global::mainWindow.size.x, (float)::global::mainWindow.size.y, 45.0f, 0.1f, 100.0f );
     float4x4 mvp = model * vp;
+
+    glBindVertexArray( 0 );
+    check_gl_error();
+
+    glUseProgram( ::global::defaultGlyphTable->shaderProgram );
     uniformID mvpID = glGetUniformLocation( ::global::defaultGlyphTable->shaderProgram, "MVP" );
     glUniformMatrix4fv( mvpID, 1, GL_FALSE, &mvp.m00 );
 
-    GLuint id= ::global::defaultGlyphSheet->textureID;
+    check_gl_error();
+
+    GLuint textureID = ::global::defaultGlyphSheet->textureID;
+    glBindTexture( GL_TEXTURE_2D, textureID );
+    if ( !renderObject->id )
+    {
+      //  renderObject->id = init_vao_for_mesh( &renderObject->mesh );
+
+      init_vao( renderObject );
+    }
+    check_gl_error();
+
+
+    glBindVertexArray( renderObject->id );
+
+    check_gl_error();
+
+    GLenum glIndexFormat = get_gl_index_format( renderObject->mesh.indexFormat );
+    glDrawElements( GL_TRIANGLES, renderObject->mesh.indexCount, glIndexFormat, (void*) 0 );
+
+    glBindVertexArray( 0 );
+    glDisableVertexAttribArray( 0 );
+    glDisableVertexAttribArray( 1 );
+
+    // glUseProgram( 0 );
+    // glBindVertexArray( 0 );
+    // glBindBuffer( GL_ARRAY_BUFFER, 0 );
+    // glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
+
+    // glEnableVertexAttribArray( 0 );
+    // glBindBuffer( GL_ARRAY_BUFFER, vertexbuffer );
+    // glVertexAttribPointer(
+    //    0,                  // attribute 0. match shader
+    //    3,                  // size
+    //    GL_FLOAT,           // type
+    //    GL_FALSE,           // normalized?
+    //    0,                  // stride
+    //    (void*) 0           // array buffer offset
+    // );
+    // // Draw the triangle !
+
+    // glEnableVertexAttribArray( 1 );
+    // glBindBuffer( GL_ARRAY_BUFFER, uvBuffer );
+    // glVertexAttribPointer(
+    //     1,                                // attribute. match shader.
+    //     2,                                // size
+    //     GL_FLOAT,                         // type
+    //     GL_FALSE,                         // normalized?
+    //     0,                                // stride
+    //     (void*) 0                         // array buffer offset
+    // );
+
+    // glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, indexBuffer );
+
+   // glDrawElements( GL_TRIANGLES, sizeof( g_index_buffer_data ), GL_UNSIGNED_SHORT, (void*) 0 );
+
+  }
+
+  void render_testSCENE( bs::graphics::RenderTarget* target, bs::graphics::Camera* camera, bs::scene::Object* sceneObjects, u32 sceneObjectCount )
+  {
+    float4x4 vp = bs::graphics::get_camera_view_projection_matrix( camera, (float)::global::mainWindow.size.x, (float)::global::mainWindow.size.y, 45.0f, 0.1f, 100.0f );
+
+    GLuint id = ::global::defaultGlyphSheet->textureID;
     glBindTexture( GL_TEXTURE_2D, id );
 
     glUseProgram( ::global::defaultGlyphTable->shaderProgram );
-    glEnableVertexAttribArray( 0 );
-    glBindBuffer( GL_ARRAY_BUFFER, vertexbuffer );
-    glVertexAttribPointer(
-       0,                  // attribute 0. match shader
-       3,                  // size
-       GL_FLOAT,           // type
-       GL_FALSE,           // normalized?
-       0,                  // stride
-       (void*) 0           // array buffer offset
-    );
-    // Draw the triangle !
 
-    glEnableVertexAttribArray( 1 );
-    glBindBuffer( GL_ARRAY_BUFFER, uvBuffer );
-    glVertexAttribPointer(
-        1,                                // attribute. match shader.
-        2,                                // size
-        GL_FLOAT,                         // type
-        GL_FALSE,                         // normalized?
-        0,                                // stride
-        (void*) 0                         // array buffer offset
-    );
+    for ( u32 i = 0; i < sceneObjectCount; ++i )
+    {
+      bs::graphics::RenderObject* renderObject = sceneObjects[i].renderObject;
 
-    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, indexBuffer );
-    glDrawElements( GL_TRIANGLES, sizeof( g_index_buffer_data ), GL_UNSIGNED_SHORT, (void*) 0 );
-    // glDrawArrays( GL_TRIANGLES, 0, 3 * 2 ); // Starting from vertex 0; 3 vertices total -> 1 triangle
+      if ( !renderObject->id )
+      {
+        init_vao( renderObject );
+      }
+      glBindVertexArray( renderObject->id );
 
-     // glDisableVertexAttribArray( 0 );
-     // glDisableVertexAttribArray( 1 );
+      float4x4 mvp = sceneObjects[i].transform * vp;
+      uniformID mvpID = glGetUniformLocation( ::global::defaultGlyphTable->shaderProgram, "MVP" );
+      glUniformMatrix4fv( mvpID, 1, GL_FALSE, &mvp.m00 );
+
+      //  u32 indexSize = get_size_for_index_format( renderObject->mesh.indexFormat );
+      GLenum glIndexFormat = get_gl_index_format( renderObject->mesh.indexFormat );
+      glDrawElements( GL_TRIANGLES, renderObject->mesh.indexCount, glIndexFormat, (void*) 0 );
+
+      glBindVertexArray( 0 );
+    }
+    glUseProgram( 0 );
   }
 
   void render( bs::graphics::RenderTarget* target, bs::graphics::RenderGroup* group, bs::graphics::Camera* camera )
@@ -753,9 +1000,14 @@ namespace opengl
         render_custom_bitmap( target, (bs::graphics::Bitmap*) group->renderObject );
         break;
       }
+      case bs::graphics::RenderGroup::SCENE_OBJECTS:
+      {
+        render_testSCENE( target, camera, (bs::scene::Object*) group->renderObject, group->count );
+        break;
+      }
       default:
       {
-        render_testDEBUG( target, group, camera );
+        //  render_testDEBUG( target, group, camera );
         break;
       }
     }
@@ -879,7 +1131,6 @@ namespace opengl
 
     return create_shader_program( h, vs, fs );
   }
-
 };
 
 

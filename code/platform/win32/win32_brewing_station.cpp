@@ -1,8 +1,10 @@
 #include "win32_util.h"
 #include "win32_global.h"
 #include "win32_app_dll_loader.h"
-#include "win32_opengl.h"
+//#include "win32_opengl.h"
+
 #include "win32_thread.h"
+#include <platform/win32/win32_opengl.h>
 #include <platform/platform.h>
 #include <core/bsfont.h>
 #include <common/bsstring.h>
@@ -193,7 +195,7 @@ LRESULT CALLBACK brewing_station_main_window_callback( HWND window, UINT message
       global::mainWindow.size.y = s32( HIWORD( lParam ) );
       if ( wParam == SIZE_MAXIMIZED || wParam == SIZE_MINIMIZED )
       {
-        opengl::resize_viewport();
+        opengl::resize_viewport( global::mainWindow.size );
       }
       break;
     }
@@ -206,7 +208,7 @@ LRESULT CALLBACK brewing_station_main_window_callback( HWND window, UINT message
     case WM_DISPLAYCHANGE:
     case WM_EXITSIZEMOVE:
     {
-      opengl::resize_viewport();
+      opengl::resize_viewport( global::mainWindow.size );
       break;
     }
     case WM_DESTROY:
@@ -276,7 +278,7 @@ void brewing_station_main()
     assert( global::mainWindow.handle != 0 );
     HDC deviceContext = GetDC( global::mainWindow.handle );
     assert( deviceContext != 0 );
-    opengl::init( deviceContext );
+    opengl::init( deviceContext, global::mainWindow.size );
   }
 
   void* buffer = VirtualAlloc( 0, (s64) global::APP_MEMORY_SIZE, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
@@ -312,6 +314,7 @@ void brewing_station_main()
     thread::ThreadInfo standaloneDllLoadThread {};
     dllLoaderPrm.threadInfo = &standaloneDllLoadThread;
     dllLoaderPrm.appDll =  &global::appDll;
+    dllLoaderPrm.renderContext = opengl::create_render_context_for_worker_thread();
     //    dllLoaderPrm.for_all_app_threads = &win32::for_all_app_threads;
     CloseHandle( CreateThread( 0, 0, win32::thread_DllLoader, &dllLoaderPrm, 0, (LPDWORD) &dllLoaderPrm.threadInfo->id ) );
   }
@@ -323,7 +326,7 @@ void brewing_station_main()
     thread::pause_thread_if_requested( &global::mainThread );
     brewing_station_loop();
 
-    opengl::tick();
+    opengl::swap_buffers();
 
 
     ++global::appData.currentFrameIndex;
@@ -401,13 +404,13 @@ namespace platform
   {
     global::defaultArena->free( ptr );
   }
-  INLINE bs::graphics::TextureID allocate_texture( u32 const* pixel, s32 width, s32 height )
+  INLINE bs::graphics::TextureID allocate_texture( bs::graphics::TextureData const* textureData )
   {
-    return opengl::allocate_texture( pixel, width, height );
+    return 0;//opengl::allocate_texture( textureData );
   }
   INLINE void free_texture( bs::graphics::TextureID id )
   {
-    return opengl::free_texture( id );
+    // return opengl::free_texture( id );
   }
 };
 #endif

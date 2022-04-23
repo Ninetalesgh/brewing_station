@@ -24,8 +24,11 @@ namespace platform
     using push_synced_task = u32( bs::Task const&, bs::TaskState volatile* out_taskState );
     using complete_synced_tasks = void();
 
-    using allocate_texture = bs::graphics::TextureID( u32 const* pixel, s32 width, s32 height );
+    using allocate_texture = bs::graphics::TextureID( bs::graphics::TextureData const* );
     using free_texture = void( bs::graphics::TextureID );
+    using allocate_mesh = bs::graphics::Mesh( bs::graphics::MeshData const* );
+    using free_mesh = void( bs::graphics::Mesh );
+
     using render = void( bs::graphics::RenderTarget*, bs::graphics::RenderGroup*, bs::graphics::Camera* );
 
     using bind_shader = void();
@@ -49,6 +52,9 @@ namespace platform
 
     callbackfunctionsignature::allocate_texture* ptr_allocate_texture;
     callbackfunctionsignature::free_texture* ptr_free_texture;
+    callbackfunctionsignature::allocate_mesh* ptr_allocate_mesh;
+    callbackfunctionsignature::free_mesh* ptr_free_mesh;
+
     callbackfunctionsignature::render* ptr_render;
 
     bs::memory::Arena* mainArena;
