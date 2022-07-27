@@ -252,12 +252,6 @@ namespace win32
 
   u32 init_worker_threads()
   {
-    log_info( "test" );
-    log_info( "test" );
-    log_info( "test" );
-    log_info( "test" );
-    log_info( "test" );
-    log_info( "test" );
     global::asyncTaskQueue.semaphore = CreateSemaphoreEx( 0, 0/*initialCount*/, global::ASYNC_THREAD_COUNT, 0, 0, SEMAPHORE_ALL_ACCESS );
     global::syncedTaskQueue.semaphore = CreateSemaphoreEx( 0, 0/*initialCount*/, global::SYNCED_THREAD_COUNT, 0, 0, SEMAPHORE_ALL_ACCESS );
 

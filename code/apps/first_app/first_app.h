@@ -6,13 +6,24 @@
 #include <common/bscolor.h>
 #include <platform/platform.h>
 
+struct FirstAppData
+{
+  bs::graphics::Bitmap bmp;
+};
+
+FirstAppData* app;
 
 void update();
 void start();
 void print_text( char const* text );
 
-static bs::graphics::Bitmap* bmp;
+
+
 static bs::input::State* inputPtr;
+const int windowWidth = DEFAULT_WINDOW_SIZE.x;
+const int windowHeight = DEFAULT_WINDOW_SIZE.y - 40;
+
+
 
 INLINE u32 is_key_held( u32 key )
 {
@@ -21,19 +32,19 @@ INLINE u32 is_key_held( u32 key )
 
 INLINE void clear( u32 clearColor )
 {
-  s32 end = bmp->width * bmp->height;
+  s32 end = app->bmp.width * app->bmp.height;
   for ( s32 i = 0; i < end; ++i )
   {
-    bmp->pixel[i] = clearColor;
+    app->bmp.pixel[i] = clearColor;
   }
 }
 
 INLINE void plot( int2 pos, u32 color )
 {
-  if ( pos.x >= 0.0f && pos.x < bmp->width &&
-       pos.y >= 0.0f && pos.y < bmp->height )
+  if ( pos.x >= 0.0f && pos.x < app->bmp.width &&
+       pos.y >= 0.0f && pos.y < app->bmp.height )
   {
-    bmp->pixel[pos.x + pos.y * bmp->width] = color;
+    app->bmp.pixel[pos.x + pos.y * app->bmp.width] = color;
   }
 }
 
@@ -73,18 +84,8 @@ void draw_line( int2 begin, int2 end, u32 color )
 }
 
 
-
 namespace bs
 {
-  graphics::Bitmap* create_bitmap( s32 width, s32 height )
-  {
-    u8* allocation = (u8*) memory::allocate_to_zero( sizeof( graphics::Bitmap ) + sizeof( u32 ) * width * height );
-    graphics::Bitmap* resultBmp = (graphics::Bitmap*) allocation;
-    resultBmp->width = width;
-    resultBmp->height = height;
-    resultBmp->pixel = (u32*) allocation + sizeof( graphics::Bitmap );
-    return resultBmp;
-  }
 
   void app_sample_sound( PrmAppSampleSound prm )
   {
@@ -93,15 +94,29 @@ namespace bs
 
   void app_on_load( PrmAppOnLoad prm )
   {
-    bmp = create_bitmap( DEFAULT_WINDOW_SIZE.x, DEFAULT_WINDOW_SIZE.y );
+    if ( prm.appData->userData == nullptr )
+    {
+      prm.appData->userData = memory::allocate_to_zero( sizeof( FirstAppData ) );
+    }
+
+    app = (FirstAppData*) prm.appData->userData;
+
+    if ( app->bmp.pixel != nullptr )
+    {
+      memory::free( app->bmp.pixel );
+    }
+    app->bmp.pixel = (u32*) memory::allocate_to_zero( sizeof( u32 ) * windowWidth * windowHeight );
+    app->bmp.height = windowHeight;
+    app->bmp.width = windowWidth;
     inputPtr = &prm.appData->input;
+
     start();
   }
 
   void app_tick( PrmAppTick prm )
   {
     update();
-    graphics::RenderGroup rg = graphics::render_group_from_custom_bitmap( bmp );
+    graphics::RenderGroup rg = graphics::render_group_from_custom_bitmap( &app->bmp );
     platform::render( nullptr, &rg, nullptr );
     clear( color::BLACK );
   }

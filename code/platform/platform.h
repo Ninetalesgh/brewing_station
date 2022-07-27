@@ -16,6 +16,7 @@ namespace bs
     float deltaTime;
     input::State input;
     net::NetworkData network;
+    void* userData;
   };
 
   struct PrmAppSampleSound

@@ -1,7 +1,6 @@
 #include "first_app.h"
 
-int windowWidth = DEFAULT_WINDOW_SIZE.x;
-int windowHeight = DEFAULT_WINDOW_SIZE.y;
+
 
 float deltaTime = 1.0f / 60.0f;
 

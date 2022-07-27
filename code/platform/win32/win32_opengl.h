@@ -348,4 +348,90 @@ namespace opengl
       BREAK;
     }
   }
+
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////
+  // hotfix for cpu renderer
+  ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  bs::graphics::TextureID allocate_texture( bs::graphics::TextureData const* textureData )
+  {
+    u32 const* pixel = (u32 const*) textureData->pixel;
+    //TODO use PBO to skip one copy step ?
+    GLuint textureHandle = 0;
+    glGenTextures( 1, &textureHandle );
+    glBindTexture( GL_TEXTURE_2D, textureHandle );
+    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, textureData->width, textureData->height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, pixel );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
+    //glGenerateMipmap(GL_TEXTURE_2D); set filter to mipmap if want
+    glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+    glBindTexture( GL_TEXTURE_2D, 0 );
+
+    return (bs::graphics::TextureID) textureHandle;
+  }
+  void free_texture( bs::graphics::TextureID texture )
+  {
+    GLuint handle = (GLuint) texture;
+    glDeleteTextures( 1, &handle );
+  }
+  void render_custom_bitmap( bs::graphics::RenderTarget* target, bs::graphics::Bitmap* bmp )
+  {
+    int2 screenSize = ::global::mainWindow.size;
+
+    bs::graphics::TextureData texData {};
+    texData.pixel = bmp->pixel;
+    texData.width = bmp->width;
+    texData.height = bmp->height;
+    texData.format = bs::graphics::TextureFormat::RGBA8;
+
+    bs::graphics::TextureID id = allocate_texture( &texData );
+    glEnable( GL_TEXTURE_2D );
+    glBindTexture( GL_TEXTURE_2D, id );
+
+    glMatrixMode( GL_TEXTURE );
+    glLoadIdentity();
+    glMatrixMode( GL_MODELVIEW );
+    glLoadIdentity();
+    glMatrixMode( GL_PROJECTION );
+    glLoadIdentity();
+    glOrtho( 0.f, screenSize.x, screenSize.y, 0.f, 0.f, 10.f );
+
+    glEnable( GL_BLEND );
+    glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+
+    glBegin( GL_TRIANGLES );
+
+    float2 min = { -1, -1 };
+    float2 max = { (float) bmp->width, (float) bmp->height };
+    glTexCoord2f( 0.0f, 1.0f );
+    glVertex2f( min.x, max.y );
+
+    glTexCoord2f( 1.0f, 1.0f );
+    glVertex2f( max.x, max.y );
+
+    glTexCoord2f( 1.0f, 0.0f );
+    glVertex2f( max.x, min.y );
+
+    glTexCoord2f( 0.0f, 1.0f );
+    glVertex2f( min.x, max.y );
+
+    glTexCoord2f( 1.0f, 0.0f );
+    glVertex2f( max.x, min.y );
+
+    glTexCoord2f( 0.0f, 0.0f );
+    glVertex2f( min.x, min.y );
+
+    glBindTexture( GL_TEXTURE_2D, 0 );
+    glEnd();
+
+    free_texture( id );
+  }
+
+  void render( bs::graphics::RenderTarget* target, bs::graphics::RenderGroup* group, bs::graphics::Camera* camera )
+  {
+    render_custom_bitmap( target, (bs::graphics::Bitmap*) group->renderObject );
+  }
 };

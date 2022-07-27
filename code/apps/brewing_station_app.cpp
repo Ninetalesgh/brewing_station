@@ -1,5 +1,5 @@
-#define BUILD_TESTAPP
-//#define BUILD_FIRST_APP
+//#define BUILD_TESTAPP
+#define BUILD_FIRST_APP
 
 #if defined(BUILD_TESTAPP)
 #include "testapp/test_app_main.cpp"
