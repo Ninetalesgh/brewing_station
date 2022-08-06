@@ -4,11 +4,14 @@
 #include <core/bsmemory.h>
 #include <core/bsdebuglog.h>
 #include <common/bscolor.h>
+#include <core/bsfont.h>
 #include <platform/platform.h>
 
 struct FirstAppData
 {
   bs::graphics::Bitmap bmp;
+  bs::font::GlyphTable* glyphTable;
+  bs::font::GlyphSheet* glyphSheet;
 };
 
 FirstAppData* app;
@@ -97,17 +100,21 @@ namespace bs
     if ( prm.appData->userData == nullptr )
     {
       prm.appData->userData = memory::allocate_to_zero( sizeof( FirstAppData ) );
+      app = (FirstAppData*) prm.appData->userData;
+      app->bmp.pixel = (u32*) memory::allocate_to_zero( sizeof( u32 ) * windowWidth * windowHeight );
+      app->bmp.height = windowHeight;
+      app->bmp.width = windowWidth;
+
+      bs::file::Data ttf;
+      platform::load_file_into_memory( "w:/data/bs.ttf", &ttf );
+
+      char const chars[] = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+      app->glyphTable = bs::font::create_glyph_table_from_ttf( ttf.data );
+      bs::font::set_scale_for_glyph_creation( app->glyphTable, 64.0f );
+      app->glyphSheet = bs::font::create_glyph_sheet( app->glyphTable, chars );
     }
 
     app = (FirstAppData*) prm.appData->userData;
-
-    if ( app->bmp.pixel != nullptr )
-    {
-      memory::free( app->bmp.pixel );
-    }
-    app->bmp.pixel = (u32*) memory::allocate_to_zero( sizeof( u32 ) * windowWidth * windowHeight );
-    app->bmp.height = windowHeight;
-    app->bmp.width = windowWidth;
     inputPtr = &prm.appData->input;
 
     start();

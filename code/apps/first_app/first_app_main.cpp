@@ -1,9 +1,6 @@
 #include "first_app.h"
 
-
-
 float deltaTime = 1.0f / 60.0f;
-
 
 int2 circlePos;
 float2 circleSpeed;

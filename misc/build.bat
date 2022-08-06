@@ -26,7 +26,7 @@ IF %build_mode%=="release" goto build_release
   set compiler_options_dev=%compiler_options% /Z7 /Od /DBS_DEBUG
 
   cl /LD %codepath%\apps\brewing_station_app.cpp /I %codepath%\apps %compiler_options_dev% /Fe:brewing_station_app.dll /Fmbrewing_station_app.map %linker_options% %app_exports% /PDB:bs_app_%random%.pdb 
-  cl     %codepath%\brewing_station_main.cpp /Fe:brewing_station.exe %compiler_options_dev% %linker_options% 
+  cl     %codepath%\brewing_station_main.cpp /Fe:bs_develop.exe %compiler_options_dev% %linker_options% 
 
   echo ------------------------------------
   popd

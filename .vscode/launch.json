@@ -8,7 +8,7 @@
             "name": "(Windows) Launch",
             "type": "cppvsdbg",
             "request": "launch",
-           "program": "w:/build/dev/brewing_station.exe",
+           "program": "w:/build/dev/bs_develop.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "w:/build/dev",

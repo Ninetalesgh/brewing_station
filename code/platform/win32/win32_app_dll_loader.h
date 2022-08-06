@@ -19,7 +19,7 @@ namespace win32
     result.ptr_load_file_into_memory = &win32::load_file_into_memory;
     result.ptr_write_file = &win32::write_file;
 
-    // result.ptr_allocate_texture = &opengl::allocate_texture;
+    result.ptr_allocate_texture = &opengl::allocate_texture;
     // result.ptr_free_texture = &opengl::free_texture;
     // result.ptr_allocate_mesh = &opengl::allocate_mesh;
     // result.ptr_free_mesh = &opengl::free_mesh;
