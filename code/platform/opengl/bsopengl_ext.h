@@ -80,50 +80,50 @@ namespace opengl_ext
   // OPENGL 2.0 ///////////////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  using glShaderSource = void WINAPI( GLuint shader, GLsizei count, const GLchar** string, const GLint* length );
-  using glCreateShader = GLuint WINAPI( GLenum type );
-  using glCompileShader = void WINAPI( GLuint shader );
-  using glAttachShader = void WINAPI( GLuint program, GLuint shader );
-  using glDetachShader = void WINAPI( GLuint program, GLuint shader );
-  using glDeleteShader = void WINAPI( GLuint shader );
-  using glCreateProgram = GLuint WINAPI( void );
-  using glLinkProgram = void WINAPI( GLuint program );
-  using glDeleteProgram = void WINAPI( GLuint program );
-  using glBufferData = void WINAPI( GLenum target, GLsizeiptr size, const void* data, GLenum usage );
-  using glBindBuffer = void WINAPI( GLenum target, GLuint buffer );
-  using glDeleteBuffers = void WINAPI( GLsizei n, const GLuint* buffers );
-  using glUseProgram = void WINAPI( GLuint program );
-  using glGetProgramiv = void WINAPI( GLuint program, GLenum pname, GLint* params );
-  using glGetProgramInfoLog = void WINAPI( GLuint program, GLsizei bufSize, GLsizei* length, GLchar* infoLog );
-  using glGetShaderiv = void WINAPI( GLuint shader, GLenum pname, GLint* params );
-  using glGetShaderInfoLog = void WINAPI( GLuint shader, GLsizei bufSize, GLsizei* length, GLchar* infoLog );
-  using glVertexAttribPointer = void WINAPI( GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void* pointer );
-  using glDisableVertexAttribArray = void WINAPI( GLuint index );
-  using glEnableVertexAttribArray = void WINAPI( GLuint index );
-  using glGenBuffers = void WINAPI( GLsizei n, GLuint* buffers );
-  using glGetUniformLocation = GLint WINAPI( GLuint program, const GLchar* name );
-  using glGetUniformfv = void WINAPI( GLuint program, GLint location, GLfloat* params );
-  using glGetUniformiv = void WINAPI( GLuint program, GLint location, GLint* params );
-  using glUniformMatrix4fv = void WINAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
+  using glShaderSource             = void   WINAPI( GLuint shader, GLsizei count, const GLchar** string, const GLint* length );
+  using glCreateShader             = GLuint WINAPI( GLenum type );
+  using glCompileShader            = void   WINAPI( GLuint shader );
+  using glAttachShader             = void   WINAPI( GLuint program, GLuint shader );
+  using glDetachShader             = void   WINAPI( GLuint program, GLuint shader );
+  using glDeleteShader             = void   WINAPI( GLuint shader );
+  using glCreateProgram            = GLuint WINAPI( void );
+  using glLinkProgram              = void   WINAPI( GLuint program );
+  using glDeleteProgram            = void   WINAPI( GLuint program );
+  using glBufferData               = void   WINAPI( GLenum target, GLsizeiptr size, const void* data, GLenum usage );
+  using glBindBuffer               = void   WINAPI( GLenum target, GLuint buffer );
+  using glDeleteBuffers            = void   WINAPI( GLsizei n, const GLuint* buffers );
+  using glUseProgram               = void   WINAPI( GLuint program );
+  using glGetProgramiv             = void   WINAPI( GLuint program, GLenum pname, GLint* params );
+  using glGetProgramInfoLog        = void   WINAPI( GLuint program, GLsizei bufSize, GLsizei* length, GLchar* infoLog );
+  using glGetShaderiv              = void   WINAPI( GLuint shader, GLenum pname, GLint* params );
+  using glGetShaderInfoLog         = void   WINAPI( GLuint shader, GLsizei bufSize, GLsizei* length, GLchar* infoLog );
+  using glVertexAttribPointer      = void   WINAPI( GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void* pointer );
+  using glDisableVertexAttribArray = void   WINAPI( GLuint index );
+  using glEnableVertexAttribArray  = void   WINAPI( GLuint index );
+  using glGenBuffers               = void   WINAPI( GLsizei n, GLuint* buffers );
+  using glGetUniformLocation       = GLint  WINAPI( GLuint program, const GLchar* name );
+  using glGetUniformfv             = void   WINAPI( GLuint program, GLint location, GLfloat* params );
+  using glGetUniformiv             = void   WINAPI( GLuint program, GLint location, GLint* params );
+  using glUniformMatrix4fv         = void   WINAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
 
   // OPENGL 3.0 ///////////////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  using glGenVertexArrays = void WINAPI( GLsizei n, GLuint* arrays );
-  using glBindVertexArray = void WINAPI( GLuint array );
+  using glGenVertexArrays    = void WINAPI( GLsizei n, GLuint* arrays );
+  using glBindVertexArray    = void WINAPI( GLuint array );
   using glDeleteVertexArrays = void WINAPI( GLsizei n, const GLuint* arrays );
 
   // OPENGL 4.5 ///////////////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  using glCreateBuffers = void WINAPI( GLsizei n, GLuint* buffers );
-  using glNamedBufferData = void WINAPI( GLuint buffer, GLsizeiptr size, const void* data, GLenum usage );
-  using glCreateVertexArrays = void WINAPI( GLsizei n, GLuint* arrays );
-  using glEnableVertexArrayAttrib = void WINAPI( GLuint vaobj, GLuint index );
+  using glCreateBuffers            = void WINAPI( GLsizei n, GLuint* buffers );
+  using glNamedBufferData          = void WINAPI( GLuint buffer, GLsizeiptr size, const void* data, GLenum usage );
+  using glCreateVertexArrays       = void WINAPI( GLsizei n, GLuint* arrays );
+  using glEnableVertexArrayAttrib  = void WINAPI( GLuint vaobj, GLuint index );
   using glVertexArrayElementBuffer = void WINAPI( GLuint vaobj, GLuint buffer );
   using glVertexArrayAttribBinding = void WINAPI( GLuint vaobj, GLuint attribindex, GLuint bindingindex );
-  using glVertexArrayAttribFormat = void WINAPI( GLuint vaobj, GLuint attribindex, GLint size, GLenum type, GLboolean normalized, GLuint relativeoffset );
-  using glVertexArrayVertexBuffer = void WINAPI( GLuint vaobj, GLuint bindingindex, GLuint buffer, GLintptr offset, GLsizei stride );
+  using glVertexArrayAttribFormat  = void WINAPI( GLuint vaobj, GLuint attribindex, GLint size, GLenum type, GLboolean normalized, GLuint relativeoffset );
+  using glVertexArrayVertexBuffer  = void WINAPI( GLuint vaobj, GLuint bindingindex, GLuint buffer, GLintptr offset, GLsizei stride );
   //GLAPI void APIENTRY glNamedBufferSubData (GLuint buffer, GLintptr offset, GLsizeiptr size, const void *data);
 
   struct OpenGLExtCallbacks

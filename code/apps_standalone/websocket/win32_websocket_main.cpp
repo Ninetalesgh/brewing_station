@@ -15,7 +15,7 @@ constexpr u32 MAX_DEBUG_MESSAGE_LENGTH = 512;
 template<typename... Args> void log( Args... args )
 {
   char debugBuffer[MAX_DEBUG_MESSAGE_LENGTH];
-  s32 bytesToWrite = bs::string::format( debugBuffer, MAX_DEBUG_MESSAGE_LENGTH, args... ) - 1 /* ommit null */;
+  s32 bytesToWrite = bs::string_format( debugBuffer, MAX_DEBUG_MESSAGE_LENGTH, args... ) - 1 /* ommit null */;
   if ( bytesToWrite > 0 )
   {
     if ( debugBuffer[bytesToWrite - 1] != '\n' )
@@ -111,15 +111,15 @@ int main()
         {
           log( receiveBuffer );
 
-          if ( string::contains( receiveBuffer, "GET" ) == receiveBuffer )
+          if ( string_contains( receiveBuffer, "GET" ) == receiveBuffer )
           {
             char const* key = nullptr;
             char const* keyText = "Sec-WebSocket-Key: ";
-            key = string::contains( receiveBuffer, keyText );
+            key = string_contains( receiveBuffer, keyText );
             if ( key )
             {
               char const* magic_key = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-              key += string::length( keyText );
+              key += string_length( keyText );
 
 
             }

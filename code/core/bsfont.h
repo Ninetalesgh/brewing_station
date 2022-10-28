@@ -255,7 +255,7 @@ namespace bs
     GlyphSheet* create_glyph_sheet( GlyphTable* glyphTable, char const* utf8String )
     {
       char const* reader = utf8String;
-      s32 glyphCount = bs::string::length_utf8( utf8String );
+      s32 glyphCount = bs::string_length_utf8( utf8String );
 
       Glyph* rects = nullptr;
       GlyphSheet* resultSheet = nullptr;
@@ -273,7 +273,7 @@ namespace bs
       while ( *reader )
       {
         s32 codepoint;
-        reader = bs::string::parse_utf8( reader, &codepoint );
+        reader = bs::string_parse_utf8( reader, &codepoint );
 
         Glyph newGlyph = get_glyph_dimensions( glyphTable, codepoint );
         newGlyph.codepoint = codepoint;

@@ -42,8 +42,8 @@ namespace bs
 
     TextArea* create_text_area_from_text( char const* text, font::GlyphTable* glyphTable, float2 dimensions )
     {
-      s32 lineCount = string::line_count( text );
-      s32 totalTextLength = string::length_utf8( text ) + 1;
+      s32 lineCount = string_line_count( text );
+      s32 totalTextLength = string_length_utf8( text ) + 1;
 
       u8* allocation = (u8*) memory::allocate( sizeof( TextArea ) + sizeof( TextLine ) * lineCount + sizeof( s32 ) * totalTextLength );
       TextArea* resultArea = (TextArea*) allocation;
@@ -65,7 +65,7 @@ namespace bs
         s32 codepoint = 1;
         while ( codepoint != end )
         {
-          reader = string::parse_utf8( reader, &codepoint );
+          reader = string_parse_utf8( reader, &codepoint );
           *writer++ = codepoint;
           ++textLine.capacity;
         }

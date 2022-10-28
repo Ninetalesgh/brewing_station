@@ -193,7 +193,7 @@ static void sha1( char const* input, s32 inputSize, char* out_hash, s32 bufferSi
 
   char const* reader = input;
 
-  s32 inputLeft = inputSize == 0 ? bs::string::length( input ) : inputSize;
+  s32 inputLeft = inputSize == 0 ? bs::string_length( input ) : inputSize;
 
   while ( inputLeft > BLOCK_BYTES )
   {

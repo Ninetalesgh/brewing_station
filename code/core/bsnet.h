@@ -18,7 +18,7 @@ namespace bs
     {
       u32 flags;
 
-      enum : u32
+      enum: u32
       {
         PLATFORM_RESERVED = 0x80000000, //if set the platform won't forward the packet to the app
       };
@@ -26,9 +26,9 @@ namespace bs
 
     struct Connection
     {
-      Connection() : ipv4_address( 0 ), port( 0 ) {}
-      Connection( Connection const& other ) : ipv4_address( other.ipv4_address ), port( other.port ) {}
-      Connection( u32 ipv4_address, u16 port ) : ipv4_address( ipv4_address ), port( port ) {}
+      Connection(): ipv4_address( 0 ), port( 0 ) {}
+      Connection( Connection const& other ): ipv4_address( other.ipv4_address ), port( other.port ) {}
+      Connection( u32 ipv4_address, u16 port ): ipv4_address( ipv4_address ), port( port ) {}
       union
       {
         u32 ipv4_address;
@@ -83,8 +83,7 @@ namespace bs
     u32 parse_ipv4( char const* from );
   };
 
-  namespace string
-  {
-    template<> INLINE s32 format<true, net::Connection>( char* destination, s32 capacity, net::Connection connection );
-  };
+
+  template<> INLINE s32 string_format<true, net::Connection>( char* destination, s32 capacity, net::Connection connection );
+
 };

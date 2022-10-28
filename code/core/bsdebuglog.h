@@ -36,7 +36,7 @@ namespace bs
     class ProfilingObject
     {
     public:
-      ProfilingObject( u64* output ) : output( output ) { *output =  __rdtsc(); }
+      ProfilingObject( u64* output ): output( output ) { *output =  __rdtsc(); }
       ~ProfilingObject() { *output = __rdtsc() - *output; }
     private:
       u64* output;
@@ -54,7 +54,7 @@ namespace bs
   {
     constexpr u32 MAX_DEBUG_MESSAGE_LENGTH = 512;
 
-    enum DebugLogFlags : u32
+    enum DebugLogFlags: u32
     {
       NONE                    = 0x0,
       INFO                    = 0x1,
@@ -85,7 +85,7 @@ namespace bs
     template<typename... Args> void _debug_log( DebugLogFlags flags, Args... args )
     {
       char debugBuffer[MAX_DEBUG_MESSAGE_LENGTH];
-      s32 bytesToWrite = bs::string::format( debugBuffer, MAX_DEBUG_MESSAGE_LENGTH, args... ) - 1 /* ommit null */;
+      s32 bytesToWrite = bs::string_format( debugBuffer, MAX_DEBUG_MESSAGE_LENGTH, args... ) - 1 /* ommit null */;
       if ( bytesToWrite > 0 )
       {
         if ( debugBuffer[bytesToWrite - 1] != '\n' )

@@ -224,10 +224,10 @@ namespace win32
     char const preContent0[] = "\r\nchar const ";
     char const preContent1[] = "[] = { \r\n";
     char const postContent[] = "};\r\n";
-    u32 nameLength = bs::string::length( assetName );
-    u32 preContent0Length = bs::string::length( preContent0 );
-    u32 preContent1Length = bs::string::length( preContent1 );
-    u32 postContentLength = bs::string::length( postContent );
+    u32 nameLength = bs::string_length( assetName );
+    u32 preContent0Length = bs::string_length( preContent0 );
+    u32 preContent1Length = bs::string_length( preContent1 );
+    u32 postContentLength = bs::string_length( postContent );
 
     hexArraySize += nameLength + preContent0Length + preContent1Length + postContentLength;
 
@@ -276,7 +276,7 @@ namespace win32
   void generate_compiled_assets_file( AssetToCompile* assetArray, s32 assetCount )
   {
     char const preContent[] = "#pragma warning(push)\r\n#pragma warning(disable:4309)\r\n#pragma warning(push)\r\n#pragma warning(disable:4838)\r\nnamespace compiledasset\r\n{";
-    write_file( "w:/code/compiled_assets", preContent, bs::string::length( preContent ) );
+    write_file( "w:/code/compiled_assets", preContent, bs::string_length( preContent ) );
 
     for ( s32 i = 0; i < assetCount; ++i )
     {
@@ -294,6 +294,6 @@ namespace win32
     // bs::memory::free( ttf.data );
 
     char const postContent[] = "};\r\n#pragma warning(pop)\r\n#pragma warning(pop)\r\n";
-    append_file( "w:/code/compiled_assets", postContent, bs::string::length( postContent ) );
+    append_file( "w:/code/compiled_assets", postContent, bs::string_length( postContent ) );
   }
 };

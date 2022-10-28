@@ -164,8 +164,8 @@ namespace opengl
     oglglobal::info.version = (char const*) glGetString( GL_VERSION );
     oglglobal::info.shadingLanguageVersion = (char const*) glGetString( GL_SHADING_LANGUAGE_VERSION );
     oglglobal::info.extensions = (char const*) glGetString( GL_EXTENSIONS );
-    oglglobal::info.GL_EXT_texture_sRGB = bs::string::contains( oglglobal::info.extensions, "GL_EXT_texture_sRGB" ) != nullptr;
-    oglglobal::info.GL_EXT_framebuffer_sRGB = bs::string::contains( oglglobal::info.extensions, "GL_EXT_framebuffer_sRGB" ) != nullptr;
+    oglglobal::info.GL_EXT_texture_sRGB = bs::string_contains( oglglobal::info.extensions, "GL_EXT_texture_sRGB" ) != nullptr;
+    oglglobal::info.GL_EXT_framebuffer_sRGB = bs::string_contains( oglglobal::info.extensions, "GL_EXT_framebuffer_sRGB" ) != nullptr;
   };
 
   u32 set_pixel_format_for_dc( HDC deviceContext )

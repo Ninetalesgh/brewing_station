@@ -1,11 +1,13 @@
 //#define BUILD_TESTAPP
-#define BUILD_FIRST_APP
+//#define BUILD_FIRST_APP
+#define BUILD_BSANIM_APP
 
 #if defined(BUILD_TESTAPP)
 #include "testapp/test_app_main.cpp"
 #elif defined(BUILD_FIRST_APP)
 #include "first_app/first_app_main.cpp"
-
+#elif defined(BUILD_BSANIM_APP)
+#include "bsanim_app/bsanim_app_main.cpp"
 #endif
 
 

@@ -11,6 +11,14 @@ namespace opengl
 
   ProgramID create_shader_program( bs::file::Data headerFileData, bs::file::Data vsFileData, bs::file::Data fsFileData );
   //all three files in one, mark sections with #h, #vs and #fs.
+  //example file content:
+  //#h
+  //#version 450 core
+  //#vs
+  //void main() { ... }
+  //#fs
+  //void main() { ... }
+  //
   ProgramID create_shader_program( bs::file::Data combinedglsl );
 
   void check_gl_error();
@@ -119,11 +127,11 @@ namespace opengl
     bs::file::Data fs;
 
     //header
-    char* nextSection = bs::string::contains( reader, "#h" );
+    char* nextSection = bs::string_contains( reader, "#h" );
     assert( nextSection );
     char* currentSection = nextSection + 2;
 
-    nextSection = bs::string::contains( currentSection, "#vs" );
+    nextSection = bs::string_contains( currentSection, "#vs" );
     assert( nextSection );
 
     h.data = currentSection;
@@ -131,7 +139,7 @@ namespace opengl
 
     //vertex shader
     currentSection = nextSection + 3;
-    nextSection = bs::string::contains( currentSection, "#fs" );
+    nextSection = bs::string_contains( currentSection, "#fs" );
     assert( nextSection );
 
     vs.data = currentSection;

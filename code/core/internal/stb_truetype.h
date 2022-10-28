@@ -11,7 +11,7 @@
 #define STBTT_free(x,u)    ((void)(u),bs::memory::free(x))
 
 #define STBTT_assert(x)    assert(x)
-#define STBTT_strlen(x)    bs::string::length(x)
+#define STBTT_strlen(x)    bs::string_length(x)
 
 #define STBTT_memcpy       bs::memory::copy
 #define STBTT_memset       bs::memory::set
@@ -668,7 +668,7 @@ extern "C" {
   };
 
   enum { // languageID for STBTT_PLATFORM_ID_MICROSOFT; same as LCID...
-         // problematic because there are e.g. 16 english LCIDs and 16 arabic LCIDs
+    // problematic because there are e.g. 16 english LCIDs and 16 arabic LCIDs
     STBTT_MS_LANG_ENGLISH     =0x0409, STBTT_MS_LANG_ITALIAN     =0x0410,
     STBTT_MS_LANG_CHINESE     =0x0804, STBTT_MS_LANG_JAPANESE    =0x0411,
     STBTT_MS_LANG_DUTCH       =0x0413, STBTT_MS_LANG_KOREAN      =0x0412,

@@ -101,8 +101,8 @@ namespace opengl
     global::info.version = (char const*) glGetString( GL_VERSION );
     global::info.shadingLanguageVersion = (char const*) glGetString( GL_SHADING_LANGUAGE_VERSION );
     global::info.extensions = (char const*) glGetString( GL_EXTENSIONS );
-    global::info.GL_EXT_texture_sRGB = bs::string::contains( global::info.extensions, "GL_EXT_texture_sRGB" ) != nullptr;
-    global::info.GL_EXT_framebuffer_sRGB = bs::string::contains( global::info.extensions, "GL_EXT_framebuffer_sRGB" ) != nullptr;
+    global::info.GL_EXT_texture_sRGB = bs::string_contains( global::info.extensions, "GL_EXT_texture_sRGB" ) != nullptr;
+    global::info.GL_EXT_framebuffer_sRGB = bs::string_contains( global::info.extensions, "GL_EXT_framebuffer_sRGB" ) != nullptr;
   };
 
   u32 set_pixel_format_for_dc( HDC deviceContext )
@@ -1104,11 +1104,11 @@ namespace opengl
     bs::file::Data fs;
 
     //header
-    char* nextSection = bs::string::contains( reader, "#h" );
+    char* nextSection = bs::string_contains( reader, "#h" );
     assert( nextSection );
     char* currentSection = nextSection + 2;
 
-    nextSection = bs::string::contains( currentSection, "#vs" );
+    nextSection = bs::string_contains( currentSection, "#vs" );
     assert( nextSection );
 
     h.data = currentSection;
@@ -1116,7 +1116,7 @@ namespace opengl
 
     //vertex shader
     currentSection = nextSection + 3;
-    nextSection = bs::string::contains( currentSection, "#fs" );
+    nextSection = bs::string_contains( currentSection, "#fs" );
     assert( nextSection );
 
     vs.data = currentSection;
