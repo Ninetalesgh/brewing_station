@@ -11,7 +11,7 @@
 //winsock
 #pragma comment(lib,"ws2_32.lib")
 
-constexpr u32 MAX_DEBUG_MESSAGE_LENGTH = 512;
+constexpr u32 MAX_DEBUG_MESSAGE_LENGTH = 8192;
 template<typename... Args> void log( Args... args )
 {
   char debugBuffer[MAX_DEBUG_MESSAGE_LENGTH];
@@ -70,8 +70,6 @@ u32 tcp_receive( SOCKET sock, char* receiveBuffer, s32 receiveBufferSize, s32* o
   return *out_bytesReceived != SOCKET_ERROR;
 }
 
-
-
 int main()
 {
   using namespace bs;
@@ -79,7 +77,12 @@ int main()
 
   bs::net::Connection connection = { bs::net::IPv4_ADDRESS_ANY, 80 };
 
-  sha1( "abc", 0, nullptr, 0 );
+  char test[100] = {};
+
+  sha1_to_hex( "dGhlIHNhbXBsZSBub25jZQ==258EAFA5-E914-47DA-95CA-C5AB0DC85B11", 0, test, 100 );
+
+  log( test );
+
 
 
   WSADATA wsaData;
@@ -121,6 +124,15 @@ int main()
               char const* magic_key = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
               key += string_length( keyText );
 
+              char sendBuffer[8192];
+
+              s32 writerIdx = string_format( sendBuffer, 8192
+                                          , "HTTP/1.1 101 Switching Protocols\r\n"
+                                          , "Upgrade: websocket\r\n"
+                                          , "Connection: Upgrade\r\n"
+                                          , "Sec-WebSocket-Accept: " );
+
+
 
             }
           }
@@ -138,7 +150,96 @@ int main()
 }
 
 
+#if 0
 
+
+
+class SHA1
+{
+public:
+  SHA1();
+  void update( const std::string& s );
+  void update( std::istream& is );
+  std::string final();
+  static std::string from_file( const std::string& filename );
+
+private:
+  uint32_t digest[5];
+  std::string buffer;
+  uint64_t transforms;
+};
+
+
+
+inline void SHA1::update( std::istream& is )
+{
+  while ( true )
+  {
+    char sbuf[BLOCK_BYTES];
+    is.read( sbuf, BLOCK_BYTES - buffer.size() );
+    buffer.append( sbuf, (std::size_t) is.gcount() );
+    if ( buffer.size() != BLOCK_BYTES )
+    {
+      return;
+    }
+    uint32_t block[BLOCK_INTS];
+    buffer_to_block( buffer, block );
+    transform( digest, block, transforms );
+    buffer.clear();
+  }
+}
+
+
+/*
+ * Add padding and return the message digest.
+ */
+
+inline std::string SHA1::final()
+{
+  /* Total number of hashed bits */
+  uint64_t total_bits = (transforms * BLOCK_BYTES + buffer.size()) * 8;
+
+  /* Padding */
+  buffer += (char) 0x80;
+  size_t orig_size = buffer.size();
+  while ( buffer.size() < BLOCK_BYTES )
+  {
+    buffer += (char) 0x00;
+  }
+
+  uint32_t block[BLOCK_INTS];
+  buffer_to_block( buffer, block );
+
+  if ( orig_size > BLOCK_BYTES - 8 )
+  {
+    transform( digest, block, transforms );
+    for ( size_t i = 0; i < BLOCK_INTS - 2; i++ )
+    {
+      block[i] = 0;
+    }
+  }
+
+  /* Append total_bits, split this uint64_t into two uint32_t */
+  block[BLOCK_INTS - 1] = (uint32_t) total_bits;
+  block[BLOCK_INTS - 2] = (uint32_t) (total_bits >> 32);
+  transform( digest, block, transforms );
+
+  /* Hex std::string */
+  std::ostringstream result;
+  for ( size_t i = 0; i < sizeof( digest ) / sizeof( digest[0] ); i++ )
+  {
+    result << std::hex << std::setfill( '0' ) << std::setw( 8 );
+    result << digest[i];
+  }
+
+  /* Reset for next run */
+  reset( digest, buffer, transforms );
+
+  return result.str();
+}
+
+
+#endif /* SHA1_HPP */
 
 
 

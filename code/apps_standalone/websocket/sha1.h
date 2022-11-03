@@ -1,251 +1,398 @@
 
 #include <common/bsstring.h>
+#include <corecrt_memory.h>
 
-//source: https://github.com/vog/sha1/blob/master/sha1.hpp
+//bufferSize has to be at least 29 bytes large or it will fail 
+//you CAN use the same buffer for in and output
+static bool sha1_to_base64( char const* input, s32 inputSize, char* out_hash_base64, s32 bufferSize );
 
-static s64 const BLOCK_INTS = 16;  /* number of 32bit integers per SHA1 block */
-static s64 const BLOCK_BYTES = BLOCK_INTS * 4;
-
-inline static u32 rol( u32 const value, s64 const bits )
-{
-  return (value << bits) | (value >> (32 - bits));
-}
-
-inline static u32 blk( u32 const block[BLOCK_INTS], s64 const i )
-{
-  return rol( block[(i + 13) & 15] ^ block[(i + 8) & 15] ^ block[(i + 2) & 15] ^ block[i], 1 );
-}
-
-/*
- * (R0+R1), R2, R3, R4 are the different operations used in SHA1
- */
-
-inline static void R0( u32 const block[BLOCK_INTS], u32 const v, u32& w, u32 const x, u32 const y, u32& z, s64 const i )
-{
-  z += ((w & (x ^ y)) ^ y) + block[i] + 0x5a827999 + rol( v, 5 );
-  w = rol( w, 30 );
-}
+//bufferSize has to be at least 41 bytes large or it will fail 
+static bool sha1_to_hex( char const* input, s32 inputSize, char* out_hash_hex, s32 bufferSize );
 
 
-inline static void R1( u32 block[BLOCK_INTS], u32 const v, u32& w, u32 const x, u32 const y, u32& z, s64 const i )
-{
-  block[i] = blk( block, i );
-  z += ((w & (x ^ y)) ^ y) + block[i] + 0x5a827999 + rol( v, 5 );
-  w = rol( w, 30 );
-}
 
-
-inline static void R2( u32 block[BLOCK_INTS], u32 const v, u32& w, u32 const x, u32 const y, u32& z, s64 const i )
-{
-  block[i] = blk( block, i );
-  z += (w ^ x ^ y) + block[i] + 0x6ed9eba1 + rol( v, 5 );
-  w = rol( w, 30 );
-}
-
-
-inline static void R3( u32 block[BLOCK_INTS], u32 const v, u32& w, u32 const x, u32 const y, u32& z, s64 const i )
-{
-  block[i] = blk( block, i );
-  z += (((w | x) & y) | (w & x)) + block[i] + 0x8f1bbcdc + rol( v, 5 );
-  w = rol( w, 30 );
-}
-
-
-inline static void R4( u32 block[BLOCK_INTS], u32 const v, u32& w, u32 const x, u32 const y, u32& z, s64 const i )
-{
-  block[i] = blk( block, i );
-  z += (w ^ x ^ y) + block[i] + 0xca62c1d6 + rol( v, 5 );
-  w = rol( w, 30 );
-}
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /*
- * Hash a single 512-bit block. This is the core of the algorithm.
+ *
+ * TinySHA1 - a header only implementation of the SHA1 algorithm in C++. Based
+ * on the implementation in boost::uuid::details.
+ *
+ * SHA1 Wikipedia Page: http://en.wikipedia.org/wiki/SHA-1
+ *
+ * Copyright (c) 2012-22 SAURAV MOHAPATRA <mohaps@gmail.com>
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-inline static void transform( u32 digest[], u32 block[BLOCK_INTS], u64& transforms )
+
+namespace sha1
 {
-  /* Copy digest[] to working vars */
-  u32 a = digest[0];
-  u32 b = digest[1];
-  u32 c = digest[2];
-  u32 d = digest[3];
-  u32 e = digest[4];
-
-  /* 4 rounds of 20 operations each. Loop unrolled. */
-  R0( block, a, b, c, d, e, 0 );
-  R0( block, e, a, b, c, d, 1 );
-  R0( block, d, e, a, b, c, 2 );
-  R0( block, c, d, e, a, b, 3 );
-  R0( block, b, c, d, e, a, 4 );
-  R0( block, a, b, c, d, e, 5 );
-  R0( block, e, a, b, c, d, 6 );
-  R0( block, d, e, a, b, c, 7 );
-  R0( block, c, d, e, a, b, 8 );
-  R0( block, b, c, d, e, a, 9 );
-  R0( block, a, b, c, d, e, 10 );
-  R0( block, e, a, b, c, d, 11 );
-  R0( block, d, e, a, b, c, 12 );
-  R0( block, c, d, e, a, b, 13 );
-  R0( block, b, c, d, e, a, 14 );
-  R0( block, a, b, c, d, e, 15 );
-  R1( block, e, a, b, c, d, 0 );
-  R1( block, d, e, a, b, c, 1 );
-  R1( block, c, d, e, a, b, 2 );
-  R1( block, b, c, d, e, a, 3 );
-  R2( block, a, b, c, d, e, 4 );
-  R2( block, e, a, b, c, d, 5 );
-  R2( block, d, e, a, b, c, 6 );
-  R2( block, c, d, e, a, b, 7 );
-  R2( block, b, c, d, e, a, 8 );
-  R2( block, a, b, c, d, e, 9 );
-  R2( block, e, a, b, c, d, 10 );
-  R2( block, d, e, a, b, c, 11 );
-  R2( block, c, d, e, a, b, 12 );
-  R2( block, b, c, d, e, a, 13 );
-  R2( block, a, b, c, d, e, 14 );
-  R2( block, e, a, b, c, d, 15 );
-  R2( block, d, e, a, b, c, 0 );
-  R2( block, c, d, e, a, b, 1 );
-  R2( block, b, c, d, e, a, 2 );
-  R2( block, a, b, c, d, e, 3 );
-  R2( block, e, a, b, c, d, 4 );
-  R2( block, d, e, a, b, c, 5 );
-  R2( block, c, d, e, a, b, 6 );
-  R2( block, b, c, d, e, a, 7 );
-  R3( block, a, b, c, d, e, 8 );
-  R3( block, e, a, b, c, d, 9 );
-  R3( block, d, e, a, b, c, 10 );
-  R3( block, c, d, e, a, b, 11 );
-  R3( block, b, c, d, e, a, 12 );
-  R3( block, a, b, c, d, e, 13 );
-  R3( block, e, a, b, c, d, 14 );
-  R3( block, d, e, a, b, c, 15 );
-  R3( block, c, d, e, a, b, 0 );
-  R3( block, b, c, d, e, a, 1 );
-  R3( block, a, b, c, d, e, 2 );
-  R3( block, e, a, b, c, d, 3 );
-  R3( block, d, e, a, b, c, 4 );
-  R3( block, c, d, e, a, b, 5 );
-  R3( block, b, c, d, e, a, 6 );
-  R3( block, a, b, c, d, e, 7 );
-  R3( block, e, a, b, c, d, 8 );
-  R3( block, d, e, a, b, c, 9 );
-  R3( block, c, d, e, a, b, 10 );
-  R3( block, b, c, d, e, a, 11 );
-  R4( block, a, b, c, d, e, 12 );
-  R4( block, e, a, b, c, d, 13 );
-  R4( block, d, e, a, b, c, 14 );
-  R4( block, c, d, e, a, b, 15 );
-  R4( block, b, c, d, e, a, 0 );
-  R4( block, a, b, c, d, e, 1 );
-  R4( block, e, a, b, c, d, 2 );
-  R4( block, d, e, a, b, c, 3 );
-  R4( block, c, d, e, a, b, 4 );
-  R4( block, b, c, d, e, a, 5 );
-  R4( block, a, b, c, d, e, 6 );
-  R4( block, e, a, b, c, d, 7 );
-  R4( block, d, e, a, b, c, 8 );
-  R4( block, c, d, e, a, b, 9 );
-  R4( block, b, c, d, e, a, 10 );
-  R4( block, a, b, c, d, e, 11 );
-  R4( block, e, a, b, c, d, 12 );
-  R4( block, d, e, a, b, c, 13 );
-  R4( block, c, d, e, a, b, 14 );
-  R4( block, b, c, d, e, a, 15 );
-
-  /* Add the working vars back into digest[] */
-  digest[0] += a;
-  digest[1] += b;
-  digest[2] += c;
-  digest[3] += d;
-  digest[4] += e;
-
-  /* Count the number of transformations */
-  transforms++;
-}
-
-
-inline static void buffer_to_block( char const* buffer, u32 block[BLOCK_INTS] )
-{
-  for ( s64 i = 0; i < BLOCK_INTS; i++ )
+  class SHA1
   {
-    block[i] = (buffer[4 * i + 3] & 0xff)
-      | (buffer[4 * i + 2] & 0xff) << 8
-      | (buffer[4 * i + 1] & 0xff) << 16
-      | (buffer[4 * i + 0] & 0xff) << 24;
-  }
-}
+  public:
+    typedef u32 digest32_t[5];
+    typedef u8 digest8_t[20];
+    inline static u32 LeftRotate( u32 value, size_t count ) {
+      return (value << count) ^ (value >> (32 - count));
+    }
+    SHA1() { reset(); }
+    virtual ~SHA1() {}
+    SHA1( const SHA1& s ) { *this = s; }
+    const SHA1& operator = ( const SHA1& s ) {
+      memcpy( m_digest, s.m_digest, 5 * sizeof( u32 ) );
+      memcpy( m_block, s.m_block, 64 );
+      m_blockByteIndex = s.m_blockByteIndex;
+      m_byteCount = s.m_byteCount;
+      return *this;
+    }
+    SHA1& reset() {
+      m_digest[0] = 0x67452301;
+      m_digest[1] = 0xEFCDAB89;
+      m_digest[2] = 0x98BADCFE;
+      m_digest[3] = 0x10325476;
+      m_digest[4] = 0xC3D2E1F0;
+      m_blockByteIndex = 0;
+      m_byteCount = 0;
+      return *this;
+    }
+    SHA1& processByte( u8 octet ) {
+      this->m_block[this->m_blockByteIndex++] = octet;
+      ++this->m_byteCount;
+      if ( m_blockByteIndex == 64 ) {
+        this->m_blockByteIndex = 0;
+        processBlock();
+      }
+      return *this;
+    }
+    SHA1& processBlock( const void* const start, const void* const end ) {
+      const u8* begin = static_cast<const u8*>(start);
+      const u8* finish = static_cast<const u8*>(end);
+      while ( begin != finish ) {
+        processByte( *begin );
+        begin++;
+      }
+      return *this;
+    }
+    SHA1& processBytes( const void* const data, size_t len ) {
+      const u8* block = static_cast<const u8*>(data);
+      processBlock( block, block + len );
+      return *this;
+    }
+    const u32* getDigest( digest32_t digest ) {
+      size_t bitCount = this->m_byteCount * 8;
+      processByte( 0x80 );
+      if ( this->m_blockByteIndex > 56 ) {
+        while ( m_blockByteIndex != 0 ) {
+          processByte( 0 );
+        }
+        while ( m_blockByteIndex < 56 ) {
+          processByte( 0 );
+        }
+      }
+      else {
+        while ( m_blockByteIndex < 56 ) {
+          processByte( 0 );
+        }
+      }
+      processByte( 0 );
+      processByte( 0 );
+      processByte( 0 );
+      processByte( 0 );
+      processByte( static_cast<unsigned char>((bitCount >> 24) & 0xFF) );
+      processByte( static_cast<unsigned char>((bitCount >> 16) & 0xFF) );
+      processByte( static_cast<unsigned char>((bitCount >> 8) & 0xFF) );
+      processByte( static_cast<unsigned char>((bitCount) & 0xFF) );
 
-static void sha1( char const* input, s32 inputSize, char* out_hash, s32 bufferSize )
-{
-  //init
-  u32 digest[5];
-  u64 transforms = 0;
+      memcpy( digest, m_digest, 5 * sizeof( u32 ) );
+      return digest;
+    }
+    const u8* getDigestBytes( digest8_t digest ) {
+      digest32_t d32;
+      getDigest( d32 );
+      size_t di = 0;
+      digest[di++] = ((d32[0] >> 24) & 0xFF);
+      digest[di++] = ((d32[0] >> 16) & 0xFF);
+      digest[di++] = ((d32[0] >> 8) & 0xFF);
+      digest[di++] = ((d32[0]) & 0xFF);
 
-  digest[0] = 0x67452301;
-  digest[1] = 0xefcdab89;
-  digest[2] = 0x98badcfe;
-  digest[3] = 0x10325476;
-  digest[4] = 0xc3d2e1f0;
+      digest[di++] = ((d32[1] >> 24) & 0xFF);
+      digest[di++] = ((d32[1] >> 16) & 0xFF);
+      digest[di++] = ((d32[1] >> 8) & 0xFF);
+      digest[di++] = ((d32[1]) & 0xFF);
 
-  u32 block[BLOCK_INTS];
+      digest[di++] = ((d32[2] >> 24) & 0xFF);
+      digest[di++] = ((d32[2] >> 16) & 0xFF);
+      digest[di++] = ((d32[2] >> 8) & 0xFF);
+      digest[di++] = ((d32[2]) & 0xFF);
 
-  char const* reader = input;
+      digest[di++] = ((d32[3] >> 24) & 0xFF);
+      digest[di++] = ((d32[3] >> 16) & 0xFF);
+      digest[di++] = ((d32[3] >> 8) & 0xFF);
+      digest[di++] = ((d32[3]) & 0xFF);
 
-  s32 inputLeft = inputSize == 0 ? bs::string_length( input ) : inputSize;
-
-  while ( inputLeft > BLOCK_BYTES )
-  {
-    buffer_to_block( reader, block );
-    transform( digest, block, transforms );
-    reader += BLOCK_BYTES;
-    inputLeft -= BLOCK_BYTES;
-  }
-
-  if ( inputLeft )
-  {
-    u64 totalBits = (transforms * BLOCK_BYTES + inputLeft) * 8;
-
-    s32 i = 0;
-    while ( inputLeft > 3 )
-    {
-      block[i] = (reader[4 * i + 3] & 0xff) | (reader[4 * i + 2] & 0xff) << 8 | (reader[4 * i + 1] & 0xff) << 16 | (reader[4 * i + 0] & 0xff) << 24;
-      ++i;
-      reader += 4;
-      inputLeft -= 4;
+      digest[di++] = ((d32[4] >> 24) & 0xFF);
+      digest[di++] = ((d32[4] >> 16) & 0xFF);
+      digest[di++] = ((d32[4] >> 8) & 0xFF);
+      digest[di++] = ((d32[4]) & 0xFF);
+      return digest;
     }
 
-    u8 c[4];
-    for ( s32 j = 0; j < 4; ++j )
-    {
-      if ( j > inputLeft )  c[j] = 0;
-      else if ( j == inputLeft ) c[j] = 0x80;
-      else c[j] = reader[j];
+  protected:
+    void processBlock() {
+      u32 w[80];
+      for ( size_t i = 0; i < 16; i++ ) {
+        w[i]  = (m_block[i * 4 + 0] << 24);
+        w[i] |= (m_block[i * 4 + 1] << 16);
+        w[i] |= (m_block[i * 4 + 2] << 8);
+        w[i] |= (m_block[i * 4 + 3]);
+      }
+      for ( size_t i = 16; i < 80; i++ ) {
+        w[i] = LeftRotate( (w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16]), 1 );
+      }
+
+      u32 a = m_digest[0];
+      u32 b = m_digest[1];
+      u32 c = m_digest[2];
+      u32 d = m_digest[3];
+      u32 e = m_digest[4];
+
+      for ( size_t i=0; i < 80; ++i ) {
+        u32 f = 0;
+        u32 k = 0;
+
+        if ( i < 20 ) {
+          f = (b & c) | (~b & d);
+          k = 0x5A827999;
+        }
+        else if ( i < 40 ) {
+          f = b ^ c ^ d;
+          k = 0x6ED9EBA1;
+        }
+        else if ( i < 60 ) {
+          f = (b & c) | (b & d) | (c & d);
+          k = 0x8F1BBCDC;
+        }
+        else {
+          f = b ^ c ^ d;
+          k = 0xCA62C1D6;
+        }
+        u32 temp = LeftRotate( a, 5 ) + f + e + k + w[i];
+        e = d;
+        d = c;
+        c = LeftRotate( b, 30 );
+        b = a;
+        a = temp;
+      }
+
+      m_digest[0] += a;
+      m_digest[1] += b;
+      m_digest[2] += c;
+      m_digest[3] += d;
+      m_digest[4] += e;
     }
+  private:
+    digest32_t m_digest;
+    u8 m_block[64];
+    size_t m_blockByteIndex;
+    size_t m_byteCount;
+  };
 
-    block[i] = (c[3] & 0xff) | (c[2] & 0xff) << 8 | (c[1] & 0xff) << 16 | (c[0] & 0xff) << 24;
-    i++;
 
-    for ( s32 j = i; j < BLOCK_INTS; ++j )
+  static bool raw( char const* input, s32 inputSize, char* out_hash, s32 bufferSize )
+  {
+    u32 digest[5];
+    s32 inputLeft = inputSize == 0 ? bs::string_length( input ) : inputSize;
+
+    sha1::SHA1 s;
+    s.processBytes( input, inputLeft );
+    s.getDigest( digest );
+
+    char* t = (char*) digest;
+
+    if ( out_hash && bufferSize >= 20 )
     {
-      block[j] = 0;
-    }
 
-    if ( i + 3 > BLOCK_INTS )
-    {
-      transform( digest, block, transforms );
-      for ( s32 j = 0; j < BLOCK_INTS; ++j )
+      for ( s32 i = 0; i < 20; i+=4 )
       {
-        block[j] = 0;
+        out_hash[i]     = t[i + 3];
+        out_hash[i + 1] = t[i + 2];
+        out_hash[i + 2] = t[i + 1];
+        out_hash[i + 3] = t[i];
+      }
+      return true;
+    }
+
+    return false;
+  }
+
+  char encode_value_in_base64( s32 value )
+  {
+    char result = -1;
+
+    if ( value >= 0 )
+    {
+      if ( value < 26 )
+      {
+        result = 'A' + (char) value;
+      }
+      else if ( value < 52 )
+      {
+        result = 'a' + (char) value - (char) 26;
+      }
+      else if ( value < 62 )
+      {
+        result = '0' + (char) value - (char) 52;
+      }
+      else if ( value == 62 )
+      {
+        result = '+';
+      }
+      else if ( value == 63 )
+      {
+        result = '/';
       }
     }
 
-    block[BLOCK_INTS - 1] = (u32) totalBits;
-    block[BLOCK_INTS - 2] = (u32) (totalBits >> 32);
-    transform( digest, block, transforms );
+    return result;
   }
 
-  int test = 0;
-  test =3;
+  char* encode_batch_to_base64( char in0, char in1, char in2, char* writer )
+  {
+    char const mask2bit = 0b00000011;
+    char const mask4bit = 0b00001111;
+    char const mask6bit = 0b00111111;
+    *writer++ = encode_value_in_base64( (in0 >> 2) & mask6bit );
+    *writer++ = encode_value_in_base64( ((in0 & mask2bit) << 4) | ((in1 >> 4) & mask4bit) );
+    *writer++ = encode_value_in_base64( ((in1 & mask4bit) << 2) | ((in2 >> 6) & mask2bit) );
+    *writer++ = encode_value_in_base64( in2 & mask6bit );
+    return writer;
+  }
+
+  bool to_base64( char const* input, s32 inputSize, char* out_base64, s32 bufferSize )
+  {
+    if ( out_base64 && bufferSize >= (4 * ((inputSize + 2) / 3)) + 1 )
+    {
+      char* writer = out_base64;
+      s32 i = 0;
+      for ( ; i < inputSize - 2; i+=3 )
+      {
+        writer = encode_batch_to_base64( input[i], input[i + 1], input[i + 2], writer );
+      }
+
+      if ( i < inputSize )
+      {
+        if ( inputSize - i == 1 )
+        {
+          writer = encode_batch_to_base64( input[i], 0, 0, writer );
+          writer[-1] = '=';
+          writer[-2] = '=';
+        }
+        else if ( inputSize - i == 2 )
+        {
+          writer = encode_batch_to_base64( input[i], input[i + 1], 0, writer );
+          writer[-1] = '=';
+        }
+        else
+        {
+          assert( 0 );
+        }
+      }
+      *writer = '\0';
+    }
+    else
+    {
+      //write buffer not large enough
+      return false;
+    }
+
+
+    return true;
+  }
+
+  bool to_hex( char const* input, s32 inputSize, char* out_hex, s32 bufferSize )
+  {
+    if ( out_hex && bufferSize >= (inputSize * 2) + 1 )
+    {
+      char* writer = out_hex;
+
+      for ( s32 i = 0; i < inputSize; ++i )
+      {
+        u8 tmp = (input[i] >> 4) & 0x0f;
+        tmp = tmp < 10 ? 48 + tmp : 87 + tmp;
+        *writer++ = (char) tmp;
+
+        tmp = input[i] & 0x0f;
+
+        tmp = tmp < 10 ? 48 + tmp : 87 + tmp;
+        *writer++ = (char) tmp;
+      }
+
+      *writer = '\0';
+
+      return true;
+    }
+
+    return false;
+  }
 }
+
+static bool sha1_to_base64( char const* input, s32 inputSize, char* out_hash_base64, s32 bufferSize )
+{
+  char hash[20];
+
+  if ( sha1::raw( input, inputSize, hash, 20 ) )
+  {
+    return sha1::to_base64( hash, 20, out_hash_base64, bufferSize );
+  }
+  else
+  {
+    assert( 0 );
+  }
+  return false;
+}
+
+
+
+
+static bool sha1_to_hex( char const* input, s32 inputSize, char* out_hash_hex, s32 bufferSize )
+{
+  char hash[20];
+
+  if ( sha1::raw( input, inputSize, hash, 20 ) )
+  {
+    return sha1::to_hex( hash, 20, out_hash_hex, bufferSize );
+  }
+  else
+  {
+    assert( 0 );
+  }
+  return false;
+}
+
+
+
+
+
+
+

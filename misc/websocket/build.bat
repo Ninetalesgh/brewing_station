@@ -22,7 +22,7 @@ IF %build_mode%=="develop" goto build_develop
   pushd dev
   del *.pdb > NUL 2> NUL
 
-  set compiler_options_dev=%compiler_options% /Z7 /Od /DBS_DEBUG
+  set compiler_options_dev=%compiler_options% /wd4189 /wd4505 /Z7 /Od /DBS_DEBUG
 
  cl     %codepath%win32_websocket_main.cpp /I %root_dir%code /Fe:bs_develop.exe %compiler_options_dev% %linker_options% 
 
