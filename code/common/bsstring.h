@@ -36,6 +36,7 @@ namespace bs
   char const* string_parse_value( char const* intString, s32* out_int );
 
 
+  //string_format returns the number of bytes written
   template<bool internal, typename Arg> INLINE s32 string_format( char* destination, s32 capacity, Arg value );
   template<typename Arg, typename... Args>
   INLINE s32 string_format( char* destination, s32 capacity, Arg arg, Args... args )
@@ -46,6 +47,14 @@ namespace bs
     return bytesWritten;
   }
 
+  //TODO testing this for ease of use in string_format
+  struct StringViewSection
+  {
+    char const* begin;
+    char const* end;
+  };
+
+  template<> INLINE s32 string_format<true, StringViewSection>( char* destination, s32 capacity, StringViewSection value );
   template<> INLINE s32 string_format<true, char const*>( char* destination, s32 capacity, char const* value );
   template<> INLINE s32 string_format<true, char*>( char* destination, s32 capacity, char* value );
   template<> INLINE s32 string_format<true, u64>( char* destination, s32 capacity, u64 value );
@@ -71,8 +80,6 @@ namespace bs
     }
     return bytesWritten + 1;
   }
-
-
 };
 
 
@@ -86,6 +93,21 @@ namespace bs
 
 namespace bs
 {
+
+  template<> INLINE s32 string_format<true, StringViewSection>( char* destination, s32 capacity, StringViewSection value )
+  {
+    s32 result = 0;
+    if ( value.begin && value.end )
+    {
+      char const* reader = value.begin;
+      while ( reader != value.end && capacity > result )
+      {
+        *destination++ = *reader++;
+        ++result;
+      }
+    }
+    return result;
+  }
 
   template<> INLINE s32 string_format<true, char const*>( char* destination, s32 capacity, char const* value )
   {
