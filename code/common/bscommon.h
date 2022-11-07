@@ -27,7 +27,7 @@ INLINE enumtypename  operator &  ( enumtypename a, enumtypename b ) { return enu
 INLINE enumtypename& operator &= ( enumtypename& a, enumtypename b ) { a = b & a; return a; }\
 INLINE enumtypename  operator ~  ( enumtypename a ) { return enumtypename( ~basictype( a ) ); }\
 INLINE enumtypename  operator ^  ( enumtypename a, enumtypename b ) { return enumtypename( basictype( a ) ^ basictype( b ) ); }\
-INLINE enumtypename& operator ^= ( enumtypename& a, enumtypename b ) { a = b ^ a; return a; }\
+INLINE enumtypename& operator ^= ( enumtypename& a, enumtypename b ) { a = b ^ a; return a; }
 
 #define DEFINE_ENUM_OPERATORS_U8(enumtypename)  _DEFINE_ENUM_OPERATORS_INTERNAL(enumtypename, u8)
 #define DEFINE_ENUM_OPERATORS_U16(enumtypename) _DEFINE_ENUM_OPERATORS_INTERNAL(enumtypename, u16)
@@ -49,6 +49,11 @@ constexpr u8   U8_MAX = 0xff;
 constexpr u16 U16_MAX = 0xffff;
 constexpr u32 U32_MAX = 0xffffffff;
 constexpr u64 U64_MAX = 0xffffffffffffffff;
+
+constexpr s8   S8_MAX = 0x7f;
+constexpr s16 S16_MAX = 0x7fff;
+constexpr s32 S32_MAX = 0x7fffffff;
+constexpr s64 S64_MAX = 0x7fffffffffffffff;
 
 constexpr INLINE s32 min( s32 a, s32 b ) { return a < b ? a : b; }
 constexpr INLINE s32 max( s32 a, s32 b ) { return a > b ? a : b; }

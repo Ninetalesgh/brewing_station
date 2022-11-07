@@ -1,6 +1,6 @@
 
 #include <common/bsstring.h>
-#include <corecrt_memory.h>
+#include <string.h>
 
 //
 // inputSize can be left 0 if input is \0 terminated
@@ -224,153 +224,153 @@ namespace sha1
     size_t m_blockByteIndex;
     size_t m_byteCount;
   };
+};
 
+static bool raw( char const* input, s32 inputSize, char* out_hash, s32 bufferSize )
+{
+  u32 digest[5];
+  s32 inputLeft = inputSize == 0 ? bs::string_length( input ) : inputSize;
 
-  static bool raw( char const* input, s32 inputSize, char* out_hash, s32 bufferSize )
+  sha1::SHA1 s;
+  s.processBytes( input, inputLeft );
+  s.getDigest( digest );
+
+  char* t = (char*) digest;
+
+  if ( out_hash && bufferSize >= 20 )
   {
-    u32 digest[5];
-    s32 inputLeft = inputSize == 0 ? bs::string_length( input ) : inputSize;
 
-    sha1::SHA1 s;
-    s.processBytes( input, inputLeft );
-    s.getDigest( digest );
-
-    char* t = (char*) digest;
-
-    if ( out_hash && bufferSize >= 20 )
+    for ( s32 i = 0; i < 20; i+=4 )
     {
+      out_hash[i]     = t[i + 3];
+      out_hash[i + 1] = t[i + 2];
+      out_hash[i + 2] = t[i + 1];
+      out_hash[i + 3] = t[i];
+    }
+    return true;
+  }
 
-      for ( s32 i = 0; i < 20; i+=4 )
-      {
-        out_hash[i]     = t[i + 3];
-        out_hash[i + 1] = t[i + 2];
-        out_hash[i + 2] = t[i + 1];
-        out_hash[i + 3] = t[i];
-      }
-      return true;
+  return false;
+}
+
+char encode_value_in_base64( s32 value )
+{
+  char result = -1;
+
+  if ( value >= 0 )
+  {
+    if ( value < 26 )
+    {
+      result = 'A' + (char) value;
+    }
+    else if ( value < 52 )
+    {
+      result = 'a' + (char) value - (char) 26;
+    }
+    else if ( value < 62 )
+    {
+      result = '0' + (char) value - (char) 52;
+    }
+    else if ( value == 62 )
+    {
+      result = '+';
+    }
+    else if ( value == 63 )
+    {
+      result = '/';
+    }
+  }
+
+  return result;
+}
+
+char* encode_batch_to_base64( char in0, char in1, char in2, char* writer )
+{
+  char const mask2bit = 0b00000011;
+  char const mask4bit = 0b00001111;
+  char const mask6bit = 0b00111111;
+  *writer++ = encode_value_in_base64( (in0 >> 2) & mask6bit );
+  *writer++ = encode_value_in_base64( ((in0 & mask2bit) << 4) | ((in1 >> 4) & mask4bit) );
+  *writer++ = encode_value_in_base64( ((in1 & mask4bit) << 2) | ((in2 >> 6) & mask2bit) );
+  *writer++ = encode_value_in_base64( in2 & mask6bit );
+  return writer;
+}
+
+bool to_base64( char const* input, s32 inputSize, char* out_base64, s32 bufferSize )
+{
+  if ( out_base64 && bufferSize >= (4 * ((inputSize + 2) / 3)) + 1 )
+  {
+    char* writer = out_base64;
+    s32 i = 0;
+    for ( ; i < inputSize - 2; i+=3 )
+    {
+      writer = encode_batch_to_base64( input[i], input[i + 1], input[i + 2], writer );
     }
 
+    if ( i < inputSize )
+    {
+      if ( inputSize - i == 1 )
+      {
+        writer = encode_batch_to_base64( input[i], 0, 0, writer );
+        writer[-1] = '=';
+        writer[-2] = '=';
+      }
+      else if ( inputSize - i == 2 )
+      {
+        writer = encode_batch_to_base64( input[i], input[i + 1], 0, writer );
+        writer[-1] = '=';
+      }
+      else
+      {
+        assert( 0 );
+      }
+    }
+    *writer = '\0';
+  }
+  else
+  {
+    //write buffer not large enough
     return false;
   }
 
-  char encode_value_in_base64( s32 value )
-  {
-    char result = -1;
 
-    if ( value >= 0 )
+  return true;
+}
+
+bool to_hex( char const* input, s32 inputSize, char* out_hex, s32 bufferSize )
+{
+  if ( out_hex && bufferSize >= (inputSize * 2) + 1 )
+  {
+    char* writer = out_hex;
+
+    for ( s32 i = 0; i < inputSize; ++i )
     {
-      if ( value < 26 )
-      {
-        result = 'A' + (char) value;
-      }
-      else if ( value < 52 )
-      {
-        result = 'a' + (char) value - (char) 26;
-      }
-      else if ( value < 62 )
-      {
-        result = '0' + (char) value - (char) 52;
-      }
-      else if ( value == 62 )
-      {
-        result = '+';
-      }
-      else if ( value == 63 )
-      {
-        result = '/';
-      }
+      u8 tmp = (input[i] >> 4) & 0x0f;
+      tmp = tmp < 10 ? 48 + tmp : 87 + tmp;
+      *writer++ = (char) tmp;
+
+      tmp = input[i] & 0x0f;
+
+      tmp = tmp < 10 ? 48 + tmp : 87 + tmp;
+      *writer++ = (char) tmp;
     }
 
-    return result;
-  }
-
-  char* encode_batch_to_base64( char in0, char in1, char in2, char* writer )
-  {
-    char const mask2bit = 0b00000011;
-    char const mask4bit = 0b00001111;
-    char const mask6bit = 0b00111111;
-    *writer++ = encode_value_in_base64( (in0 >> 2) & mask6bit );
-    *writer++ = encode_value_in_base64( ((in0 & mask2bit) << 4) | ((in1 >> 4) & mask4bit) );
-    *writer++ = encode_value_in_base64( ((in1 & mask4bit) << 2) | ((in2 >> 6) & mask2bit) );
-    *writer++ = encode_value_in_base64( in2 & mask6bit );
-    return writer;
-  }
-
-  bool to_base64( char const* input, s32 inputSize, char* out_base64, s32 bufferSize )
-  {
-    if ( out_base64 && bufferSize >= (4 * ((inputSize + 2) / 3)) + 1 )
-    {
-      char* writer = out_base64;
-      s32 i = 0;
-      for ( ; i < inputSize - 2; i+=3 )
-      {
-        writer = encode_batch_to_base64( input[i], input[i + 1], input[i + 2], writer );
-      }
-
-      if ( i < inputSize )
-      {
-        if ( inputSize - i == 1 )
-        {
-          writer = encode_batch_to_base64( input[i], 0, 0, writer );
-          writer[-1] = '=';
-          writer[-2] = '=';
-        }
-        else if ( inputSize - i == 2 )
-        {
-          writer = encode_batch_to_base64( input[i], input[i + 1], 0, writer );
-          writer[-1] = '=';
-        }
-        else
-        {
-          assert( 0 );
-        }
-      }
-      *writer = '\0';
-    }
-    else
-    {
-      //write buffer not large enough
-      return false;
-    }
-
+    *writer = '\0';
 
     return true;
   }
 
-  bool to_hex( char const* input, s32 inputSize, char* out_hex, s32 bufferSize )
-  {
-    if ( out_hex && bufferSize >= (inputSize * 2) + 1 )
-    {
-      char* writer = out_hex;
-
-      for ( s32 i = 0; i < inputSize; ++i )
-      {
-        u8 tmp = (input[i] >> 4) & 0x0f;
-        tmp = tmp < 10 ? 48 + tmp : 87 + tmp;
-        *writer++ = (char) tmp;
-
-        tmp = input[i] & 0x0f;
-
-        tmp = tmp < 10 ? 48 + tmp : 87 + tmp;
-        *writer++ = (char) tmp;
-      }
-
-      *writer = '\0';
-
-      return true;
-    }
-
-    return false;
-  }
+  return false;
 }
+
 
 static bool sha1_to_base64( char const* input, s32 inputSize, char* out_hash_base64, s32 bufferSize )
 {
   char hash[20];
 
-  if ( sha1::raw( input, inputSize, hash, 20 ) )
+  if ( raw( input, inputSize, hash, 20 ) )
   {
-    return sha1::to_base64( hash, 20, out_hash_base64, bufferSize );
+    return to_base64( hash, 20, out_hash_base64, bufferSize );
   }
   else
   {
@@ -380,15 +380,13 @@ static bool sha1_to_base64( char const* input, s32 inputSize, char* out_hash_bas
 }
 
 
-
-
 static bool sha1_to_hex( char const* input, s32 inputSize, char* out_hash_hex, s32 bufferSize )
 {
   char hash[20];
 
-  if ( sha1::raw( input, inputSize, hash, 20 ) )
+  if ( raw( input, inputSize, hash, 20 ) )
   {
-    return sha1::to_hex( hash, 20, out_hash_hex, bufferSize );
+    return to_hex( hash, 20, out_hash_hex, bufferSize );
   }
   else
   {

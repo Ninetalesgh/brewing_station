@@ -3,7 +3,6 @@
 
 namespace bs
 {
-
   //returns the number of bytes in the string, not counting the \0
   s32 string_length( char const* string );
 
@@ -74,10 +73,10 @@ namespace bs
   template<typename Arg> INLINE s32 string_format( char* destination, s32 capacity, Arg value )
   {
     s32 bytesWritten = string_format<true, Arg>( destination, capacity, value );
-    if ( capacity > bytesWritten )
-    {
-      destination[bytesWritten] = '\0'; //end of string_format
-    }
+
+    bytesWritten = min( capacity - 1, bytesWritten );
+    destination[bytesWritten] = '\0'; //end of string_format
+
     return bytesWritten + 1;
   }
 };
@@ -461,7 +460,7 @@ namespace bs
       result = 1;
     }
 
-    return 0;
+    return result;
   }
 
   INLINE s32 string_line_count( char const* string )
