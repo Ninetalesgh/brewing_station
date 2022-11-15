@@ -340,9 +340,9 @@ namespace bs
       assert( 0 );
     }
 
-    // bytesPerFragment = 80;
+    bytesPerFragment = 10;
     assert( bytesPerFragment <= 1024 );
-    char bytes[1024];
+    char bytes[1024 + 14];
     s32 offset;
 
     char fin  = (u8) 0x80;
@@ -360,17 +360,19 @@ namespace bs
 
       while ( sizeLeft > 0 )
       {
+        s32 packetSize = min( sizeLeft, bytesPerFragment );
+
         //payload length
-        if ( size < 126 )
+        if ( packetSize < 126 )
         {
-          bytes[1] = mask | (char) size;
+          bytes[1] = mask | (char) packetSize;
           offset = 2;
         }
-        else if ( size <= 0xffff )
+        else if ( packetSize <= 0xffff )
         {
           bytes[1] = mask | (char) 126;
           u16& payloadLength = *(u16*) (&bytes[2]);
-          payloadLength = htons( (u16) size );
+          payloadLength = htons( (u16) packetSize );
           offset = 4;
         }
         else
@@ -378,7 +380,7 @@ namespace bs
           bytes[1] = mask | (char) 127;
 
           u64& payloadLength = *(u64*) &bytes[2];
-          payloadLength = htonll( (u64) size );
+          payloadLength = htonll( (u64) packetSize );
 
           //first bit has to be 0
           assert( !(bytes[2] & 0x80) );
@@ -400,7 +402,6 @@ namespace bs
           offset += 4;
         }
 
-        s32 packetSize = min( sizeLeft, bytesPerFragment - offset );
 
         if ( sizeLeft <= packetSize )
         {
