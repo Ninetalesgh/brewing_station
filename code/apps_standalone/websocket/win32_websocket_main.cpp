@@ -70,6 +70,11 @@ int main()
               log( "Received message of type: TEXT" );
               log( "Message content:\n", separatorLineThin, "\n" );
               log( receiveBuffer, "\n\n", separatorLineThick, "\n" );
+
+              char testmsg[512];
+              //s32 written = string_format( testmsg, array_count( testmsg ), "I received this from you: ", receiveBuffer ) - 1;
+              s32 written = string_format( testmsg, array_count( testmsg ), "acbdsjekrdfekjfeceklhjfwserfsakdjghfdflkgfdlkjsdfhgfewlkfehwfsdlkjgfsdlukjsdflkjsdffslkjdhdsflkjshdfweriuyasqwicbnvcvbvbvHello" ) - 1;
+              websocket_send( tcpSocket, testmsg, written, WebSocketPacketType::TEXT );
             }
             else if ( packetType == WebSocketPacketType::BINARY )
             {

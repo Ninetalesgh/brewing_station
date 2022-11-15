@@ -18,9 +18,13 @@
     const textarea = document.querySelector("textarea");
         // wsUri = "ws://echo.websocket.org/",
         wsUri = "ws://127.0.0.1/",
-        websocket = new WebSocket(wsUri);
+        websocket = new WebSocket(wsUri, );
 
     button.addEventListener("click", onClickButton);
+
+    websocket.addEventListener('message', (event) => {
+      writeToScreen("<span>RESPONSE: " + event.data + "</span>");
+    });
 
     websocket.onopen = function (e) {
         writeToScreen("CONNECTED");
@@ -34,6 +38,7 @@
     websocket.onmessage = function (e) {
         writeToScreen("<span>RESPONSE: " + e.data + "</span>");
     };
+
 
     websocket.onerror = function (e) {
         writeToScreen("<span class=error>ERROR:</span> " + e.data);

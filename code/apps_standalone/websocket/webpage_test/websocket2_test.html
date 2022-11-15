@@ -1,0 +1,27 @@
+<ul id="messages"></ul>
+<form action="">
+  <input id="input" autocomplete="off" />
+  <input type="submit" value="Senden" />
+</form>
+<script src="socket.io/socket.io.js"></script>
+<script src="index.js">
+
+  var socket = io();
+  const form = document.getElementById('form');
+  const input = document.getElementById('input');
+  
+  form.addEventListener('submit', function(event) {
+    event.preventDefault();  // Form wird nicht "normal" gesendet
+    socket.emit('chat message', input.value );  // sondern nur über Socket
+    input.value=""; // Eingabefeld leeren
+  });
+
+  const list = document.getElementById('messages');
+  
+  socket.on('chat message', function(msg) {
+    const message = document.createElement('li');
+    message.textContent = msg;
+    list.appendChild(message);
+  });
+
+</script>

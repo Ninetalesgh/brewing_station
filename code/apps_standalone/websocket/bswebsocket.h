@@ -4,7 +4,7 @@
 //for easy to understand tutorials
 
 #include <common/bsstring.h>
-#include <common/bsbit.h>
+//#include <common/bsbit.h>
 #include <core/internal/bsnet.cpp>
 
 #include "sha1.h"
@@ -15,76 +15,11 @@
 #pragma comment(lib,"ws2_32.lib")
 
 
-//hacky logger real quick
-constexpr u32 MAX_DEBUG_MESSAGE_LENGTH = 8192;
-template<typename... Args> void log( Args... args )
-{
-  char debugBuffer[MAX_DEBUG_MESSAGE_LENGTH];
-  s32 bytesToWrite = bs::string_format( debugBuffer, MAX_DEBUG_MESSAGE_LENGTH - 1, args... ) - 1 /* ommit null */;
-  if ( bytesToWrite > 0 )
-  {
-    if ( debugBuffer[bytesToWrite - 1] != '\n' )
-    {
-      debugBuffer[bytesToWrite++] = '\n';
-      debugBuffer[bytesToWrite] = '\0';
-    }
-
-    printf( debugBuffer );
-  }
-}
-
-u32 tcp_init_socket( SOCKET* out_socket )
-{
-  *out_socket = socket( AF_INET, SOCK_STREAM, 0 );
-  return *out_socket != INVALID_SOCKET;
-}
-
-u32 bind_socket( SOCKET sock, bs::net::Connection incomingConnection )
-{
-  SOCKADDR_IN address;
-  address.sin_port = htons( incomingConnection.port );
-  address.sin_family = AF_INET;
-  address.sin_addr.s_addr = incomingConnection.ipv4_address;
-
-  return bind( sock, (LPSOCKADDR) &address, sizeof( address ) ) != SOCKET_ERROR;
-}
-
-u32 tcp_accept( SOCKET sock, bs::net::Connection* out_remoteConnection, SOCKET* out_tcpSocket )
-{
-  sockaddr_in remoteAddr;
-  s32 remoteAddrSize = sizeof( remoteAddr );
-  *out_tcpSocket = accept( sock, (sockaddr*) &remoteAddr, &remoteAddrSize );
-
-  if ( *out_tcpSocket != INVALID_SOCKET )
-  {
-    out_remoteConnection->ipv4_address = remoteAddr.sin_addr.s_addr;
-    out_remoteConnection->port = ntohs( remoteAddr.sin_port );
-    return 1;
-  }
-  else
-  {
-    out_remoteConnection->ipv4_address = bs::net::IPv4_ADDRESS_INVALID;
-    out_remoteConnection->port = bs::net::PORT_INVALID;
-    return 0;
-  }
-}
-
-u32 tcp_receive( SOCKET sock, char* receiveBuffer, s32 receiveBufferSize, s32* out_bytesReceived )
-{
-  *out_bytesReceived = recv( sock, receiveBuffer, receiveBufferSize, 0 );
-  return *out_bytesReceived != SOCKET_ERROR;
-}
-
-u32 tcp_send( SOCKET sock, char const* data, s32 size )
-{
-  return send( sock, data, size, 0 ) != SOCKET_ERROR;
-}
-
-
 namespace bs
 {
   enum class WebSocketState
   {
+    NONE       = 0x0,
     CONNECTING = 0x1,
     OPEN       = 0x2,
     CLOSED     = 0x3
@@ -111,10 +46,7 @@ namespace bs
     PONG = 0xA
   };
 
-
-  DEFINE_ENUM_OPERATORS_U32( WebSocketPacketType )
-
-    struct WebSocketHandshakeInfo
+  struct WebSocketHandshakeInfo
   {
     char key[25];
   };
@@ -126,7 +58,134 @@ namespace bs
     WebSocketState state;
   };
 
+  WebSocketPacketType websocket_receive( SOCKET socket, char* receiveBuffer, s32 receiveBufferSize, s32* out_bytesReceived );
+  WebSocketHandshakeInfo websocket_get_info_from_handshake_packet( char const* handshakePacket );
 
+  s32 websocket_generate_handshake_response( WebSocketHandshakeInfo const& handshakeInfo, char* out_messageBuffer, s32 messageBufferSize );
+
+  bool websocket_send( SOCKET socket, char* data, s32 size, WebSocketPacketType packetType, bool maskMessage = false, bool fragmentMessage = true, s32 bytesPerFragment = 1024 );
+
+
+};
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////inl//////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+//hacky logger real quick
+constexpr u32 MAX_DEBUG_MESSAGE_LENGTH = 8192;
+template<typename... Args> void log( Args... args )
+{
+  char debugBuffer[MAX_DEBUG_MESSAGE_LENGTH];
+  s32 bytesToWrite = bs::string_format( debugBuffer, MAX_DEBUG_MESSAGE_LENGTH - 1, args... ) - 1 /* ommit null */;
+  if ( bytesToWrite > 0 )
+  {
+    if ( debugBuffer[bytesToWrite - 1] != '\n' )
+    {
+      debugBuffer[bytesToWrite++] = '\n';
+      debugBuffer[bytesToWrite] = '\0';
+    }
+
+    printf( debugBuffer );
+  }
+}
+
+//TODO these windows lads gotta go
+bool tcp_init_socket( SOCKET* out_socket )
+{
+  if ( !out_socket )
+  {
+    log( "out_socket is nullptr" );
+    return false;
+  }
+
+  *out_socket = socket( AF_INET, SOCK_STREAM, 0 );
+  if ( *out_socket == INVALID_SOCKET )
+  {
+    s32 error = WSAGetLastError();
+    log( "socket initialization error message with code: ", error );
+    return false;
+  }
+  return true;
+}
+
+bool bind_socket( SOCKET sock, bs::net::Connection incomingConnection )
+{
+  SOCKADDR_IN address;
+  address.sin_port = htons( incomingConnection.port );
+  address.sin_family = AF_INET;
+  address.sin_addr.s_addr = incomingConnection.ipv4_address;
+
+  if ( bind( sock, (LPSOCKADDR) &address, sizeof( address ) ) == SOCKET_ERROR )
+  {
+    s32 error = WSAGetLastError();
+    log( "bind socket error message with code: ", error );
+    return false;
+  }
+  return true;
+}
+
+bool tcp_accept( SOCKET sock, bs::net::Connection* out_remoteConnection, SOCKET* out_tcpSocket )
+{
+  sockaddr_in remoteAddr;
+  s32 remoteAddrSize = sizeof( remoteAddr );
+  *out_tcpSocket = accept( sock, (sockaddr*) &remoteAddr, &remoteAddrSize );
+
+  if ( *out_tcpSocket != INVALID_SOCKET )
+  {
+    out_remoteConnection->ipv4_address = remoteAddr.sin_addr.s_addr;
+    out_remoteConnection->port = ntohs( remoteAddr.sin_port );
+    return true;
+  }
+  else
+  {
+    out_remoteConnection->ipv4_address = bs::net::IPv4_ADDRESS_INVALID;
+    out_remoteConnection->port = bs::net::PORT_INVALID;
+    return false;
+  }
+}
+
+bool tcp_receive( SOCKET sock, char* receiveBuffer, s32 receiveBufferSize, s32* out_bytesReceived )
+{
+  *out_bytesReceived = recv( sock, receiveBuffer, receiveBufferSize, 0 );
+
+  if ( *out_bytesReceived == SOCKET_ERROR )
+  {
+    s32 error = WSAGetLastError();
+    log( "tcp_receive error message with code: ", error );
+    return false;
+  }
+
+  return true;
+}
+
+bool tcp_send( SOCKET sock, char const* data, s32 size )
+{
+  if ( send( sock, data, size, 0 ) == SOCKET_ERROR )
+  {
+    s32 error = WSAGetLastError();
+    log( "tcp_send error message with code: ", error );
+    return false;
+  }
+
+  return true;
+}
+
+
+namespace bs
+{
 
   INLINE WebSocketOpcode websocket_get_packet_opcode( u8* packet )
   {
@@ -162,9 +221,10 @@ namespace bs
                                      , "HTTP/1.1 101 Switching Protocols\r\n"
                                      , "Upgrade: websocket\r\n"
                                      , "Connection: Upgrade\r\n"
+                                 //    , "Sec-WebSocket-Version: 13\r\n"   only relevant if client's version is not supported
                                      , "Sec-WebSocket-Accept: ", hash, "\r\n\r\n" );
 
-    return writerIdx;
+    return writerIdx - 1;
   }
 
   WebSocketPacketType websocket_receive( SOCKET socket, char* receiveBuffer, s32 receiveBufferSize, s32* out_bytesReceived )
@@ -172,104 +232,259 @@ namespace bs
     using namespace bs;
     WebSocketPacketType resultType = WebSocketPacketType::INVALID;
 
-    if ( tcp_receive( socket, receiveBuffer, receiveBufferSize, out_bytesReceived ) )
+    if ( !tcp_receive( socket, receiveBuffer, receiveBufferSize, out_bytesReceived ) )
     {
-      if ( string_match( receiveBuffer, "GET" ) )
+      return WebSocketPacketType::INVALID;
+    }
+
+    if ( !*out_bytesReceived )
+    {
+      return WebSocketPacketType::INVALID;
+    }
+
+    if ( string_match( receiveBuffer, "GET" ) )
+    {
+      resultType = WebSocketPacketType::HANDSHAKE;
+      //TODO stuff
+    }
+    else
+    {
+
+      bool fin = (receiveBuffer[0] & 0b10000000) != 0;
+      bool mask = (receiveBuffer[1] & 0b10000000) != 0;
+      WebSocketOpcode opcode = WebSocketOpcode( receiveBuffer[0] & 0b00001111 );
+      int offset = 2;
+      u64 packetSize = (u64) (receiveBuffer[1] & 0b01111111);
+      if ( packetSize == 126 )
       {
-        resultType = WebSocketPacketType::HANDSHAKE;
+        // convert from big-endian
+        packetSize = ntohs( *(u16*) (&receiveBuffer[2]) );
+        // (u64) bs::byte_to_u16( &receiveBuffer[2] );
+        offset = 4;
+      }
+      else if ( packetSize == 127 )
+      {
+        // convert from big-endian
+        packetSize = ntohll( *(u64*) (&receiveBuffer[2]) );
+        offset = 10;
+      }
+
+      //decode message in place
+      if ( mask )
+      {
+        char masks[4] = { receiveBuffer[offset], receiveBuffer[offset + 1], receiveBuffer[offset + 2], receiveBuffer[offset + 3] };
+        offset += 4;
+
+        assert( packetSize <= (u64) S32_MAX );
+        s32 bytesToWrite = min( (s32) packetSize, receiveBufferSize - 1 );
+        for ( u64 i = 0; i < bytesToWrite; ++i )
+        {
+          receiveBuffer[i] = (char) (receiveBuffer[offset + s32( i )] ^ masks[i % 4]);
+        }
+
+        receiveBuffer[bytesToWrite] = '\0';
       }
       else
       {
-        bool fin = (receiveBuffer[0] & 0b10000000) != 0;
-        bool mask = (receiveBuffer[1] & 0b10000000) != 0;
-        WebSocketOpcode opcode = WebSocketOpcode( receiveBuffer[0] & 0b00001111 );
-        int offset = 2;
-        u64 packetSize = (u64) (receiveBuffer[1] & 0b01111111);
-        if ( packetSize == 126 )
+        //an error if coming from a client but fine if coming from a server?
+        assert( 0 );
+      }
+
+      switch ( opcode )
+      {
+        case WebSocketOpcode::FRAME_CONTINUATION:
         {
-          // convert from big-endian
-          packetSize = (u64) bs::byte_to_u16( &receiveBuffer[2] );
+          assert( 0 );//TODO
+          break;
+        }
+        case WebSocketOpcode::NON_CONTROL_TEXT_FRAME:
+        {
+          resultType = WebSocketPacketType::TEXT;
+          break;
+        }
+        case WebSocketOpcode::NON_CONTROL_BINARY_FRAME:
+        {
+          assert( 0 );//TODO
+          break;
+        }
+        case WebSocketOpcode::CONTROL_CONNECTION_CLOSE:
+        {
+          resultType = WebSocketPacketType::CONNECTION_CLOSE;
+          break;
+        }
+        case WebSocketOpcode::CONTROL_PING:
+        {
+          resultType = WebSocketPacketType::PING;
+          break;
+        }
+        case WebSocketOpcode::CONTROL_PONG:
+        {
+          resultType = WebSocketPacketType::PONG;
+          break;
+        }
+        default:
+        {
+          assert( 0 );//TODO
+          break;
+        }
+      }
+    }
+
+    return resultType;
+  }
+
+  bool websocket_send( SOCKET socket, char* data, s32 size, WebSocketPacketType packetType, bool maskMessage, bool fragmentMessage, s32 bytesPerFragment )
+  {
+    if ( packetType == WebSocketPacketType::INVALID )
+    {
+      assert( 0 );
+    }
+
+    // bytesPerFragment = 80;
+    assert( bytesPerFragment <= 1024 );
+    char bytes[1024];
+    s32 offset;
+
+    char fin  = (u8) 0x80;
+    char mask = (u8) 0x80 * (u8) maskMessage;
+    char opcode = char( packetType );
+
+    assert( opcode < 0x10 );
+
+
+    if ( fragmentMessage )
+    {
+      char const* reader = data;
+      char const* sender;
+      s32 sizeLeft = size;
+
+      while ( sizeLeft > 0 )
+      {
+        //payload length
+        if ( size < 126 )
+        {
+          bytes[1] = mask | (char) size;
+          offset = 2;
+        }
+        else if ( size <= 0xffff )
+        {
+          bytes[1] = mask | (char) 126;
+          u16& payloadLength = *(u16*) (&bytes[2]);
+          payloadLength = htons( (u16) size );
           offset = 4;
         }
-        else if ( packetSize == 127 )
+        else
         {
-          // convert from big-endian
-          packetSize = bs::byte_to_u64( &receiveBuffer[2] );
+          bytes[1] = mask | (char) 127;
+
+          u64& payloadLength = *(u64*) &bytes[2];
+          payloadLength = htonll( (u64) size );
+
+          //first bit has to be 0
+          assert( !(bytes[2] & 0x80) );
 
           offset = 10;
         }
 
-        //decode message in place
+        //TODO proper mask
+        char masks[4] = { (char) -114, (char) -78, (char) -32, (char) -123 };
+
         if ( mask )
         {
-          char masks[4] = { receiveBuffer[offset], receiveBuffer[offset + 1], receiveBuffer[offset + 2], receiveBuffer[offset + 3] };
-          offset += 4;
-
-          assert( packetSize <= (u64) S32_MAX );
-          s32 bytesToWrite = min( (s32) packetSize, receiveBufferSize - 1 );
-          for ( u64 i = 0; i < bytesToWrite; ++i )
+          char* writer = bytes + offset;
+          for ( u64 i = 0; i < 4; ++i )
           {
-            receiveBuffer[i] = (char) (receiveBuffer[offset + s32( i )] ^ masks[i % 4]);
+            writer[i] = masks[i];
           }
 
-          receiveBuffer[bytesToWrite] = '\0';
+          offset += 4;
+        }
+
+        s32 packetSize = min( sizeLeft, bytesPerFragment - offset );
+
+        if ( sizeLeft <= packetSize )
+        {
+          //fin & opcode
+          bytes[0] = fin | opcode;
         }
         else
         {
-          //an error if coming from a client but fine if coming from a server?
-          assert( 0 );
+          bytes[0] = opcode;
         }
 
-        switch ( opcode )
+        // bytes[0] = ((sizeLeft <= packetSize) * fin) | opcode;
+           //set opcode to 0 for all other fragments
+        opcode = 0x0;
+
+
+        //send the header
+        tcp_send( socket, bytes, offset );
+
+        if ( mask )
         {
-          case WebSocketOpcode::FRAME_CONTINUATION:
+          char* writer = bytes;
+          for ( u64 i = 0; i < packetSize; ++i )
           {
-            assert( 0 );//TODO
-            break;
+            writer[i] = (char) (writer[i] ^ masks[i % 4]);
           }
-          case WebSocketOpcode::NON_CONTROL_TEXT_FRAME:
-          {
-            resultType = WebSocketPacketType::TEXT;
-            break;
-          }
-          case WebSocketOpcode::NON_CONTROL_BINARY_FRAME:
-          {
-            assert( 0 );//TODO
-            break;
-          }
-          case WebSocketOpcode::CONTROL_CONNECTION_CLOSE:
-          {
-            resultType = WebSocketPacketType::CONNECTION_CLOSE;
-            break;
-          }
-          case WebSocketOpcode::CONTROL_PING:
-          {
-            resultType = WebSocketPacketType::PING;
-            break;
-          }
-          case WebSocketOpcode::CONTROL_PONG:
-          {
-            resultType = WebSocketPacketType::PONG;
-            break;
-          }
-          default:
-          {
-            assert( 0 );//TODO
-            break;
-          }
+
+          sender = bytes;
         }
+        else
+        {
+          sender = reader;
+        }
+
+
+        //send the packet
+        tcp_send( socket, sender, packetSize );
+
+        sizeLeft -= packetSize;
+        reader += packetSize;
       }
     }
-    return resultType;
-  }
 
 
-  void websocket_send()
-  {
+
+    else
+    {
+      //send the header
+    //  tcp_send( socket, bytes, offset );
+      //send the packet
+    //  tcp_send( socket, data, size );
+
+    }
+
+
+    ///
+ //   s32 bytesWritten = string_format( writer, 20, "WebSocket rocks" ) - 1;
+
+
+ //   writer += bytesWritten;
+
+ //   bytes[1] = mask | (char) bytesWritten;
+
+  //  s32 bytesToSend = s32( writer - bytes );
+
+  //  char test[] = "  HELLO?";
+  //  test[0] = -127;
+  //  test[1] = char( array_count( test ) - 3 );
+    //  tcp_send( socket, test, array_count( test ) );
+
+  //  tcp_send( socket, bytes, bytesToSend );
+
+    //char packet[MAX_PACKET_SIZE + offset];
+
+
+   // if ( size < MAX_PACKET_SIZE )
+   // {
+
+   // }
+
     ///FOR SENDING 
     /*
-    set this if it's the last package:
-    bool fin = (receiveBuffer[0] & 0b10000000) != 0;
+
+    FIRST PACKET opcode set, LAST PACKET fin set.
 
   //<FIRST BYTE
     u8 fin    = 0b10000000;
@@ -304,6 +519,8 @@ control frames:
 
 
                   */
+
+    return true;
   }
 
 

@@ -18,7 +18,7 @@ namespace bs
   //returns the number of utf8 characters until a \n or a \0, including it
   s32 string_line_length_utf8( char const* utf8String );
 
-  //returns 1 if the strings match
+  //returns 1 if the strings match until the end of either
   //returns 0 if they don't
   u32 string_match( char const* a, char const* b );
 
@@ -455,7 +455,7 @@ namespace bs
       ++b;
     }
 
-    if ( (*a) * (*b) == 0 )
+    if ( *b == '\0' )
     {
       result = 1;
     }
