@@ -1,6 +1,8 @@
+DEPRECATED
+
 #pragma once
 
-#include <core/bsgraphics.h>
+//#include <core/bsgraphics.h>
 #include <common/bsmath.h>
 namespace bs
 {

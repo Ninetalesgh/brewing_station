@@ -3,8 +3,9 @@
 #pragma comment(lib,"opengl32.lib")
 
 
-#include <platform/opengl/bsopengl.h>
-#include <core/bsgraphics.h>
+#include <platform/opengl/bsopengl_ext.h>
+#include <module/bs_texture.h>
+#include <common/bscolor.h>
 
 namespace opengl
 {
@@ -28,6 +29,7 @@ namespace opengl
   HGLRC create_render_context_for_worker_thread();
 
   void set_worker_thread_render_context( HGLRC renderContext );
+  void check_gl_error();
 };
 
 
@@ -121,8 +123,6 @@ namespace opengl_ext
     return validate_callbacks();
   }
 
-
-
   void* get_proc_address( char const* functionName )
   {
     void* p = (void*) wglGetProcAddress( functionName );
@@ -137,7 +137,6 @@ namespace opengl_ext
     return p;
   }
 }
-
 
 namespace opengl
 {
@@ -349,12 +348,61 @@ namespace opengl
     }
   }
 
+  void check_gl_error()
+  {
+    GLenum err;
+    while ( (err = glGetError()) != GL_NO_ERROR )
+    {
+      switch ( err )
+      {
+        case GL_INVALID_ENUM:
+        {
+          BREAK;
+          break;
+        }
+        case GL_INVALID_VALUE:
+        {
+          BREAK;
+          break;
+        }
+        case GL_INVALID_OPERATION:
+        {
+          BREAK;
+          break;
+        }
+        case GL_STACK_OVERFLOW:
+        {
+          BREAK;
+          break;
+        }
+        case GL_STACK_UNDERFLOW:
+        {
+          BREAK;
+          break;
+        }
+        case GL_OUT_OF_MEMORY:
+        {
+          BREAK;
+          break;
+        }
+        default:
+        {
+          //??
+          BREAK;
+        }
+      }
+    }
+  }
+
+
+
+
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////
   // hotfix for cpu renderer
   ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  bs::graphics::TextureID allocate_texture( bs::graphics::TextureData const* textureData )
+  bs::TextureID allocate_texture( bs::TextureData const* textureData )
   {
     u32 const* pixel = (u32 const*) textureData->pixel;
     //TODO use PBO to skip one copy step ?
@@ -370,68 +418,70 @@ namespace opengl
     glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
     glBindTexture( GL_TEXTURE_2D, 0 );
 
-    return (bs::graphics::TextureID) textureHandle;
+    return (bs::TextureID) textureHandle;
   }
-  void free_texture( bs::graphics::TextureID texture )
+
+  void free_texture( bs::TextureID texture )
   {
     GLuint handle = (GLuint) texture;
     glDeleteTextures( 1, &handle );
   }
-  void render_custom_bitmap( bs::graphics::RenderTarget* target, bs::graphics::Bitmap* bmp )
-  {
-    int2 screenSize = ::global::mainWindow.size;
 
-    bs::graphics::TextureData texData {};
-    texData.pixel = bmp->pixel;
-    texData.width = bmp->width;
-    texData.height = bmp->height;
-    texData.format = bs::graphics::TextureFormat::RGBA8;
+  // void render_custom_bitmap( bs::RenderTarget* target, bs::Bitmap* bmp )
+  // {
+  //   int2 screenSize = ::global::mainWindow.size;
 
-    bs::graphics::TextureID id = allocate_texture( &texData );
-    glEnable( GL_TEXTURE_2D );
-    glBindTexture( GL_TEXTURE_2D, id );
+  //   bs::TextureData texData {};
+  //   texData.pixel = bmp->pixel;
+  //   texData.width = bmp->width;
+  //   texData.height = bmp->height;
+  //   texData.format = bs::TextureFormat::RGBA8;
 
-    glMatrixMode( GL_TEXTURE );
-    glLoadIdentity();
-    glMatrixMode( GL_MODELVIEW );
-    glLoadIdentity();
-    glMatrixMode( GL_PROJECTION );
-    glLoadIdentity();
-    glOrtho( 0.f, screenSize.x, screenSize.y, 0.f, 0.f, 10.f );
+  //   bs::TextureID id = allocate_texture( &texData );
+  //   glEnable( GL_TEXTURE_2D );
+  //   glBindTexture( GL_TEXTURE_2D, id );
 
-    glEnable( GL_BLEND );
-    glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+  //   glMatrixMode( GL_TEXTURE );
+  //   glLoadIdentity();
+  //   glMatrixMode( GL_MODELVIEW );
+  //   glLoadIdentity();
+  //   glMatrixMode( GL_PROJECTION );
+  //   glLoadIdentity();
+  //   glOrtho( 0.f, screenSize.x, screenSize.y, 0.f, 0.f, 10.f );
 
-    glBegin( GL_TRIANGLES );
+  //   glEnable( GL_BLEND );
+  //   glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 
-    float2 min = { -1, -1 };
-    float2 max = { (float) bmp->width, (float) bmp->height };
-    glTexCoord2f( 0.0f, 1.0f );
-    glVertex2f( min.x, max.y );
+  //   glBegin( GL_TRIANGLES );
 
-    glTexCoord2f( 1.0f, 1.0f );
-    glVertex2f( max.x, max.y );
+  //   float2 min = { -1, -1 };
+  //   float2 max = { (float) bmp->width, (float) bmp->height };
+  //   glTexCoord2f( 0.0f, 1.0f );
+  //   glVertex2f( min.x, max.y );
 
-    glTexCoord2f( 1.0f, 0.0f );
-    glVertex2f( max.x, min.y );
+  //   glTexCoord2f( 1.0f, 1.0f );
+  //   glVertex2f( max.x, max.y );
 
-    glTexCoord2f( 0.0f, 1.0f );
-    glVertex2f( min.x, max.y );
+  //   glTexCoord2f( 1.0f, 0.0f );
+  //   glVertex2f( max.x, min.y );
 
-    glTexCoord2f( 1.0f, 0.0f );
-    glVertex2f( max.x, min.y );
+  //   glTexCoord2f( 0.0f, 1.0f );
+  //   glVertex2f( min.x, max.y );
 
-    glTexCoord2f( 0.0f, 0.0f );
-    glVertex2f( min.x, min.y );
+  //   glTexCoord2f( 1.0f, 0.0f );
+  //   glVertex2f( max.x, min.y );
 
-    glBindTexture( GL_TEXTURE_2D, 0 );
-    glEnd();
+  //   glTexCoord2f( 0.0f, 0.0f );
+  //   glVertex2f( min.x, min.y );
 
-    free_texture( id );
-  }
+  //   glBindTexture( GL_TEXTURE_2D, 0 );
+  //   glEnd();
 
-  void render( bs::graphics::RenderTarget* target, bs::graphics::RenderGroup* group, bs::graphics::Camera* camera )
-  {
-    render_custom_bitmap( target, (bs::graphics::Bitmap*) group->renderObject );
-  }
+  //   free_texture( id );
+  // }
+
+  // void render( bs::RenderTarget* target, bs::RenderGroup* group, bs::Camera* camera )
+  // {
+  //   render_custom_bitmap( target, (bs::Bitmap*) group->renderObject );
+  // }
 };

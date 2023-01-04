@@ -1,9 +1,8 @@
-#pragma once
-#include "bsopengl_ext.h"
+DEPRECATED
 
-#include <core/bsfile.h>
-#include <common/bscolor.h>
-#include <common/bscommon.h>
+#pragma once
+
+
 
 
 namespace opengl
@@ -23,7 +22,6 @@ namespace opengl
   //
   ProgramID create_shader_program( bs::file::Data combinedglsl );
 
-  void check_gl_error();
 };
 
 
@@ -157,49 +155,5 @@ namespace opengl
     return create_shader_program( h, vs, fs );
   }
 
-  void check_gl_error()
-  {
-    GLenum err;
-    while ( (err = glGetError()) != GL_NO_ERROR )
-    {
-      switch ( err )
-      {
-        case GL_INVALID_ENUM:
-        {
-          BREAK;
-          break;
-        }
-        case GL_INVALID_VALUE:
-        {
-          BREAK;
-          break;
-        }
-        case GL_INVALID_OPERATION:
-        {
-          BREAK;
-          break;
-        }
-        case GL_STACK_OVERFLOW:
-        {
-          BREAK;
-          break;
-        }
-        case GL_STACK_UNDERFLOW:
-        {
-          BREAK;
-          break;
-        }
-        case GL_OUT_OF_MEMORY:
-        {
-          BREAK;
-          break;
-        }
-        default:
-        {
-          //??
-          BREAK;
-        }
-      }
-    }
-  }
+
 };

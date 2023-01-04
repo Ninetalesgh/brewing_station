@@ -2,7 +2,6 @@
 
 #include <platform/platform_callbacks.h>
 //#include <scene/bssceneobject.h>
-#include <core/bsgraphics.h>
 
 
 namespace bs

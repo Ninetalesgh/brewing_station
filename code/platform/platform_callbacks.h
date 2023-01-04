@@ -3,7 +3,6 @@
 DEPRECATED
 
 #include <core/bsdebuglog.h>
-#include <core/bsgraphics.h>
 #include <core/bsnet.h>
 #include <core/bsfile.h>
 #include <core/bstask.h>

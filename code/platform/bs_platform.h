@@ -3,13 +3,14 @@
 #include <common/bscommon.h>
 
 #include<module/bs_debuglog.h>
+#include<module/bs_texture.h>
 #include <core/bsinput.h>
 
 
 namespace bsp
 {
 
-  using debug_log_fn = void( bsm::DebugLogFlags, char const*, s32 );
+  using debug_log_fn = void( bsm::DebugLogFlags, char const* message, s32 messageSize );
 
   using allocate_fn = void* (s64 size);
   using free_fn = void( void* );
@@ -17,6 +18,8 @@ namespace bsp
   using get_file_info_fn = bool( char const* filePath, u64* out_fileSize );
   using load_file_part_fn = bool( char const* filePath, u64 readOffset, void* targetBuffer, u32 bufferSize );
   using write_file_fn = bool( char const* filePath, void const* data, u32 size );
+  using allocate_texture_fn = bs::TextureID( bs::TextureData const* );
+  using free_texture_fn = void( bs::TextureID );
 
   struct PlatformCallbacks
   {
@@ -32,7 +35,9 @@ namespace bsp
     load_file_part_fn* load_file_part;
     write_file_fn* write_file;
 
-
+    //graphics
+    allocate_texture_fn* allocate_texture;
+    free_texture_fn* free_texture;
 
 
   };
