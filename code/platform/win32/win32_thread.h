@@ -263,7 +263,11 @@ namespace win32
       "thread_synced_worker_3",
       "thread_synced_worker_4",
       "thread_synced_worker_5",
+      "thread_synced_worker_6",
+      "thread_synced_worker_7",
     };
+    static_assert(array_count( syncedThreadNames ) == global::SYNCED_THREAD_COUNT);
+
     for ( s32 i = 0; i < global::SYNCED_THREAD_COUNT; ++i )
     {
       thread::ThreadInfo& new_worker_thread = global::syncedThreads[i];
@@ -286,6 +290,8 @@ namespace win32
       "thread_async_worker_0",
       "thread_async_worker_1",
     };
+    static_assert(array_count( asyncThreadNames ) == global::ASYNC_THREAD_COUNT);
+
     for ( s32 i = 0; i < global::ASYNC_THREAD_COUNT; ++i )
     {
       thread::ThreadInfo& new_worker_thread = global::asyncThreads[i];

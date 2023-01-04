@@ -1,7 +1,8 @@
 #pragma once
 
+DEPRECATED
+
 #include <core/bsgraphics.h>
-#include <core/bsmemory.h>
 #include <core/bsdebuglog.h>
 #include <common/bscolor.h>
 #include <core/bsfont.h>

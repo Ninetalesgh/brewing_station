@@ -1,6 +1,6 @@
 #pragma once
 
-#include "win32_file.h"
+//#include "win32_file.h"
 #include "win32_thread.h"
 #include "win32_global.h"
 
@@ -58,29 +58,6 @@ namespace win32
     //synced threads are paused together with mainThread
     fn( &global::mainThread );
   }
-
-  void debug_log( bs::debug::DebugLogFlags flags, char const* string, s32 size )
-  {
-    //wchar_t wideChars[bs::debug::MAX_DEBUG_MESSAGE_LENGTH];
-   // utf8_to_wchar( string, wideChars, array_count( wideChars ) );
-
-   // OutputDebugStringA( string );
-    printf( string );
-    if ( flags & bs::debug::DebugLogFlags::WRITE_TO_DEBUG_LOG_FILE )
-    {
-      static HANDLE debug_log_file = CreateFileW( L"debug.log", GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0 );
-      s32 bytesWritten {};
-
-      // LockFile(debug_log_file, dwPos, 0, dwBytesRead, 0); 
-      WriteFile( debug_log_file, string, size, (LPDWORD) &bytesWritten, 0 );
-      // UnlockFile(debug_log_file, dwPos, 0, dwBytesRead, 0);
-
-    }
-    if ( flags & bs::debug::DebugLogFlags::SEND_TO_SERVER )
-    {
-
-    }
-  };
 
   namespace stub
   {

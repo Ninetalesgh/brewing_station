@@ -4,11 +4,11 @@
 //
 //   See end of file for license information.
 
-#include <core/bsmemory.h>
+#include <platform/bs_platform.h>
 #include <common/bsstring.h>
 
-#define STBTT_malloc(x,u)  ((void)(u),bs::memory::allocate(x))
-#define STBTT_free(x,u)    ((void)(u),bs::memory::free(x))
+#define STBTT_malloc(x,u)  ((void)(u),bsp::platform->allocate(x))
+#define STBTT_free(x,u)    ((void)(u),bsp::platform->free(x))
 
 #define STBTT_assert(x)    assert(x)
 #define STBTT_strlen(x)    bs::string_length(x)

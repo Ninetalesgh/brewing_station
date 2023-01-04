@@ -1,5 +1,5 @@
 #pragma once 
-
+DEPRECATED
 
 #ifndef BS_DEBUG
 

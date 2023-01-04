@@ -61,4 +61,4 @@ namespace platform
   };
 };
 
-extern "C" void register_callbacks( platform::Callbacks const& );
+//extern "C" void register_callbacks( platform::Callbacks const& );

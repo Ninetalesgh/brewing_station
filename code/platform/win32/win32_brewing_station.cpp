@@ -1,12 +1,13 @@
 #include "win32_util.h"
 #include "win32_global.h"
 #include "win32_app_dll_loader.h"
-//#include "win32_opengl.h"
+#include "win32_platformcallbacks.h"
 
 #include "win32_thread.h"
 #include <platform/win32/win32_opengl.h>
-#include <platform/platform.h>
-#include <core/bsfont.h>
+#include <platform/bs_platform.h>
+#include <module/bs_performanceprofile.h>
+//#include <core/bsfont.h>
 #include <common/bsstring.h>
 
 //winsock
@@ -127,18 +128,16 @@ void brewing_station_loop()
     {
       PROFILE_SCOPE( debug_CyclesForAppTick );
 
-      bs::PrmAppTick appTickParameter {};
-      appTickParameter.appData = &global::appData;
-      global::appDll.tick( appTickParameter );
+      global::appDll.tick( &global::appData );
     }
 
     //TODO sound here ? 
     //bs::TaskState volatile state;
-    // win32::push_synced_task( { &testfunc, nullptr } );
-//    win32::push_async_task( { &testfunc, nullptr }, &state );
+    //win32::push_synced_task( { &testfunc, nullptr } );
+    //win32::push_async_task( { &testfunc, nullptr }, &state );
 
 
-//TODO remove this here and leave it up to the app
+    //TODO remove this here and leave it up to the app, if we do dll reload has to also pause these threads manually
     win32::complete_synced_tasks();
 
     constexpr float APP_TARGET_FPS = 60.0f;
@@ -256,8 +255,8 @@ void brewing_station_main()
   {
     win32::WindowInitParameter parameter {};
     parameter.windowName = L"tmp_window_name";
-    parameter.width = DEFAULT_WINDOW_SIZE.x;
-    parameter.height = DEFAULT_WINDOW_SIZE.y;
+    parameter.width = 1024;//DEFAULT_WINDOW_SIZE.x;
+    parameter.height = 780;//DEFAULT_WINDOW_SIZE.y;
     parameter.x = -parameter.width - 200;
     parameter.y = 200;
     parameter.wndClass.cbSize        = sizeof( WNDCLASSEX );
@@ -293,6 +292,8 @@ void brewing_station_main()
 
   result = (s32) timeBeginPeriod( 1 );
   assert( result == TIMERR_NOERROR );
+
+  register_callbacks( &global::platformCallbacks );
 
   if ( !init_compiled_assets() )
   {
@@ -333,7 +334,7 @@ void brewing_station_main()
   }
 }
 
-#include <compiled_assets>
+//#include <compiled_assets>
 
 u32 init_compiled_assets()
 {
@@ -342,19 +343,19 @@ u32 init_compiled_assets()
   #if 1
   //default font
   {
-    char const chars[] = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
-    global::defaultGlyphTable = bs::font::create_glyph_table_from_ttf( compiledasset::DEFAULT_FONT );
-    bs::font::set_scale_for_glyph_creation( global::defaultGlyphTable, 64.0f );
-    global::defaultGlyphSheet = bs::font::create_glyph_sheet( global::defaultGlyphTable, chars );
+    //  char const chars[] = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+    //  global::defaultGlyphTable = bs::font::create_glyph_table_from_ttf( compiledasset::DEFAULT_FONT );
+    //  bs::font::set_scale_for_glyph_creation( global::defaultGlyphTable, 64.0f );
+    //  global::defaultGlyphSheet = bs::font::create_glyph_sheet( global::defaultGlyphTable, chars );
   }
 
   //TODO
   {
-    bs::file::Data test;
-    //win32::load_file_into_memory( "w:/code/shader/test.glsl", &test );
-    win32::load_file_into_memory( "w:/code/shader/test_texture.glsl", &test );
+    //  bs::file::Data test;
+      //win32::load_file_into_memory( "w:/code/shader/test.glsl", &test );
+    //  win32::load_file_into_memory( "w:/code/shader/test_texture.glsl", &test );
 
-    global::defaultGlyphTable->shaderProgram = opengl::create_shader_program( test );
+    //  global::defaultGlyphTable->shaderProgram = opengl::create_shader_program( test );
   }
 
 
@@ -385,33 +386,34 @@ u32 init_compiled_assets()
 #include <apps/brewing_Station_app.cpp>
 #else
 
-namespace platform
+namespace bsp
 {
-  INLINE void debug_log( bs::debug::DebugLogFlags flags, char const* string, s32 size )
-  {
-    return win32::debug_log( flags, string, size );
-  }
+  PlatformCallbacks* platform;
+  // INLINE void debug_log( bs::debug::DebugLogFlags flags, char const* string, s32 size )
+  // {
+  //   return win32::debug_log( flags, string, size );
+  // }
 
-  INLINE void* allocate( s64 size )
-  {
-    return global::defaultArena->alloc( size );
-  }
-  INLINE void* allocate_to_zero( s64 size )
-  {
-    return global::defaultArena->alloc_set_zero( size );
-  }
-  INLINE void free( void* ptr )
-  {
-    global::defaultArena->free( ptr );
-  }
-  INLINE bs::graphics::TextureID allocate_texture( bs::graphics::TextureData const* textureData )
-  {
-    return 0;//opengl::allocate_texture( textureData );
-  }
-  INLINE void free_texture( bs::graphics::TextureID id )
-  {
-    // return opengl::free_texture( id );
-  }
+  // INLINE void* allocate( s64 size )
+  // {
+  //   return global::defaultArena->alloc( size );
+  // }
+  // INLINE void* allocate_to_zero( s64 size )
+  // {
+  //   return global::defaultArena->alloc_set_zero( size );
+  // }
+  // INLINE void free( void* ptr )
+  // {
+  //   global::defaultArena->free( ptr );
+  // }
+  // INLINE bs::graphics::TextureID allocate_texture( bs::graphics::TextureData const* textureData )
+  // {
+  //   return 0;//opengl::allocate_texture( textureData );
+  // }
+  // INLINE void free_texture( bs::graphics::TextureID id )
+  // {
+  //   // return opengl::free_texture( id );
+  // }
 };
 #endif
 

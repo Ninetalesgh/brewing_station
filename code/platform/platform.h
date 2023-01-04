@@ -1,6 +1,6 @@
 #pragma once
 
-#include "platform_callbacks.h"
+#include "bs_platform.h"
 
 #include <core/bsinput.h>
 #include <core/bsnet.h>
@@ -10,6 +10,10 @@
 
 namespace bs
 {
+
+
+
+
   struct AppData
   {
     u64 currentFrameIndex;
@@ -51,5 +55,10 @@ namespace bs
     u32         id;
   };
   extern "C" void app_receive_udp_packet( PrmAppReceiveUDPPacket );
+
+
+
+
+  extern "C" void register_callbacks( bs::Platform* );
 
 };

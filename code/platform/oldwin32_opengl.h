@@ -1,5 +1,7 @@
 #pragma once
 
+DEPRECATED
+
 #pragma comment(lib,"Gdi32.lib")
 #pragma comment(lib,"opengl32.lib")
 
@@ -9,7 +11,6 @@
 #include <core/bsgraphics.h>
 #include <core/bsfile.h>
 #include <core/bsfont.h>
-#include <core/bsmemory.h>
 #include <common/bscolor.h>
 #include <common/bscommon.h>
 

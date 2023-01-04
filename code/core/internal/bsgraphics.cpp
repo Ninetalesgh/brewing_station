@@ -3,7 +3,6 @@
 #include <platform/platform_callbacks.h>
 //#include <scene/bssceneobject.h>
 #include <core/bsgraphics.h>
-#include <core/bsmemory.h>
 
 
 namespace bs
@@ -13,20 +12,21 @@ namespace bs
 
     RenderObject* create_render_object( MeshData const* meshData, TextureData const* diffuseTextureData, TextureData const* normalMapData )
     {
-      RenderObject* resultObject = (RenderObject*) memory::allocate_to_zero( sizeof( RenderObject ) );
+      return nullptr;
+      // RenderObject* resultObject = (RenderObject*) memory::allocate_to_zero( sizeof( RenderObject ) );
 
-      resultObject->mesh = platform::allocate_mesh( meshData );
+      // resultObject->mesh = platform::allocate_mesh( meshData );
 
-      if ( diffuseTextureData )
-      {
-        resultObject->diffuseTexture = platform::allocate_texture( diffuseTextureData );
-      }
-      if ( normalMapData )
-      {
-        resultObject->normalMap = platform::allocate_texture( normalMapData );
-      }
+      // if ( diffuseTextureData )
+      // {
+      //   resultObject->diffuseTexture = platform::allocate_texture( diffuseTextureData );
+      // }
+      // if ( normalMapData )
+      // {
+      //   resultObject->normalMap = platform::allocate_texture( normalMapData );
+      // }
 
-      return resultObject;
+      // return resultObject;
     }
   };
 };

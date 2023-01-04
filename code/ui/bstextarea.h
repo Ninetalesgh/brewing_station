@@ -1,6 +1,7 @@
 #pragma once
 
-#include <core/bsmemory.h>
+DEPRECATED
+
 #include <common/bscommon.h>
 
 namespace bs { namespace font { struct GlyphTable; struct GlyphSheet; }; };

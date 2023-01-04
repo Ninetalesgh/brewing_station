@@ -3,17 +3,6 @@
 #include <core/bsthread.h>
 #include <common/bscommon.h>
 
-namespace bs
-{
-  namespace memory
-  {
-    void* allocate( s64 size );
-    void* allocate_to_zero( s64 size );
-    void free( void* ptr );
-    void* set( void* ptr, s32 value, u32 bytesToWrite );
-    void* copy( void* destination, void const* source, u32 bytesToCopy );
-  };
-};
 
 //TODO arena code
 namespace bs
@@ -73,50 +62,6 @@ namespace bs
 };
 
 
-////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////inl/////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////
-
-//TODO THIS IS SO BAD
-#include <platform/platform_callbacks.h>
-namespace bs
-{
-  namespace memory
-  {
-    INLINE void* allocate( s64 size )
-    {
-      return platform::allocate( size );
-    }
-    INLINE void* allocate_to_zero( s64 size )
-    {
-      return platform::allocate_to_zero( size );
-    }
-    INLINE void free( void* ptr )
-    {
-      platform::free( ptr );
-    }
-    INLINE void* set( void* ptr, s32 value, u32 bytesToWrite )
-    {
-      for ( u32 i = 0; i < bytesToWrite; ++i )
-      {
-        ((u8*) ptr)[i] = (u8) value;
-      }
-      return ptr;
-    }
-
-    INLINE void* copy( void* destination, void const* source, u32 bytesToCopy )
-    {
-      for ( u32 i = 0; i < bytesToCopy; ++i )
-      {
-        ((char*) destination)[i] = ((char*) source)[i];
-      }
-      return destination;
-    }
-  };
-};
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -131,7 +76,6 @@ namespace bs
 {
   namespace memory
   {
-
     enum EntryFlags: u64
     {
       ALIVE = 0x1,

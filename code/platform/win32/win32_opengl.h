@@ -4,7 +4,7 @@
 
 
 #include <platform/opengl/bsopengl.h>
-
+#include <core/bsgraphics.h>
 
 namespace opengl
 {

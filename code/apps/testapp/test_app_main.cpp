@@ -1,9 +1,10 @@
 
+DEPRECATED
+
 #include <ui/bstextarea.h>
 #include <scene/bssceneobject.h>
 
 #include <core/bsgraphics.h>
-#include <core/bsmemory.h>
 #include <common/bscolor.h>
 
 #include <platform/platform.h>

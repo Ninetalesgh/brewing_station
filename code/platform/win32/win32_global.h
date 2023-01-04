@@ -1,8 +1,7 @@
 #pragma once
 
-//ONLY for brewing_station_platform.cpp build
-#include <platform/platform.h>
-#include <platform/platform_callbacks_internal.h>
+#include <platform/bs_platform.h>
+#include <core/bsmemory.h>
 #include <core/bsthread.h>
 #include <common/bscommon.h>
 
@@ -26,27 +25,32 @@ namespace win32
 
   namespace stub
   {
-    void app_sample_sound( bs::PrmAppSampleSound ) {}
-    void app_on_load( bs::PrmAppOnLoad ) {}
-    void app_tick( bs::PrmAppTick ) {}
-    void app_receive_udp_packet( bs::PrmAppReceiveUDPPacket ) {}
-    void app_register_callbacks( platform::Callbacks ) {}
+    //  void app_sample_sound( bs::PrmAppSampleSound ) {}
+    void app_on_load( APP_ON_LOAD_PARAMETERS ) {}
+    void app_tick( APP_TICK_PARAMETERS ) {}
+    // PLATFORM_FUNCTION_APP_ON_LOAD {}
+       // void app_tick( bs::PrmAppTick ) {}
+       // void app_receive_udp_packet( bs::PrmAppReceiveUDPPacket ) {}
+       // void app_register_callbacks( bs::Platform* ) {}
+
+        //    PLATFORM_FUNCTION_SIGNATURE_APP_TICK {}
+     // PLATFORM_FUNCTION_SIGNATURE_APP_ON_LOAD {}
   };
 
-  using  win32_app_sample_sound = void( bs::PrmAppSampleSound );
-  using  win32_app_on_load = void( bs::PrmAppOnLoad );
-  using  win32_app_tick = void( bs::PrmAppTick );
-  using  win32_app_receive_udp_packet = void( bs::PrmAppReceiveUDPPacket );
-  using  win32_app_register_callbacks = void( platform::Callbacks );
+  // using  win32_app_sample_sound = void( bs::PrmAppSampleSound );
+ //  using  win32_app_on_load = void( bs::PrmAppOnLoad );
+  // using  win32_app_tick = void( bs::PrmAppTick );
+ //  using  win32_app_receive_udp_packet = void( bs::PrmAppReceiveUDPPacket );
+ // using  win32_app_register_callbacks = void( bs::Platform* );
 
   struct AppDll
   {
     HMODULE dll;
-    win32_app_sample_sound* sample_sound = stub::app_sample_sound;
-    win32_app_on_load* on_load = stub::app_on_load;
-    win32_app_tick* tick = stub::app_tick;
-    win32_app_receive_udp_packet* receive_udp_packet = stub::app_receive_udp_packet;
-    win32_app_register_callbacks* register_callbacks = stub::app_register_callbacks;
+    //  win32_app_sample_sound* sample_sound = stub::app_sample_sound;
+    bsp::app_on_load_fn* on_load = stub::app_on_load;
+    bsp::app_tick_fn* tick = stub::app_tick;
+    //   win32_app_receive_udp_packet* receive_udp_packet = stub::app_receive_udp_packet;
+     //  win32_app_register_callbacks* register_callbacks = stub::app_register_callbacks;
   };
 
   struct Window
@@ -74,8 +78,9 @@ namespace global
 
   static win32::Window        mainWindow;
 
-  static win32::AppDll         appDll;
-  static bs::AppData           appData;
+  static win32::AppDll          appDll;
+  static bsp::AppData           appData;
+  static bsp::PlatformCallbacks platformCallbacks;
 
   static bs::memory::Arena* defaultArena;
   static bs::font::GlyphTable* defaultGlyphTable;

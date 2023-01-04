@@ -1,11 +1,12 @@
 #pragma once
 
+#include <common/bsmath.h>
 
 namespace bs
 {
   namespace input
   {
-    enum : u32
+    enum: u32
     {
       MOUSE_PRIMARY            = 1,
       MOUSE_SECONDARY          = 2,

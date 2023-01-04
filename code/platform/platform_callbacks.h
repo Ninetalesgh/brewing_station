@@ -1,5 +1,7 @@
 #pragma once
 
+DEPRECATED
+
 #include <core/bsdebuglog.h>
 #include <core/bsgraphics.h>
 #include <core/bsnet.h>

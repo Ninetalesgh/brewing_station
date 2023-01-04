@@ -1,34 +1,20 @@
 
-#include <core/bsmemory.h>
-
-#include <platform/platform.h>
+#include <platform/bs_platform.h>
 
 #include "klein.hpp"
 
-
-
-
 namespace bs
 {
-  void app_sample_sound( PrmAppSampleSound prm )
+
+
+  void app_on_load( bsp::AppData* appData )
   {
     BREAK;
   }
 
-  void app_on_load( PrmAppOnLoad prm )
-  {
-    BREAK;
-  }
-
-  void app_tick( PrmAppTick prm )
-  {
-    BREAK;
-  }
-
-  void app_receive_udp_packet( PrmAppReceiveUDPPacket prm )
+  void app_tick( bsp::AppData* appData )
   {
     BREAK;
   }
 
 };
-

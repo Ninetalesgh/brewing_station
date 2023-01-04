@@ -1,9 +1,11 @@
 #pragma once
+
+DEPRECATED
+
 #include "win32_global.h"
 
-#include <core/bsdebuglog.h>
+//#include <module/bs_debuglog.h>
 #include <core/bsfile.h>
-#include <core/bsmemory.h>
 #include <common/bsstring.h>
 #include <common/bscommon.h>
 

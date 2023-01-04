@@ -1,5 +1,7 @@
 #pragma once
 #include "bsopengl_ext.h"
+
+#include <core/bsfile.h>
 #include <common/bscolor.h>
 #include <common/bscommon.h>
 
