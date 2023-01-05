@@ -3,9 +3,9 @@
 
 #include "klein.hpp"
 
+
 namespace bs
 {
-
 
   void app_on_load( bsp::AppData* appData )
   {
@@ -14,7 +14,7 @@ namespace bs
 
   void app_tick( bsp::AppData* appData )
   {
-    BREAK;
+    // BREAK;
   }
 
 };

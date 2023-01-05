@@ -30,6 +30,17 @@ namespace opengl
 
   void set_worker_thread_render_context( HGLRC renderContext );
   void check_gl_error();
+
+  //all three files in one, mark sections with #h, #vs and #fs.
+  //example file content:
+  //#h
+  //#version 450 core
+  //#vs
+  //void main() { ... }
+  //#fs
+  //void main() { ... }
+  //
+  bs::ShaderProgramID create_shader_program( char const* combinedglslData, s32 size );
 };
 
 
@@ -282,6 +293,7 @@ namespace opengl
     {
       oglglobal::renderContext = wglCreateContext( oglglobal::deviceContext );
       oglglobal::info.extEnabled = 0;
+      BREAK;
     }
 
     if ( !wglMakeCurrent( oglglobal::deviceContext, oglglobal::renderContext ) )
@@ -399,8 +411,51 @@ namespace opengl
 
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////
-  // hotfix for cpu renderer
+  // callbacks
   ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  INLINE u32 get_size_for_index_format( bs::IndexFormat indexFormat ) { return indexFormat == bs::IndexFormat::U16 ? sizeof( u16 ) : sizeof( u32 ); }
+
+  bs::Mesh allocate_mesh( bs::MeshData const* raw )
+  {
+    bs::Mesh resultMesh {};
+
+    u32 const vertexCount = raw->vertexCount;
+    u32 const indexCount = raw->indexCount;
+    bs::IndexFormat const indexFormat = raw->indexFormat;
+
+    if ( indexFormat == bs::IndexFormat::INVALID ) BREAK;
+
+    check_gl_error();
+
+    glCreateBuffers( 1, &resultMesh.vertexBuffer );
+    glNamedBufferData( resultMesh.vertexBuffer, vertexCount * sizeof( float3 ), raw->vertices, GL_STATIC_DRAW );
+
+    glCreateBuffers( 1, &resultMesh.uvBuffer );
+    glNamedBufferData( resultMesh.uvBuffer, vertexCount * sizeof( float2 ), raw->uvs, GL_STATIC_DRAW );
+
+    glCreateBuffers( 1, &resultMesh.indexBuffer );
+    glNamedBufferData( resultMesh.indexBuffer, indexCount * get_size_for_index_format( indexFormat ), raw->indices, GL_STATIC_DRAW );
+
+    check_gl_error();
+
+    resultMesh.indexCount = indexCount;
+    resultMesh.indexFormat = indexFormat;
+    return resultMesh;
+  }
+
+  void free_mesh( bs::Mesh const& mesh )
+  {
+    if ( mesh.id )
+    {
+      glDeleteVertexArrays( 1, &mesh.id );
+      check_gl_error();
+      BREAK;
+    }
+
+    u32 buffers[] = { mesh.vertexBuffer, mesh.uvBuffer, mesh.indexBuffer };
+    glDeleteBuffers( 3, buffers );
+  }
 
   bs::TextureID allocate_texture( bs::TextureData const* textureData )
   {
@@ -427,61 +482,207 @@ namespace opengl
     glDeleteTextures( 1, &handle );
   }
 
-  // void render_custom_bitmap( bs::RenderTarget* target, bs::Bitmap* bmp )
-  // {
-  //   int2 screenSize = ::global::mainWindow.size;
+  using ShaderID = u32;
 
-  //   bs::TextureData texData {};
-  //   texData.pixel = bmp->pixel;
-  //   texData.width = bmp->width;
-  //   texData.height = bmp->height;
-  //   texData.format = bs::TextureFormat::RGBA8;
+  bool validate_shader( ShaderID shaderID )
+  {
+    constexpr s32 MAX_INFO_LOG_LENGTH = 512;
+    char infoLog[MAX_INFO_LOG_LENGTH];
+    GLint result = GL_FALSE;
+    s32 infoLogLength = 0;
+    glGetShaderiv( shaderID, GL_COMPILE_STATUS, &result );
+    if ( result != GL_TRUE )
+    {
+      glGetShaderiv( shaderID, GL_INFO_LOG_LENGTH, &infoLogLength );
+      glGetShaderInfoLog( shaderID, min( infoLogLength, MAX_INFO_LOG_LENGTH ), NULL, infoLog );
+      log_error( "[OGL] Errors: \n", infoLog );
+      BREAK;
+    }
+    return result == GL_TRUE;
+  }
 
-  //   bs::TextureID id = allocate_texture( &texData );
-  //   glEnable( GL_TEXTURE_2D );
-  //   glBindTexture( GL_TEXTURE_2D, id );
+  bool validate_program( bs::ShaderProgramID programID )
+  {
+    constexpr s32 MAX_INFO_LOG_LENGTH = 512;
+    char infoLog[MAX_INFO_LOG_LENGTH];
+    GLint result = GL_FALSE;
+    s32 infoLogLength = 0;
+    glGetProgramiv( programID, GL_LINK_STATUS, &result );
+    if ( result != GL_TRUE )
+    {
+      glGetProgramiv( programID, GL_INFO_LOG_LENGTH, &infoLogLength );
+      glGetProgramInfoLog( programID, min( infoLogLength, MAX_INFO_LOG_LENGTH ), NULL, infoLog );
+      log_error( "[OGL] Errors: \n", infoLog );
+      BREAK;
+    }
+    return result == GL_TRUE;
+  }
 
-  //   glMatrixMode( GL_TEXTURE );
-  //   glLoadIdentity();
-  //   glMatrixMode( GL_MODELVIEW );
-  //   glLoadIdentity();
-  //   glMatrixMode( GL_PROJECTION );
-  //   glLoadIdentity();
-  //   glOrtho( 0.f, screenSize.x, screenSize.y, 0.f, 0.f, 10.f );
 
-  //   glEnable( GL_BLEND );
-  //   glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+  struct OGLFileData
+  {
+    char const* data;
+    s64 size;
+  };
+  bs::ShaderProgramID create_shader_program( OGLFileData headerFileData, OGLFileData vsFileData, OGLFileData fsFileData )
+  {
+    log_info( "[OGL] Compiling shader." );
 
-  //   glBegin( GL_TRIANGLES );
+    GLint shaderCodeLengths[] = { (s32) headerFileData.size, (s32) vsFileData.size };
 
-  //   float2 min = { -1, -1 };
-  //   float2 max = { (float) bmp->width, (float) bmp->height };
-  //   glTexCoord2f( 0.0f, 1.0f );
-  //   glVertex2f( min.x, max.y );
+    ShaderID vsID = glCreateShader( GL_VERTEX_SHADER );
+    GLchar const* vsCode[] =
+    {
+      (char const*) headerFileData.data,
+      (char const*) vsFileData.data
+    };
+    glShaderSource( vsID, array_count( vsCode ), vsCode, shaderCodeLengths );
+    glCompileShader( vsID );
 
-  //   glTexCoord2f( 1.0f, 1.0f );
-  //   glVertex2f( max.x, max.y );
+    if ( !validate_shader( vsID ) )
+    {
+      BREAK;
+    }
 
-  //   glTexCoord2f( 1.0f, 0.0f );
-  //   glVertex2f( max.x, min.y );
+    shaderCodeLengths[1] = (s32) fsFileData.size;
 
-  //   glTexCoord2f( 0.0f, 1.0f );
-  //   glVertex2f( min.x, max.y );
+    ShaderID fsID = glCreateShader( GL_FRAGMENT_SHADER );
+    GLchar const* fsCode[] =
+    {
+      (char const*) headerFileData.data,
+      (char const*) fsFileData.data
+    };
+    glShaderSource( fsID, array_count( fsCode ), fsCode, shaderCodeLengths );
+    glCompileShader( fsID );
 
-  //   glTexCoord2f( 1.0f, 0.0f );
-  //   glVertex2f( max.x, min.y );
+    if ( !validate_shader( fsID ) )
+    {
+      BREAK;
+    }
 
-  //   glTexCoord2f( 0.0f, 0.0f );
-  //   glVertex2f( min.x, min.y );
+    log_info( "[OGL] Linking program." );
 
-  //   glBindTexture( GL_TEXTURE_2D, 0 );
-  //   glEnd();
+    GLuint programID = glCreateProgram();
+    glAttachShader( programID, vsID );
+    glAttachShader( programID, fsID );
+    glLinkProgram( programID );
 
-  //   free_texture( id );
-  // }
+    if ( !validate_program( programID ) )
+    {
+      BREAK;
+    }
 
-  // void render( bs::RenderTarget* target, bs::RenderGroup* group, bs::Camera* camera )
-  // {
-  //   render_custom_bitmap( target, (bs::Bitmap*) group->renderObject );
-  // }
+    glDetachShader( programID, vsID );
+    glDetachShader( programID, fsID );
+
+    glDeleteShader( vsID );
+    glDeleteShader( fsID );
+
+    return programID;
+  }
+
+  bs::ShaderProgramID create_shader_program( char const* combinedglslData, s32 size )
+  {
+    char const* reader = (char const*) combinedglslData;
+    char const* end = reader + size;
+    OGLFileData h;
+    OGLFileData vs;
+    OGLFileData fs;
+
+    //header
+    char const* nextSection = bs::string_contains( reader, "#h" );
+    assert( nextSection );
+    char const* currentSection = nextSection + 2;
+
+    nextSection = bs::string_contains( currentSection, "#vs" );
+    assert( nextSection );
+
+    h.data = currentSection;
+    h.size = nextSection - currentSection;
+
+    //vertex shader
+    currentSection = nextSection + 3;
+    nextSection = bs::string_contains( currentSection, "#fs" );
+    assert( nextSection );
+
+    vs.data = currentSection;
+    vs.size = nextSection - currentSection;
+
+    //fragment shader
+    currentSection = nextSection + 3;
+    nextSection = end;
+
+    fs.data = currentSection;
+    fs.size = nextSection - currentSection;
+
+    return create_shader_program( h, vs, fs );
+  }
+
+  bool render_retained_mode() { return false; }
+
+  bool render_immediate_mode()
+  {
+    return false;
+  }
+
+
+
 };
+
+// void render_custom_bitmap( bs::RenderTarget* target, bs::Bitmap* bmp )
+// {
+//   int2 screenSize = ::global::mainWindow.size;
+
+//   bs::TextureData texData {};
+//   texData.pixel = bmp->pixel;
+//   texData.width = bmp->width;
+//   texData.height = bmp->height;
+//   texData.format = bs::TextureFormat::RGBA8;
+
+//   bs::TextureID id = allocate_texture( &texData );
+//   glEnable( GL_TEXTURE_2D );
+//   glBindTexture( GL_TEXTURE_2D, id );
+
+//   glMatrixMode( GL_TEXTURE );
+//   glLoadIdentity();
+//   glMatrixMode( GL_MODELVIEW );
+//   glLoadIdentity();
+//   glMatrixMode( GL_PROJECTION );
+//   glLoadIdentity();
+//   glOrtho( 0.f, screenSize.x, screenSize.y, 0.f, 0.f, 10.f );
+
+//   glEnable( GL_BLEND );
+//   glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+
+//   glBegin( GL_TRIANGLES );
+
+//   float2 min = { -1, -1 };
+//   float2 max = { (float) bmp->width, (float) bmp->height };
+//   glTexCoord2f( 0.0f, 1.0f );
+//   glVertex2f( min.x, max.y );
+
+//   glTexCoord2f( 1.0f, 1.0f );
+//   glVertex2f( max.x, max.y );
+
+//   glTexCoord2f( 1.0f, 0.0f );
+//   glVertex2f( max.x, min.y );
+
+//   glTexCoord2f( 0.0f, 1.0f );
+//   glVertex2f( min.x, max.y );
+
+//   glTexCoord2f( 1.0f, 0.0f );
+//   glVertex2f( max.x, min.y );
+
+//   glTexCoord2f( 0.0f, 0.0f );
+//   glVertex2f( min.x, min.y );
+
+//   glBindTexture( GL_TEXTURE_2D, 0 );
+//   glEnd();
+
+//   free_texture( id );
+// }
+
+// void render( bs::RenderTarget* target, bs::RenderGroup* group, bs::Camera* camera )
+// {
+//   render_custom_bitmap( target, (bs::Bitmap*) group->renderObject );
+// }

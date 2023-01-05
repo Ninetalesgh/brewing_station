@@ -294,9 +294,9 @@ namespace opengl
 
   VertexArrayObjectID init_vao_for_mesh( bs::graphics::Mesh const* mesh )
   {
+    //not working yet
     VertexArrayObjectID vao;
     BREAK;
-    //not working yet
     check_gl_error();
     glCreateVertexArrays( 1, &vao );
 

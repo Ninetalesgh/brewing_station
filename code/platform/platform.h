@@ -1,3 +1,5 @@
+DEPRECATED
+
 #pragma once
 
 #include "bs_platform.h"

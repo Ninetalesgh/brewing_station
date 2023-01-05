@@ -1,3 +1,4 @@
+DEPRECATED
 #pragma once
 
 #include "platform_callbacks.h"

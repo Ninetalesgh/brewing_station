@@ -20,10 +20,10 @@ namespace win32
 
   //returns 0 if the queue is full and the task wasn't added
   //out_taskState is optional 
-  u32 push_async_task( bs::Task const& task, bs::TaskState volatile* out_taskState );
+  bool push_async_task( bs::Task const& task, bs::TaskState volatile* out_taskState );
 
   //returns 0 if the queue is full and the task wasn't added
-  u32 push_synced_task( bs::Task const& task, bs::TaskState volatile* out_taskState );
+  bool push_synced_task( bs::Task const& task, bs::TaskState volatile* out_taskState );
 
   //join the synced worker threads until all tasks are completed
   void complete_synced_tasks();
@@ -183,6 +183,10 @@ namespace win32
             taskQueueEntry.task.function( taskQueueEntry.task.parameter );
             interlocked_compare_exchange( (volatile s32*) state, (s32) bs::TaskState::COMPLETED, (s32) bs::TaskState::IN_PROGRESS );
           }
+          else
+          {
+            BREAK; //tasks state was null, what do we do then? just call the function anyways?
+          }
 
           result = true;
           break;
@@ -203,12 +207,12 @@ namespace win32
     return result;
   }
 
-  INLINE u32 push_async_task( bs::Task const& task, bs::TaskState volatile* out_taskState )
+  INLINE bool push_async_task( bs::Task const& task, bs::TaskState volatile* out_taskState )
   {
     return push_task( &global::asyncTaskQueue, task, out_taskState );
   }
 
-  INLINE u32 push_synced_task( bs::Task const& task, bs::TaskState volatile* out_taskState )
+  INLINE bool push_synced_task( bs::Task const& task, bs::TaskState volatile* out_taskState )
   {
     return push_task( &global::syncedTaskQueue, task, out_taskState );
   }
@@ -257,14 +261,14 @@ namespace win32
 
     char const* const syncedThreadNames[] =
     {
-      "thread_synced_worker_0",
-      "thread_synced_worker_1",
-      "thread_synced_worker_2",
-      "thread_synced_worker_3",
-      "thread_synced_worker_4",
-      "thread_synced_worker_5",
-      "thread_synced_worker_6",
-      "thread_synced_worker_7",
+      "high_priority_worker_0",
+      "high_priority_worker_1",
+      "high_priority_worker_2",
+      "high_priority_worker_3",
+      "high_priority_worker_4",
+      "high_priority_worker_5",
+      "high_priority_worker_6",
+      "high_priority_worker_7",
     };
     static_assert(array_count( syncedThreadNames ) == global::SYNCED_THREAD_COUNT);
 
@@ -287,8 +291,8 @@ namespace win32
 
     char const* const asyncThreadNames[] =
     {
-      "thread_async_worker_0",
-      "thread_async_worker_1",
+      "low_priority_worker_0",
+      "low_priority_worker_1",
     };
     static_assert(array_count( asyncThreadNames ) == global::ASYNC_THREAD_COUNT);
 

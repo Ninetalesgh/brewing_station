@@ -2,6 +2,7 @@
 
 //#include "win32_file.h"
 #include "win32_global.h"
+#include "win32_thread.h"
 
 #include <module/bs_debuglog.h>
 #include <module/bs_texture.h>
@@ -199,7 +200,13 @@ void register_callbacks( bsp::PlatformCallbacks* platform )
   platform->load_file_part = &win32_load_file_part_fn;
   platform->write_file = &win32_write_file;
 
+  platform->push_low_priority_task = &win32::push_async_task;
+  platform->push_high_priority_task = &win32::push_synced_task;
+  platform->wait_for_high_priority_tasks = &win32::complete_synced_tasks;
+
+  platform->allocate_mesh = &opengl::allocate_mesh;
+  platform->free_mesh = &opengl::free_mesh;
   platform->allocate_texture = &opengl::allocate_texture;
   platform->free_texture = &opengl::free_texture;
-
+  platform->create_shader_program = &opengl::create_shader_program;
 }

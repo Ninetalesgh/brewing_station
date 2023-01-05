@@ -1,6 +1,6 @@
+DEPRECATED
 #pragma once
 
-DEPRECATED
 
 #include <core/bsdebuglog.h>
 #include <core/bsnet.h>

@@ -5,6 +5,7 @@
 #include<module/bs_debuglog.h>
 #include<module/bs_texture.h>
 #include <core/bsinput.h>
+#include <core/bstask.h>
 
 
 namespace bsp
@@ -12,14 +13,58 @@ namespace bsp
 
   using debug_log_fn = void( bsm::DebugLogFlags, char const* message, s32 messageSize );
 
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////   memory     //////////////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
   using allocate_fn = void* (s64 size);
   using free_fn = void( void* );
+
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////    file io    //////////////////////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   using get_file_info_fn = bool( char const* filePath, u64* out_fileSize );
   using load_file_part_fn = bool( char const* filePath, u64 readOffset, void* targetBuffer, u32 bufferSize );
   using write_file_fn = bool( char const* filePath, void const* data, u32 size );
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////    threading    /////////////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  //returns false on fail
+  //pushes a task onto the asynchronous task queue
+  //out_taskState can be null if keeping track isn't relevant
+  using push_low_priority_task_fn = bool( bs::Task const&, bs::TaskState volatile* out_taskState );
+
+  //returns false on fail
+  //pushes a task onto the high priority task queue, which can be collectively waited for with complete_synced_tasks();
+  //out_taskState can be null if keeping track isn't relevant
+  using push_high_priority_task_fn = bool( bs::Task const&, bs::TaskState volatile* out_taskState );
+
+  //wait for all tasks in the high priority task queue to finish. 
+  using wait_for_high_priority_tasks_fn = void();
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////    graphics    //////////////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  using allocate_mesh_fn = bs::Mesh( bs::MeshData const* raw );
+  using free_mesh_fn = void( bs::Mesh const& mesh );
+
   using allocate_texture_fn = bs::TextureID( bs::TextureData const* );
   using free_texture_fn = void( bs::TextureID );
+
+  //mark sections with #h, #vs and #fs.
+  //example file content:
+  //#h
+  //#version 450 core
+  //#vs
+  //void main() { ... }
+  //#fs
+  //void main() { ... }
+  //
+  using create_shader_program_fn = bs::ShaderProgramID( char const* combinedglslData, s32 size );
 
   struct PlatformCallbacks
   {
@@ -35,13 +80,19 @@ namespace bsp
     load_file_part_fn* load_file_part;
     write_file_fn* write_file;
 
+    //task scheduling
+    push_low_priority_task_fn* push_low_priority_task;
+    push_high_priority_task_fn* push_high_priority_task;
+    wait_for_high_priority_tasks_fn* wait_for_high_priority_tasks;
+
     //graphics
+    allocate_mesh_fn* allocate_mesh;
+    free_mesh_fn* free_mesh;
     allocate_texture_fn* allocate_texture;
     free_texture_fn* free_texture;
+    create_shader_program_fn* create_shader_program;
 
-
-  };
-  extern PlatformCallbacks* platform;
+  } extern* platform;
 
   struct AppData
   {
