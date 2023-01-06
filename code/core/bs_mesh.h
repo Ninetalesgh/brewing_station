@@ -1,23 +1,9 @@
 #pragma once
 
 #include <common/bsmath.h>
-#include <common/bscommon.h>
 
 namespace bs
 {
-  using TextureID = u32;
-  enum class TextureFormat: u32
-  {
-    INVALID = 0,
-    RGBA8 = 1,
-  };
-  struct TextureData
-  {
-    void* pixel;
-    TextureFormat format;
-    s32 width;
-    s32 height;
-  };
 
   using VertexBufferID  = u32;
   using UVBufferID      = u32;
@@ -51,5 +37,4 @@ namespace bs
     IndexFormat indexFormat;
     MeshID id;
   };
-
 };

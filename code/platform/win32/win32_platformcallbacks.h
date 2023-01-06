@@ -5,7 +5,7 @@
 #include "win32_thread.h"
 
 #include <module/bs_debuglog.h>
-#include <module/bs_texture.h>
+#include <core/bs_texture.h>
 
 #include <stdio.h>
 

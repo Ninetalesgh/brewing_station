@@ -70,3 +70,12 @@ constexpr INLINE float clamp( float value, float low, float high ) { return max(
 constexpr INLINE u64 KiloBytes( u64 kiloBytes ) { return kiloBytes * 1024ULL; }
 constexpr INLINE u64 MegaBytes( u64 megaBytes ) { return KiloBytes( megaBytes ) * 1024ULL; }
 constexpr INLINE u64 GigaBytes( u64 gigaBytes ) { return MegaBytes( gigaBytes ) * 1024ULL; }
+
+
+namespace bs
+{
+  namespace internal { template<class T> struct rem_ref { using type = T; };template<class T> struct rem_ref<T&> { using type = T; };template<class T> struct rem_ref<T&&> { using type = T; }; };
+
+  template <class T> using remove_reference = typename internal::rem_ref<T>::type;
+  template <class T> constexpr remove_reference<T>&& move( T&& object ) { return static_cast<remove_reference<T>&&>(object); }
+};

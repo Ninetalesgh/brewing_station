@@ -4,7 +4,7 @@
 
 
 #include <platform/opengl/bsopengl_ext.h>
-#include <module/bs_texture.h>
+#include <core/bs_texture.h>
 #include <common/bscolor.h>
 
 namespace opengl

@@ -3,6 +3,7 @@
 
 #include "klein.hpp"
 
+#include <module/bs_font.h>
 
 namespace bs
 {
@@ -14,6 +15,9 @@ namespace bs
 
   void app_tick( bsp::AppData* appData )
   {
+    bsm::Font test( "" );
+
+    bsm::Font test2 = bs::move( test );
     // BREAK;
   }
 

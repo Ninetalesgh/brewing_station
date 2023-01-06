@@ -1,3 +1,5 @@
+DEPRECATED
+
 #pragma once
 
 #include <common/bscommon.h>
