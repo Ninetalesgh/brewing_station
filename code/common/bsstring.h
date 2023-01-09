@@ -27,6 +27,8 @@ namespace bs
   char* string_contains( char* string, char const* subString );
   char const* string_contains( char const* string, char const* subString );
 
+  char const* string_find_last( char const* string, char const* subString );
+
   //returns the next character in the string after parsing the codepoint
   char const* string_parse_utf8( char const* utf8String, s32* out_codepoint );
 
@@ -570,6 +572,28 @@ namespace bs
 
     return result;
   }
+
+  char const* string_find_last( char const* string, char character )
+  {
+    if ( string )
+    {
+      char const* end = string + bs::string_length( string );
+      if ( *string != '\0' )
+      {
+        while ( --end != string )
+        {
+          if ( *end == character )
+          {
+            return end;
+          }
+        }
+      }
+    }
+
+    return nullptr;
+  }
+
+
 
   s32 string_get_unicode_codepoint( char const* utf8String, s32* out_extraBytes /*= nullptr*/ )
   {

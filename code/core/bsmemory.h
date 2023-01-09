@@ -184,7 +184,7 @@ namespace bs
     {
       LOCK_SCOPE( guard ); //TODO this is a bit more overhead than necessary
 
-      if ( ptr != nullptr )
+      if ( ptr != nullptr && ptr < bufferEnd && ptr >= bufferBegin )
       {
         ArenaEntry* entry = lastEntry;
 

@@ -85,6 +85,30 @@ void win32_free( void* allocationToFree )
 
 #define MAX_BS_PATH 512
 
+#include <precompiled_assets/precompiled_assets.cpp>
+bool win32_get_precompiled_asset( char const* name, void const** out_data, u64* out_size )
+{
+  s32 precompiledAssetCount = array_count( compiledasset::assetIndex );
+  for ( s32 i = 0; i < precompiledAssetCount; ++i )
+  {
+    if ( bs::string_match( compiledasset::assetIndex[i].name, name ) )
+    {
+      if ( out_data )
+      {
+        *out_data = compiledasset::assetIndex[i].data;
+      }
+      if ( out_size )
+      {
+        *out_size = compiledasset::assetIndex[i].size;
+      }
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
 
 bool win32_get_file_info( char const* filePath, u64* out_fileSize )
 {
@@ -217,7 +241,6 @@ void win32_shutdown()
 
 #include "win32_opengl.h"
 
-
 void register_callbacks( bsp::PlatformCallbacks* platform )
 {
   //logging
@@ -233,6 +256,7 @@ void register_callbacks( bsp::PlatformCallbacks* platform )
   platform->load_file_part = &win32_load_file_part_fn;
   platform->write_file = &win32_write_file_fn;
   platform->create_directory = &win32_create_directory;
+  platform->get_precompiled_asset = &win32_get_precompiled_asset;
 
   //task scheduling
   platform->push_low_priority_task = &win32::push_async_task;
@@ -249,3 +273,4 @@ void register_callbacks( bsp::PlatformCallbacks* platform )
   //system
   platform->shutdown = &win32_shutdown;
 }
+

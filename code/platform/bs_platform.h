@@ -46,6 +46,7 @@ namespace bsp
 
   using create_directory_fn = bool( char const* directoryPath );
 
+  using get_precompiled_asset_fn = bool( char const* name, void const** out_data, u64* out_size );
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////    threading    /////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -109,6 +110,7 @@ namespace bsp
     load_file_part_fn* load_file_part;
     write_file_fn* write_file;
     create_directory_fn* create_directory;
+    get_precompiled_asset_fn* get_precompiled_asset;
 
     //task scheduling
     push_low_priority_task_fn* push_low_priority_task;

@@ -97,10 +97,10 @@ namespace bs
     void const* data;
   }assetIndex[] = { {"bs.ttf", nullptr} };
 
-  s32 format_index_entry( char* destination, char const* path, char const* name )
+  s32 format_index_entry( char* destination, char const* path, char const* name, u32 size )
   {
     char* writer = destination;
-    return bs::string_format( writer, 512, "\r\n{\"", path, "\", &", name, "}," ) - 1;
+    return bs::string_format( writer, 512, "\r\n{\"", path, "\", &", name, ", ", size, "}," ) - 1;
   }
 
   void cleanup_name( char* destination, s32 capacity, char const* name )
@@ -147,12 +147,13 @@ namespace bs
     bsm::write_file( fs, compiledAssetsFile, preContent, bs::string_length( preContent ), precompiledAssetsMountPath );
 
     char const* reader = (char const*) indexFile->data;
-    char index[8192] = {};
+    constexpr s32 INDEX_MAX_SIZE = 16000;
+    char index[INDEX_MAX_SIZE] = {};
     char* indexWriter = index;
 
-    char const preIndex[] = "\r\nstruct Index\r\n{\r\n  char const* name;\r\n  void const* data;\r\n} assetIndex[] = {";
+    char const preIndex[] = "\r\nstruct Index\r\n{\r\n  char const* name;\r\n  void const* data;\r\n  u64 size;\r\n} assetIndex[] = {";
     char const postIndex[] = "\r\n};";
-    indexWriter += bs::string_format( index, 8192, preIndex ) - 1;
+    indexWriter += bs::string_format( index, INDEX_MAX_SIZE, preIndex ) - 1;
 
     for ( s32 i = 0; *reader != '\0'; ++i )
     {
@@ -169,9 +170,9 @@ namespace bs
         bs::string_format( newAssetFileIncludeLine, 128, "\r\n#include \"internal/", newAssetFileName, "\"" );
         bsm::append_file( fs, compiledAssetsFile, newAssetFileIncludeLine, bs::string_length( newAssetFileIncludeLine ), precompiledAssetsMountPath );
 
-        char placeholderName[16] = {};
-        cleanup_name( placeholderName, 16, filePath );
-        indexWriter += format_index_entry( indexWriter, filePath, placeholderName );
+        char placeholderName[64] = {};
+        cleanup_name( placeholderName, 63, filePath );
+        indexWriter += format_index_entry( indexWriter, filePath, placeholderName, (u32) fileToCompile->size );
 
         if ( fileToCompile )
         {

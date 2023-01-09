@@ -9,8 +9,9 @@ struct Index
 {
   char const* name;
   void const* data;
+  u64 size;
 } assetIndex[] = {
-{"default_font.ttf", &default_font_ttf}
+{"default_font.ttf", &default_font_ttf, 19472}
 };
 };
 #pragma warning(pop)

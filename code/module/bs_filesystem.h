@@ -5,10 +5,18 @@
 
 namespace bsm
 {
+  enum class FileType: u64
+  {
+    INVALID = 0x0,
+    DISK = 0x1,
+    PCA,
+  };
+
   struct File
   {
     void* data;
     u64 size;
+    FileType type;
   };
 
   struct FileSystem;
@@ -22,6 +30,8 @@ namespace bsm
   //keep the return value if you need the mounted path for writing, for reading it doesn't matter
   //path can be absolute or relative to the initial mounted path
   MountPathID mount_path_to_filesystem( FileSystem*, char const* path );
+  //also makes this filesystem interact with assets compiled into the exe
+  MountPathID mount_precompiled_assets( FileSystem* );
 
   char const* get_mounted_path_by_id( FileSystem* fs, MountPathID mountPathID );
 
@@ -59,9 +69,9 @@ namespace bsm
     constexpr static s32 MAX_LOADED_FILES = 256;
     char mountedPaths[FS_LL_BLOCK_SIZE];
     File loadedFiles[MAX_LOADED_FILES];
-    atomic32 fileSlotLock;
     char* writer;
     FileSystem* next;
+    atomic32 fileSlotLock;
     s32 mountedPathsCount;
     s32 loadedFilesCount;
   };
@@ -214,6 +224,26 @@ namespace bsm
     return succeeded ? fs->mountedPathsCount++ : -1;
   }
 
+  // MountPathID mount_precompiled_assets( FileSystem* fs )
+  // {
+  //   char const precompiledAssetsPath[] = "!!PCA/";
+
+  //   char* end = fs->mountedPaths + FileSystem::FS_LL_BLOCK_SIZE;
+
+  //   s32 capacity = s32( end - fs->writer );
+  //   length = bs::string_length( precompiledAssetsPath );
+
+  //   if ( length < capacity )
+  //   {
+  //     fs->writer += bs::string_format( fs->writer, capacity, precompiledAssetsPath );
+  //   }
+  //   else
+  //   {
+  //     BREAK; //TODO allocate new file system block and check there
+  //     return false;
+  //   }
+  // }
+
   char const* get_mounted_path_by_id( FileSystem* fs, MountPathID mountPathID )
   {
     char const* result = fs->mountedPaths;
@@ -250,7 +280,7 @@ namespace bsm
     File* result = nullptr;
     for ( s32 i = 0; i < fs->MAX_LOADED_FILES; ++i )
     {
-      if ( fs->loadedFiles[i].data == nullptr )
+      if ( fs->loadedFiles[i].type == FileType::INVALID )
       {
         result = &fs->loadedFiles[i];
         fs->loadedFilesCount++;
@@ -260,6 +290,7 @@ namespace bsm
 
     return result;
   }
+
 
   File* load_file( FileSystem* fs, char const* path, MountPathID* out_mountPathID )
   {
@@ -271,6 +302,19 @@ namespace bsm
     char actualPath[1024];
     if ( !find_first_valid_file_path( fs, actualPath, 1024, path, out_mountPathID ) )
     {
+      //TODO fetch precompiled assets somehow :shrug:
+      // void const* pcaData;
+      // u64 pcaSize;
+      // if ( bsp::platform->get_precompiled_asset( bs::string_find_last( path, '/' ), &pcaData, &pcaSize ) )
+      // {
+      //   LOCK_SCOPE( fs->fileSlotLock );
+      //   File* file = get_next_free_file_slot( fs );
+      //   file->data = pcaData;
+      //   file->size = pcaSize;
+      //   file->type = FileType::PCA;
+      //   return file;
+      // }
+
       return nullptr;
     }
 
@@ -289,6 +333,7 @@ namespace bsm
         File* file = get_next_free_file_slot( fs );
         file->data = data;
         file->size = size;
+        file->type = FileType::DISK;
         return file;
       }
       else
@@ -307,16 +352,20 @@ namespace bsm
 
     if ( file > begin && file < end )
     {
-      if ( file->data )
+      if ( file->data && file->type != FileType::PCA )
       {
         bsp::platform->free( file->data );
       }
 
       interlocked_decrement( (s32 volatile*) &fs->loadedFilesCount );
-      file->data = nullptr;
-      file->size = 0;
+      file->type = FileType::INVALID;
 
       return true;
+    }
+    else
+    {
+      //it's a precompiled asset or a file that doesn't belong to this filesystem
+      //TODO if fs is linked list
     }
 
     return false;
