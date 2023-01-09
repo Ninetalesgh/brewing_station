@@ -13,6 +13,7 @@ namespace bsm
 {
   struct FileSystem;
   struct Font;
+  struct GlyphTable;
 };
 
 namespace bsp
@@ -34,7 +35,14 @@ namespace bsp
 
   using get_file_info_fn = bool( char const* filePath, u64* out_fileSize );
   using load_file_part_fn = bool( char const* filePath, u64 readOffset, void* targetBuffer, u32 bufferSize );
-  using write_file_fn = bool( char const* filePath, void const* data, u32 size );
+
+  enum class WriteFileFlags: u32
+  {
+    OVERWRITE_OR_CREATE_NEW = 0x0,
+    APPEND_OR_FAIL = 0x1,
+    OVERWRITE_OR_FAIL = 0x2,
+  };
+  using write_file_fn = bool( char const* filePath, void const* data, u32 size, WriteFileFlags );
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////    threading    /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -74,6 +82,11 @@ namespace bsp
   //
   using create_shader_program_fn = bs::ShaderProgramID( char const* combinedglslData, s32 size );
 
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////    system    ////////////////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  using shutdown_fn = void();
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////    content    ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -106,13 +119,15 @@ namespace bsp
     free_texture_fn* free_texture;
     create_shader_program_fn* create_shader_program;
 
-  } extern* platform;
+    //system
+    shutdown_fn* shutdown;
 
-  struct DefaultModules
-  {
-    bsm::FileSystem* defaultFileSystem;
-    bsm::Font* defaultFont;
-  } extern defaultModules;
+    //default modules
+    bsm::FileSystem* defaultFileSystem = nullptr;
+    bsm::Font* defaultFont = nullptr;
+    bsm::GlyphTable* defaultGlyphTable = nullptr;
+
+  } extern* platform;
 
 
   struct AppData

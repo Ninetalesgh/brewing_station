@@ -548,7 +548,7 @@ namespace bs
       {
         char const* a = reader;
         char const* b = subString;
-        while ( *a == *b )
+        while ( *a == *b && *a != '\0' )
         {
           ++a;
           ++b;

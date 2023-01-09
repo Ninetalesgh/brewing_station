@@ -234,6 +234,8 @@ LRESULT CALLBACK brewing_station_main_window_callback( HWND window, UINT message
   return result;
 }
 
+void brewing_station_init_release();
+
 void brewing_station_main()
 {
   // win32::fetch_paths();
@@ -295,19 +297,10 @@ void brewing_station_main()
 
   register_callbacks( &global::platformCallbacks );
 
-  if ( !init_compiled_assets() )
-  {
-    return;
-  }
 
   #ifdef BS_RELEASE_BUILD
   {
-    global::appDll.sample_sound = &bs::app_sample_sound;
-    global::appDll.on_load = &bs::app_on_load;
-    global::appDll.tick = &bs::app_tick;
-    global::appDll.receive_udp_packet = &bs::app_receive_udp_packet;
-
-    //platform::register_callbacks( win32::get_callbacks() );
+    brewing_station_init_release();
   }
   #else
   {
@@ -334,86 +327,25 @@ void brewing_station_main()
   }
 }
 
-//#include <compiled_assets>
-
-u32 init_compiled_assets()
-{
-  u32 result = 0;
-  //switch to either initialize already compiled assets (1) or compile them (0)
-  #if 1
-  //default font
-  {
-    //  char const chars[] = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
-    //  global::defaultGlyphTable = bs::font::create_glyph_table_from_ttf( compiledasset::DEFAULT_FONT );
-    //  bs::font::set_scale_for_glyph_creation( global::defaultGlyphTable, 64.0f );
-    //  global::defaultGlyphSheet = bs::font::create_glyph_sheet( global::defaultGlyphTable, chars );
-  }
-
-  //TODO
-  {
-    //  bs::file::Data test;
-      //win32::load_file_into_memory( "w:/code/shader/test.glsl", &test );
-    //  win32::load_file_into_memory( "w:/code/shader/test_texture.glsl", &test );
-
-    //  global::defaultGlyphTable->shaderProgram = opengl::create_shader_program( test );
-  }
-
-
-  result = 1;
-
-  //////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////
-  #else
-  //////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////
-
-  bs::file::Data ttf;
-  win32::load_file_into_memory( "w:/data/bs.ttf", &ttf );
-
-  win32::AssetToCompile assets[] =
-  {
-  {"DEFAULT_FONT", ttf.data,(u32) ttf.size},
-  };
-
-  win32::generate_compiled_assets_file( assets, array_count( assets ) );
-  #endif
-
-  return result;
-}
-
 
 #ifdef BS_RELEASE_BUILD
 #include <apps/brewing_Station_app.cpp>
+
+void brewing_station_init_release()
+{
+  global::appDll.on_load = &bsp::app_on_load_internal;
+  global::appDll.tick = &bsp::app_tick_internal;
+  char exePath[512] = {};
+  win32::get_exe_path( exePath, 512 );
+  global::appDll.on_load( &global::appData, &global::platformCallbacks, exePath );
+}
 #else
+
+void brewing_station_init_release() {}
 
 namespace bsp
 {
   PlatformCallbacks* platform;
-  // INLINE void debug_log( bs::debug::DebugLogFlags flags, char const* string, s32 size )
-  // {
-  //   return win32::debug_log( flags, string, size );
-  // }
-
-  // INLINE void* allocate( s64 size )
-  // {
-  //   return global::defaultArena->alloc( size );
-  // }
-  // INLINE void* allocate_to_zero( s64 size )
-  // {
-  //   return global::defaultArena->alloc_set_zero( size );
-  // }
-  // INLINE void free( void* ptr )
-  // {
-  //   global::defaultArena->free( ptr );
-  // }
-  // INLINE bs::graphics::TextureID allocate_texture( bs::graphics::TextureData const* textureData )
-  // {
-  //   return 0;//opengl::allocate_texture( textureData );
-  // }
-  // INLINE void free_texture( bs::graphics::TextureID id )
-  // {
-  //   // return opengl::free_texture( id );
-  // }
 };
 #endif
 

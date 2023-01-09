@@ -13,15 +13,30 @@ namespace bsm
 
   struct FileSystem;
 
+  using MountPathID = s32;
+
   [[nodiscard]]
   FileSystem* create_filesystem();
   void destroy_filesystem( FileSystem* );
 
-  bool mount_path_to_filesystem( FileSystem*, char const* path );
+  //keep the return value if you need the mounted path for writing, for reading it doesn't matter
+  //path can be absolute or relative to the initial mounted path
+  MountPathID mount_path_to_filesystem( FileSystem*, char const* path );
 
-  File* load_file( FileSystem*, char const* path );
+  char const* get_mounted_path_by_id( FileSystem* fs, MountPathID mountPathID );
 
-  bool write_file( FileSystem*, char const* path, void const* data, u32 size );
+  bool unmount_path_from_filesystem( FileSystem*, char const* path ) { return false; } //TODO
+
+  [[nodiscard]]
+  File* load_file( FileSystem*, char const* path, MountPathID* out_mountPathID = nullptr );
+
+  //returns false if the file wasn't loaded by this file system
+  bool unload_file( FileSystem*, File* );
+
+  bool file_exists( FileSystem*, char const* path, MountPathID mountPathID = 0 );
+  bool write_file( FileSystem*, char const* path, void const* data, u32 size, MountPathID mountPathID = 0 );
+  bool append_file( FileSystem*, char const* path, void const* data, u32 size, MountPathID mountPathID = 0 );
+
 };
 
 
@@ -32,7 +47,7 @@ namespace bsm
 ///////////////////////////////////////////////////////////////////////////
 
 #include <platform/bs_platform.h>
-
+#include <core/bsthread.h>
 
 namespace bsm
 {
@@ -42,6 +57,7 @@ namespace bsm
     constexpr static s32 MAX_LOADED_FILES = 256;
     char mountedPaths[FS_LL_BLOCK_SIZE];
     File loadedFiles[MAX_LOADED_FILES];
+    atomic32 fileSlotLock;
     char* writer;
     FileSystem* next;
     s32 mountedPathsCount;
@@ -64,8 +80,10 @@ namespace bsm
     {
       FileSystem* part = fs;
       fs = fs->next;
+      //TODO unload loaded files
       bsp::platform->free( part );
     }
+
   }
 
   bool is_absolute_path( char const* path )
@@ -112,7 +130,7 @@ namespace bsm
     char tmp[STACK_CAPACITY + 1] = {};
 
     s32 length = path_format_replace_slashes( tmp, STACK_CAPACITY, path );
-    if ( bs::string_contains( path, "." ) )
+    if ( bs::string_contains( path, ".exe" ) )
     {
       path_remove_node( tmp );
     }
@@ -179,44 +197,45 @@ namespace bsm
     return mount_absolute_path_to_filesystem( fs, tmp );
   }
 
-  bool mount_path_to_filesystem( FileSystem* fs, char const* path )
+  MountPathID mount_path_to_filesystem( FileSystem* fs, char const* path )
   {
-    bool result = false;
+    bool succeeded = false;
     if ( is_absolute_path( path ) )
     {
-      result = mount_absolute_path_to_filesystem( fs, path );
+      succeeded = mount_absolute_path_to_filesystem( fs, path );
     }
     else
     {
-      result = mount_relative_path_to_filesystem( fs, path );
+      succeeded = mount_relative_path_to_filesystem( fs, path );
     }
 
-    if ( result )
-    {
-      ++fs->mountedPathsCount;
-    }
-
-    return result;
+    return succeeded ? fs->mountedPathsCount++ : -1;
   }
 
-  char const* get_mounted_path_by_index( FileSystem* fs, s32 index )
+  char const* get_mounted_path_by_id( FileSystem* fs, MountPathID mountPathID )
   {
     char const* result = fs->mountedPaths;
-    while ( index-- )
+    while ( mountPathID-- )
     {
       result += bs::string_length( result ) + 1;
     }
     return result;
   }
 
-  bool find_first_valid_file_path( FileSystem* fs, char* out_validPath, s32 capacity, char const* relativePath )
+  bool find_first_valid_file_path( FileSystem* fs, char* out_validPath, s32 capacity, char const* relativePath, MountPathID* out_mountPathID )
   {
+    if ( *relativePath == '/' ) ++relativePath;
+
     for ( s32 i = 0; i < fs->mountedPathsCount; ++i )
     {
-      bs::string_format( out_validPath, capacity, get_mounted_path_by_index( fs, i ), relativePath );
-      u64 size;
-      if ( bsp::platform->get_file_info( out_validPath, &size ) )
+      bs::string_format( out_validPath, capacity, get_mounted_path_by_id( fs, i ), relativePath );
+
+      if ( bsp::platform->get_file_info( out_validPath, nullptr ) )
       {
+        if ( out_mountPathID )
+        {
+          *out_mountPathID = i;
+        }
         return true;
       }
     }
@@ -226,63 +245,106 @@ namespace bsm
 
   File* get_next_free_file_slot( FileSystem* fs )
   {
-    s32 currentIndex = fs->loadedFilesCount;
-    while ( fs->loadedFiles[currentIndex].data )
+    File* result = nullptr;
+    for ( s32 i = 0; i < fs->MAX_LOADED_FILES; ++i )
     {
-      currentIndex = (currentIndex + 1) % FileSystem::MAX_LOADED_FILES;
+      if ( fs->loadedFiles[i].data == nullptr )
+      {
+        result = &fs->loadedFiles[i];
+        fs->loadedFilesCount++;
+        break;
+      }
     }
-    //TODO thread safe queue
 
-    return nullptr;
+    return result;
   }
 
-  File* load_file( FileSystem* fs, char const* path )
+  File* load_file( FileSystem* fs, char const* path, MountPathID* out_mountPathID )
   {
-    File result = {};
-
     if ( !path )
     {
       return nullptr;
     }
-    if ( *path == '/' ) ++path;
 
     char actualPath[1024];
-
-    if ( !find_first_valid_file_path( fs, actualPath, 1024, path ) )
+    if ( !find_first_valid_file_path( fs, actualPath, 1024, path, out_mountPathID ) )
     {
       return nullptr;
     }
 
-    if ( !bsp::platform->get_file_info( actualPath, &result.size ) )
+    u64 size = 0;
+    if ( !bsp::platform->get_file_info( actualPath, &size ) )
     {
       return nullptr;
     }
 
-    result.data = bsp::platform->allocate( result.size );
-    if ( result.data )
+    void* data = bsp::platform->allocate( size );
+    if ( data )
     {
-      if ( bsp::platform->load_file_part( actualPath, 0, result.data, (u32) result.size ) )
+      if ( bsp::platform->load_file_part( actualPath, 0, data, (u32) size ) )
       {
-        //TODO USE A PROPER QUEUE HERE
-        fs->loadedFiles[fs->loadedFilesCount] = result;
-        return &fs->loadedFiles[fs->loadedFilesCount++];
+        LOCK_SCOPE( fs->fileSlotLock );
+        File* file = get_next_free_file_slot( fs );
+        file->data = data;
+        file->size = size;
+        return file;
       }
       else
       {
-        bsp::platform->free( result.data );
+        bsp::platform->free( data );
       }
     }
 
     return nullptr;
   }
 
-  bool write_file( FileSystem* fs, char const* path, void const* data, u32 size )
+  bool unload_file( FileSystem* fs, File* file )
+  {
+    File* begin = fs->loadedFiles;
+    File* end = fs->loadedFiles + FileSystem::MAX_LOADED_FILES;
+
+    if ( file > begin && file < end && file->data )
+    {
+      bsp::platform->free( file->data );
+
+      interlocked_decrement( (s32 volatile*) &fs->loadedFilesCount );
+      file->data = nullptr;
+      file->size = 0;
+
+      return true;
+    }
+
+    return false;
+  }
+
+  bool file_exists( FileSystem* fs, char const* path, MountPathID mountPathID )
   {
     char actualPath[1024];
 
-    //VFS
-
-    return (bsp::platform->write_file( actualPath, data, size ));
+    if ( *path == '/' ) ++path;
+    bs::string_format( actualPath, 1024, get_mounted_path_by_id( fs, mountPathID ), path );
+    return bsp::platform->get_file_info( actualPath, nullptr );
   }
 
+  bool write_file( FileSystem* fs, char const* path, void const* data, u32 size, MountPathID mountPathID )
+  {
+    char actualPath[1024];
+
+    if ( *path == '/' ) ++path;
+    bs::string_format( actualPath, 1024, get_mounted_path_by_id( fs, mountPathID ), path );
+
+    bsp::WriteFileFlags flags = bsp::WriteFileFlags::OVERWRITE_OR_CREATE_NEW;
+    return bsp::platform->write_file( actualPath, data, size, flags );
+  }
+
+  bool append_file( FileSystem* fs, char const* path, void const* data, u32 size, MountPathID mountPathID )
+  {
+    char actualPath[1024];
+
+    if ( *path == '/' ) ++path;
+    bs::string_format( actualPath, 1024, get_mounted_path_by_id( fs, mountPathID ), path );
+
+    bsp::WriteFileFlags flags = bsp::WriteFileFlags::APPEND_OR_FAIL;
+    return bsp::platform->write_file( actualPath, data, size, flags );
+  }
 };

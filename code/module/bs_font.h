@@ -83,12 +83,7 @@ namespace bsm
 
   Font* create_font_from_ttf_file( char const* ttfPath, FileSystem* fs )
   {
-    if ( !fs ) fs = bsp::defaultModules.defaultFileSystem;
-
-    u64 fileSize;
-    bsp::platform->get_file_info( ttfPath, &fileSize );
-    char* allocation = (char*) bsp::platform->allocate( fileSize );
-    bsp::platform->load_file_part( ttfPath, 0, allocation, (u32) fileSize );
+    if ( !fs ) fs = bsp::platform->defaultFileSystem;
 
     File* ttfFile = load_file( fs, ttfPath );
     Font* font = nullptr;

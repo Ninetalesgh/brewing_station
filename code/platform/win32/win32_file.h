@@ -1,6 +1,6 @@
-#pragma once
-
 DEPRECATED
+
+#pragma once
 
 #include "win32_global.h"
 

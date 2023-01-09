@@ -89,27 +89,23 @@ void win32_free( void* allocationToFree )
 bool win32_get_file_info( char const* filePath, u64* out_fileSize )
 {
   bool result = false;
-  if ( out_fileSize )
-  {
-    wchar_t wideChars[MAX_BS_PATH];
-    utf8_to_wchar( filePath, wideChars, MAX_BS_PATH );
+  wchar_t wideChars[MAX_BS_PATH];
+  utf8_to_wchar( filePath, wideChars, MAX_BS_PATH );
 
-    _WIN32_FIND_DATAW findData;
-    HANDLE findHandle = FindFirstFileW( wideChars, &findData );
-    if ( findHandle != INVALID_HANDLE_VALUE )
+  _WIN32_FIND_DATAW findData;
+  HANDLE findHandle = FindFirstFileW( wideChars, &findData );
+  if ( findHandle != INVALID_HANDLE_VALUE )
+  {
+    FindClose( findHandle );
+    if ( out_fileSize )
     {
-      FindClose( findHandle );
       *out_fileSize = u64( findData.nFileSizeLow ) + (u64( findData.nFileSizeHigh ) << 32);
-      result = true;
     }
-    else
-    {
-      result = false; //file or directory doesn't exist 
-    }
+    result = true;
   }
   else
   {
-    BREAK;
+    result = false; //file or directory doesn't exist 
   }
 
   return result;
@@ -148,18 +144,17 @@ bool win32_load_file_part_fn( char const* filePath, u64 readOffset, void* target
   return result;
 }
 
-bool win32_write_file( char const* filePath, void const* data, u32 size )
+bool win32_write_file_fn( char const* filePath, void const* data, u32 size, bsp::WriteFileFlags flags )
 {
   bool result = true;
   wchar_t wideChars[MAX_BS_PATH];
   utf8_to_wchar( filePath, wideChars, MAX_BS_PATH );
+  HANDLE fileHandle = nullptr;
 
-  HANDLE fileHandle = CreateFileW( wideChars,
-                                   GENERIC_WRITE,
-                                   0, 0,
-                                   CREATE_ALWAYS,
-                                   FILE_ATTRIBUTE_NORMAL,
-                                   0 );
+  DWORD writeMode = (flags == bsp::WriteFileFlags::APPEND_OR_FAIL) ? FILE_APPEND_DATA : GENERIC_WRITE;
+  DWORD createMode = (flags == bsp::WriteFileFlags::OVERWRITE_OR_CREATE_NEW) ? CREATE_ALWAYS : OPEN_EXISTING;
+
+  fileHandle = CreateFileW( wideChars, writeMode, 0, 0, createMode, FILE_ATTRIBUTE_NORMAL, 0 );
 
   if ( fileHandle != INVALID_HANDLE_VALUE )
   {
@@ -195,6 +190,16 @@ bool win32_write_file( char const* filePath, void const* data, u32 size )
   return result;
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+/////      System      //////////////////////////////////////////////////////////////////////////////// 
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void win32_shutdown()
+{
+  global::running = false;
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -207,23 +212,31 @@ bool win32_write_file( char const* filePath, void const* data, u32 size )
 
 void register_callbacks( bsp::PlatformCallbacks* platform )
 {
+  //logging
   platform->debug_log = &win32_debug_log;
 
+  //allocations for larger chunks
   platform->allocate = &win32_allocate;
   platform->allocate_to_zero = &win32_allocate_to_zero;
   platform->free = &win32_free;
 
+  //file IO
   platform->get_file_info = &win32_get_file_info;
   platform->load_file_part = &win32_load_file_part_fn;
-  platform->write_file = &win32_write_file;
+  platform->write_file = &win32_write_file_fn;
 
+  //task scheduling
   platform->push_low_priority_task = &win32::push_async_task;
   platform->push_high_priority_task = &win32::push_synced_task;
   platform->wait_for_high_priority_tasks = &win32::complete_synced_tasks;
 
+  //graphics
   platform->allocate_mesh = &opengl::allocate_mesh;
   platform->free_mesh = &opengl::free_mesh;
   platform->allocate_texture = &opengl::allocate_texture;
   platform->free_texture = &opengl::free_texture;
   platform->create_shader_program = &opengl::create_shader_program;
+
+  //system
+  platform->shutdown = &win32_shutdown;
 }
