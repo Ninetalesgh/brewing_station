@@ -2,13 +2,13 @@
 //#define BUILD_FIRST_APP
 
 //#define BUILD_BSANIM_APP
-#define BUILD_ASSETCOMPILER_APP
+#define BUILD_ASSETPRECOMPILER_APP
 
 
 #if defined(BUILD_BSANIM_APP)
 #include "bsanim_app/bsanim_app_main.cpp"
-#elif defined(BUILD_ASSETCOMPILER_APP)
-#include "assetcompiler/assetcompiler_main.cpp"
+#elif defined(BUILD_ASSETPRECOMPILER_APP)
+#include "assetprecompiler/assetprecompiler_main.cpp"
 #endif
 
 

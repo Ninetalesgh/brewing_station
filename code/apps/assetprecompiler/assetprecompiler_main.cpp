@@ -126,19 +126,25 @@ namespace bs
   {
     bsm::FileSystem* fs = bsp::platform->defaultFileSystem;
 
-    bsm::MountPathID assetMountPath = bsm::mount_path_to_filesystem( fs, "/../../code/compiled_assets" );
-    bsm::File* indexFile = bsm::load_file( fs, "assetlist.txt" );
+    bsm::MountPathID precompiledAssetsMountPath = bsm::mount_path_to_filesystem( fs, "/../../code/precompiled_assets" );
 
+    bsm::File* indexFile = bsm::load_file( fs, "precompiled_assets_list.txt" );
     if ( !indexFile )
     {
-      log_error( "assetlist.txt not found." );
+      log_error( "precompiled_assets_list.txt not found." );
       return;
     }
 
-    char const* const compiledAssetsFile = "compiled_assets.cpp";
+    char const* const compiledAssetsFile = "precompiled_assets.cpp";
+
+    bsm::MountPathID existingPrecompiledAssetsMountPath;
+    if ( bsm::find_file( fs, compiledAssetsFile, &existingPrecompiledAssetsMountPath ) )
+    {
+      precompiledAssetsMountPath = existingPrecompiledAssetsMountPath;
+    }
 
     char const preContent[] = "#pragma warning(push)\r\n#pragma warning(disable:4309)\r\n#pragma warning(push)\r\n#pragma warning(disable:4838)\r\nnamespace compiledasset\r\n{";
-    bsm::write_file( fs, compiledAssetsFile, preContent, bs::string_length( preContent ), assetMountPath );
+    bsm::write_file( fs, compiledAssetsFile, preContent, bs::string_length( preContent ), precompiledAssetsMountPath );
 
     char const* reader = (char const*) indexFile->data;
     char index[8192] = {};
@@ -157,11 +163,11 @@ namespace bs
       char newAssetFileName[128] = {};
       bs::string_format( newAssetFileName, 128, filePath, "_compiled" );
 
-      if ( fileToCompile || bsm::file_exists( fs, newAssetFileName, assetMountPath ) )
+      if ( fileToCompile || bsm::file_exists( fs, newAssetFileName, precompiledAssetsMountPath ) )
       {
         char newAssetFileIncludeLine[256] = {};
-        bs::string_format( newAssetFileIncludeLine, 128, "\r\n#include <", newAssetFileName, ">" );
-        bsm::append_file( fs, compiledAssetsFile, newAssetFileIncludeLine, bs::string_length( newAssetFileIncludeLine ), assetMountPath );
+        bs::string_format( newAssetFileIncludeLine, 128, "\r\n#include \"internal/", newAssetFileName, "\"" );
+        bsm::append_file( fs, compiledAssetsFile, newAssetFileIncludeLine, bs::string_length( newAssetFileIncludeLine ), precompiledAssetsMountPath );
 
         char placeholderName[16] = {};
         cleanup_name( placeholderName, 16, filePath );
@@ -173,7 +179,9 @@ namespace bs
           u32 hexArraySize;
           char* hexArrayString = generate_hex_array_string( (u8 const*) fileToCompile->data, (u32) fileToCompile->size, placeholderName, &hexArraySize );
 
-          bsm::write_file( fs, newAssetFileName, hexArrayString, hexArraySize, assetMountPath );
+          char newAssetPath[256] = {};
+          bs::string_format( newAssetPath, 256, "internal/", newAssetFileName );
+          bsm::write_file( fs, newAssetPath, hexArrayString, hexArraySize, precompiledAssetsMountPath );
 
           bsp::platform->free( hexArrayString );
         }
@@ -183,10 +191,10 @@ namespace bs
     if ( *(indexWriter - 1) == ',' ) --indexWriter;
 
     indexWriter += bs::string_format( indexWriter, 24, postIndex );
-    bsm::append_file( fs, compiledAssetsFile, index, bs::string_length( index ), assetMountPath );
+    bsm::append_file( fs, compiledAssetsFile, index, bs::string_length( index ), precompiledAssetsMountPath );
 
     char const postContent[] = "\r\n};\r\n#pragma warning(pop)\r\n#pragma warning(pop)\r\n";
-    bsm::append_file( fs, compiledAssetsFile, postContent, bs::string_length( postContent ), assetMountPath );
+    bsm::append_file( fs, compiledAssetsFile, postContent, bs::string_length( postContent ), precompiledAssetsMountPath );
   }
 
   void app_tick( bsp::AppData* appData )

@@ -190,6 +190,15 @@ bool win32_write_file_fn( char const* filePath, void const* data, u32 size, bsp:
   return result;
 }
 
+bool win32_create_directory( char const* directoryPath )
+{
+  bool result = true;
+  wchar_t wideChars[MAX_BS_PATH];
+  utf8_to_wchar( directoryPath, wideChars, MAX_BS_PATH );
+
+  return CreateDirectoryW( wideChars, NULL );
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 /////      System      //////////////////////////////////////////////////////////////////////////////// 
@@ -224,6 +233,7 @@ void register_callbacks( bsp::PlatformCallbacks* platform )
   platform->get_file_info = &win32_get_file_info;
   platform->load_file_part = &win32_load_file_part_fn;
   platform->write_file = &win32_write_file_fn;
+  platform->create_directory = &win32_create_directory;
 
   //task scheduling
   platform->push_low_priority_task = &win32::push_async_task;

@@ -33,7 +33,9 @@ namespace bsm
   //returns false if the file wasn't loaded by this file system
   bool unload_file( FileSystem*, File* );
 
+  bool find_file( FileSystem*, char const* path, MountPathID* out_mountPathID = nullptr );
   bool file_exists( FileSystem*, char const* path, MountPathID mountPathID = 0 );
+
   bool write_file( FileSystem*, char const* path, void const* data, u32 size, MountPathID mountPathID = 0 );
   bool append_file( FileSystem*, char const* path, void const* data, u32 size, MountPathID mountPathID = 0 );
 
@@ -303,9 +305,12 @@ namespace bsm
     File* begin = fs->loadedFiles;
     File* end = fs->loadedFiles + FileSystem::MAX_LOADED_FILES;
 
-    if ( file > begin && file < end && file->data )
+    if ( file > begin && file < end )
     {
-      bsp::platform->free( file->data );
+      if ( file->data )
+      {
+        bsp::platform->free( file->data );
+      }
 
       interlocked_decrement( (s32 volatile*) &fs->loadedFilesCount );
       file->data = nullptr;
@@ -317,10 +322,21 @@ namespace bsm
     return false;
   }
 
-  bool file_exists( FileSystem* fs, char const* path, MountPathID mountPathID )
+  bool find_file( FileSystem* fs, char const* path, MountPathID* out_mountPathID )
   {
     char actualPath[1024];
 
+    if ( !find_first_valid_file_path( fs, actualPath, 1024, path, out_mountPathID ) )
+    {
+      return false;
+    }
+
+    return true;
+  }
+
+  bool file_exists( FileSystem* fs, char const* path, MountPathID mountPathID )
+  {
+    char actualPath[1024];
     if ( *path == '/' ) ++path;
     bs::string_format( actualPath, 1024, get_mounted_path_by_id( fs, mountPathID ), path );
     return bsp::platform->get_file_info( actualPath, nullptr );

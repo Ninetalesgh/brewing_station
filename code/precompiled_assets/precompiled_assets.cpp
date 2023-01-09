@@ -4,13 +4,13 @@
 #pragma warning(disable:4838)
 namespace compiledasset
 {
-#include <bs.ttf_compiled>
+#include "internal/default_font.ttf_compiled"
 struct Index
 {
   char const* name;
   void const* data;
 } assetIndex[] = {
-{"bs.ttf", &bs_ttf}
+{"default_font.ttf", &default_font_ttf}
 };
 };
 #pragma warning(pop)
