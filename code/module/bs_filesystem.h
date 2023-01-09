@@ -350,6 +350,7 @@ namespace bsm
     bs::string_format( actualPath, 1024, get_mounted_path_by_id( fs, mountPathID ), path );
 
     bsp::WriteFileFlags flags = bsp::WriteFileFlags::OVERWRITE_OR_CREATE_NEW;
+
     return bsp::platform->write_file( actualPath, data, size, flags );
   }
 

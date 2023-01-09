@@ -192,7 +192,6 @@ bool win32_write_file_fn( char const* filePath, void const* data, u32 size, bsp:
 
 bool win32_create_directory( char const* directoryPath )
 {
-  bool result = true;
   wchar_t wideChars[MAX_BS_PATH];
   utf8_to_wchar( directoryPath, wideChars, MAX_BS_PATH );
 
