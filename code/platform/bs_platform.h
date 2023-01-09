@@ -9,6 +9,12 @@
 #include <core/bstask.h>
 
 
+namespace bsm
+{
+  struct FileSystem;
+  struct Font;
+};
+
 namespace bsp
 {
 
@@ -19,6 +25,7 @@ namespace bsp
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   using allocate_fn = void* (s64 size);
+  using allocate_to_zero_fn = void* (s64 size);
   using free_fn = void( void* );
 
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -79,6 +86,7 @@ namespace bsp
 
     //allocations for larger chunks
     allocate_fn* allocate;
+    allocate_to_zero_fn* allocate_to_zero;
     free_fn* free;
 
     //file IO
@@ -100,6 +108,13 @@ namespace bsp
 
   } extern* platform;
 
+  struct DefaultModules
+  {
+    bsm::FileSystem* defaultFileSystem;
+    bsm::Font* defaultFont;
+  } extern defaultModules;
+
+
   struct AppData
   {
     u64 currentFrameIndex;
@@ -109,7 +124,7 @@ namespace bsp
     void* userData;
   };
 
-  #define APP_ON_LOAD_PARAMETERS bsp::AppData* appData, bsp::PlatformCallbacks* platformData
+  #define APP_ON_LOAD_PARAMETERS bsp::AppData* appData, bsp::PlatformCallbacks* platformCallbacks, char const* executablePath
   using app_on_load_fn = void( APP_ON_LOAD_PARAMETERS );
   extern "C" app_on_load_fn app_on_load_internal;
 

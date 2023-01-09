@@ -3,35 +3,17 @@
 #include "win32_util.h"
 #include "win32_thread.h"
 #include "win32_opengl.h"
-//#include <platform/win32/win32_opengl.h>
-//#include <core/bsdebuglog.h>
+#include "win32_platformcallbacks.h"
 
 namespace win32
 {
-  // platform::Callbacks get_callbacks()
-  // {
-  //   platform::Callbacks result {};
-  //   result.ptr_debug_log = &win32::debug_log;
-  //   result.ptr_push_async_task = &win32::push_async_task;
-  //   result.ptr_push_synced_task = &win32::push_synced_task;
-  //   result.ptr_complete_synced_tasks = &win32::complete_synced_tasks;
-  //   result.ptr_get_file_info = &win32::get_file_info;
-  //   result.ptr_load_file_into_memory = &win32::load_file_into_memory;
-  //   result.ptr_write_file = &win32::write_file;
-
-  //   result.ptr_allocate_texture = &opengl::allocate_texture;
-  //   // result.ptr_free_texture = &opengl::free_texture;
-  //   // result.ptr_allocate_mesh = &opengl::allocate_mesh;
-  //   // result.ptr_free_mesh = &opengl::free_mesh;
-  //   result.ptr_render = &opengl::render;
-
-  //   result.mainArena = global::defaultArena;
-
-  //   //TODO
-  //   //  prm.send_udp = &win32::send_udp;
-  //   //  prm.send_tcp = &win32::send_tcp;
-  //   return result;
-  // }
+  s32 get_exe_path( char* out_exePath, s32 exePathLengthMax )
+  {
+    wchar_t wideChars[MAX_BS_PATH];
+    s32 filePathLength = GetModuleFileNameW( 0, wideChars, MAX_BS_PATH );
+    assert( filePathLength <= exePathLengthMax );
+    return wchar_to_utf8( wideChars, out_exePath, exePathLengthMax );
+  }
 
   struct PrmThreadDllLoader
   {
@@ -118,10 +100,11 @@ namespace win32
 
               // platform::Callbacks prm = get_callbacks();
              //  currentApp.register_callbacks( prm );
+              char exePath[512] = {};
+              get_exe_path( exePath, 512 );
 
-
-               // TODO: maybe this not here? 
-              currentApp.on_load( &global::appData, &global::platformCallbacks );
+              // TODO: maybe this not here? 
+              currentApp.on_load( &global::appData, &global::platformCallbacks, exePath );
 
               dll_reload_threads_action( &thread::request_unpause );
             }

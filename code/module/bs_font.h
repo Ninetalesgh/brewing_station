@@ -5,6 +5,8 @@
 
 namespace bsm
 {
+  struct Font;
+
   struct Glyph
   {
     s32 codepoint;
@@ -16,7 +18,7 @@ namespace bsm
     s32 offsetY;
   };
 
-  struct GlyphSheet
+  struct GlyphTable
   {
     Glyph* glyphs;
     s32 glyphCount;
@@ -25,44 +27,33 @@ namespace bsm
     s32 height;
   };
 
-
-  //TODO 
-  class GlyphTable
+  struct RawGlyphData
   {
-  public:
-    ~GlyphTable();
-
-    Glyph* glyphs;
-    s32 glyphCount;
-    bs::TextureID textureID;
+    u8* data;
+    s32 advance;
+    s32 lsb;
     s32 width;
     s32 height;
+    s32 offsetX;
+    s32 offsetY;
   };
 
-  class Font
-  {
-  public:
+  [[nodiscard]]
+  Font* create_font_from_ttf_file( char const* ttfPath, FileSystem* fs = nullptr );
 
-    Font( char const* ttfData ) { init( ttfData ); }
-    Font( Font&& );
-    ~Font();
+  void destroy_font( Font* );
+  void set_font_scale( Font*, float scale );
 
-    bool init( char const* ttfData );
+  [[nodiscard]]
+  GlyphTable* create_glyph_table_for_utf8_characters( Font*, char const* utf8String );
 
-    bool is_valid() { return internal; }
-    void set_scale_for_glyph_creation( float scale );
+  void destroy_glyph_table( GlyphTable* );
 
+  Glyph* get_glyph_for_codepoint( GlyphTable*, s32 codepoint );
 
-
-  private:
-    Font( Font const& ) = delete;
-    struct FontInternal;
-    FontInternal* internal = nullptr;
-  };
-
-
+  [[nodiscard]]
+  RawGlyphData* create_raw_glyph_data( Font*, s32 unicodeCodepoint );
 };
-
 
 
 ///////////////////////////////////////////////////////////////////////////
@@ -71,50 +62,67 @@ namespace bsm
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
+#include <platform/bs_platform.h>
+#include <module/bs_filesystem.h>
+#include <common/bscolor.h>
+#include <common/bs_bitmap.h>
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "internal/stb_truetype.h"
 
 namespace bsm
 {
-
-  GlyphTable::~GlyphTable()
-  {
-    if ( textureID )
-    {
-      bsp::platform->free_texture( textureID );
-    }
-    if ( glyphs )
-    {
-      bsp::platform->free( glyphs );
-    }
-  }
-
-  struct Font::FontInternal
+  struct Font
   {
     float scale;
     float scaleForPixelHeight;
+    FileSystem* fileSystem;
     stbtt_fontinfo fontInfo;
   };
+  Glyph get_glyph_dimensions( Font* font, s32 unicodeCodepoint );
+  Font* create_font_from_ttf_data( void* ttfData );
 
-  bool Font::init( char const* ttfData )
+  Font* create_font_from_ttf_file( char const* ttfPath, FileSystem* fs )
   {
-    bool result = false;
-    if ( stbtt_GetFontOffsetForIndex( (u8 const*) ttfData, 0 ) == 0 )
-    {
-      u32 allocSize = sizeof( FontInternal );
-      u8* allocation = (u8*) bsp::platform->allocate( allocSize );
-      memset( allocation, 0, allocSize );
-      internal = (FontInternal*) allocation;
+    if ( !fs ) fs = bsp::defaultModules.defaultFileSystem;
 
-      if ( stbtt_InitFont( &internal->fontInfo, (u8 const*) ttfData, 0 ) )
+    u64 fileSize;
+    bsp::platform->get_file_info( ttfPath, &fileSize );
+    char* allocation = (char*) bsp::platform->allocate( fileSize );
+    bsp::platform->load_file_part( ttfPath, 0, allocation, (u32) fileSize );
+
+    File* ttfFile = load_file( fs, ttfPath );
+    Font* font = nullptr;
+    if ( ttfFile )
+    {
+      font = create_font_from_ttf_data( ttfFile->data );
+      if ( font )
       {
-        set_scale_for_glyph_creation( 64.0f );
-        result = true;
+        set_font_scale( font, 64.0f );
       }
       else
       {
+        bsp::platform->free( ttfFile->data );
+        font = nullptr;
+        BREAK;
+      }
+    }
+    return font;
+  }
+
+  Font* create_font_from_ttf_data( void* ttfData )
+  {
+    Font* font = nullptr;
+    if ( stbtt_GetFontOffsetForIndex( (u8 const*) ttfData, 0 ) == 0 )
+    {
+      u32 allocSize = sizeof( Font );
+      u8* allocation = (u8*) bsp::platform->allocate( allocSize );
+      memset( allocation, 0, allocSize );
+      font = (Font*) allocation;
+
+      if ( !stbtt_InitFont( &font->fontInfo, (u8 const*) ttfData, 0 ) )
+      {
         bsp::platform->free( allocation );
-        internal = nullptr;
+        font = nullptr;
         BREAK;
       }
     }
@@ -123,34 +131,264 @@ namespace bsm
       BREAK;
     }
 
-    return result;
+    return font;
   }
 
-  Font::~Font()
+  void destroy_font( Font* font )
   {
-    if ( internal )
+    if ( font )
     {
-      bsp::platform->free( internal );
+      if ( font->fontInfo.data )
+      {
+        bsp::platform->free( font->fontInfo.data );
+      }
+
+      bsp::platform->free( font );
     }
   }
 
-  Font::Font( Font&& other )
+  void set_font_scale( Font* font, float scale )
   {
-    internal = other.internal;
-    other.internal = nullptr;
+    font->scale = scale;
+    font->scaleForPixelHeight = stbtt_ScaleForPixelHeight( &font->fontInfo, scale );
   }
 
-  void Font::set_scale_for_glyph_creation( float scale )
+  GlyphTable* create_glyph_table_for_utf8_characters( Font* font, char const* utf8String )
   {
-    if ( internal )
+    char const* reader = utf8String;
+    s32 glyphCount = bs::string_length_utf8( utf8String );
+
+    Glyph* rects = nullptr;
+    GlyphTable* resultGlyphTable = nullptr;
     {
-      internal->scale = scale;
-      internal->scaleForPixelHeight = stbtt_ScaleForPixelHeight( &internal->fontInfo, scale );
+      s32 allocSize = sizeof( GlyphTable ) + sizeof( Glyph ) * glyphCount;
+      u8* allocation = (u8*) bsp::platform->allocate( allocSize );
+      memset( allocation, 0, allocSize );
+      resultGlyphTable = (GlyphTable*) allocation;
+      rects = (Glyph*) (allocation + sizeof( GlyphTable ));
     }
-    else
+
+    int2 sheetDims = 0;
+    int2 currentRow = 0;
+    constexpr s32 MAX_WIDTH = 512;
+
+    s32 rectsIndex = 0;
+    while ( *reader )
+    {
+      s32 codepoint;
+      reader = bs::string_parse_utf8( reader, &codepoint );
+
+      Glyph newGlyph = get_glyph_dimensions( font, codepoint );
+      newGlyph.codepoint = codepoint;
+
+      if ( currentRow.x + (s32) newGlyph.uvSize.x > MAX_WIDTH )
+      {
+        sheetDims.y += currentRow.y + 1;
+        sheetDims.x = max( sheetDims.x, currentRow.x );
+        currentRow = { 0, 0 };
+      }
+
+      newGlyph.uvBegin = { currentRow.x, sheetDims.y };
+      rects[rectsIndex++] = newGlyph;
+
+      currentRow.x += (s32) newGlyph.uvSize.x + 1;
+      currentRow.y = max( currentRow.y, (s32) newGlyph.uvSize.y );
+    }
+
+    sheetDims.x = max( sheetDims.x, currentRow.x );
+    sheetDims.y = sheetDims.y + currentRow.y;
+    #define LUL
+    bs::Bitmap* sheetBMP = nullptr;
+    {
+      u8* allocation = (u8*) bsp::platform->allocate( sizeof( bs::Bitmap ) + sizeof( u32 ) * sheetDims.x * sheetDims.y );
+      sheetBMP = (bs::Bitmap*) allocation;
+      sheetBMP->width = sheetDims.x;
+      sheetBMP->height = sheetDims.y;
+      sheetBMP->pixel = (u32*) (allocation + sizeof( bs::Bitmap ));
+    }
+
+    //rasterize glyphs
+    for ( s32 i = 0; i < glyphCount; ++i )
+    {
+      RawGlyphData* rawGlyphData = create_raw_glyph_data( font, rects[i].codepoint );
+      if ( rawGlyphData )
+      {
+        assert( rawGlyphData->width == (s32) rects[i].uvSize.x );
+        assert( rawGlyphData->height == (s32) rects[i].uvSize.y );
+
+        for ( s32 y = 0; y < (s32) rects[i].uvSize.y; ++y )
+        {
+          u32* writer = sheetBMP->pixel + (s32) rects[i].uvBegin.x + (((s32) rects[i].uvBegin.y + y) * sheetBMP->width);
+          for ( s32 x = 0; x < (s32) rects[i].uvSize.x; ++x )
+          {
+            s32 index = x + y * rawGlyphData->width;
+            //*writer++ = color::rgba( 0xff, 0xff, 0xff, rawGlyphData->data[index] );
+            *writer++ = color::rgba( rawGlyphData->data[index], rawGlyphData->data[index], rawGlyphData->data[index], rawGlyphData->data[index] );
+          }
+        }
+
+        bsp::platform->free( rawGlyphData );
+      }
+    }
+
+    bs::TextureData texData {};
+    texData.pixel = sheetBMP->pixel;
+    texData.width = sheetBMP->width;
+    texData.height = sheetBMP->height;
+    texData.format = bs::TextureFormat::RGBA8;
+
+    resultGlyphTable->glyphs =     rects;
+    resultGlyphTable->glyphCount = glyphCount;
+    resultGlyphTable->textureID =  bsp::platform->allocate_texture( &texData );
+    resultGlyphTable->width =      sheetBMP->width;
+    resultGlyphTable->height =     sheetBMP->height;
+
+    bsp::platform->free( sheetBMP );
+
+    return resultGlyphTable;
+
+  }
+
+  void destroy_glyph_table( GlyphTable* table )
+  {
+    if ( table )
+    {
+      if ( table->textureID )
+      {
+        bsp::platform->free_texture( table->textureID );
+      }
+      if ( table->glyphs )
+      {
+        bsp::platform->free( table->glyphs );
+      }
+    }
+  }
+
+  Glyph* get_glyph_for_codepoint( GlyphTable* table, s32 codepoint )
+  {
+    Glyph* glyph = table->glyphs;
+    Glyph* end = glyph + table->glyphCount;
+    while ( glyph->codepoint != codepoint && glyph != end ) { ++glyph; }
+
+    return glyph == end ? nullptr : glyph;
+  }
+
+  RawGlyphData* create_raw_glyph_data( Font* font, s32 unicodeCodepoint )
+  {
+    stbtt_fontinfo* fontInfo = &font->fontInfo;
+    float scale = font->scaleForPixelHeight;
+
+    RawGlyphData* glyph = nullptr;
+    s32 advance;
+    s32 lsb;
+
+    if ( scale > 0.0f )
+    {
+      s32 glyphIndex = stbtt_FindGlyphIndex( fontInfo, unicodeCodepoint );
+
+      if ( glyphIndex > 0 )
+      {
+        stbtt_GetGlyphHMetrics( fontInfo, glyphIndex, &advance, &lsb );
+
+        s32 ix0, ix1, iy0, iy1;
+        float scale_x = scale;
+        float scale_y = scale;
+        float shift_x = 0;
+        float shift_y = 0;
+        float flatnessInPixels = 0.35f;
+        stbtt__bitmap gbm;
+
+        stbtt_GetGlyphBitmapBoxSubpixel( fontInfo, glyphIndex, scale_x, scale_y, shift_x, shift_y, &ix0, &iy0, &ix1, &iy1 );
+
+        gbm.w = (ix1 - ix0);
+        gbm.h = (iy1 - iy0);
+        gbm.pixels = nullptr;
+
+        if ( gbm.w && gbm.h )
+        {
+          u8* allocation = (u8*) bsp::platform->allocate( sizeof( RawGlyphData ) + gbm.w * gbm.h );
+          glyph = (RawGlyphData*) allocation;
+          gbm.pixels = allocation + sizeof( RawGlyphData );
+          glyph->data = gbm.pixels;
+          glyph->advance = advance;
+          glyph->lsb = lsb;
+          glyph->width = gbm.w;
+          glyph->height = gbm.h;
+          glyph->offsetX = ix0;
+          glyph->offsetY = iy0;
+          if ( gbm.pixels )
+          {
+            gbm.stride = gbm.w;
+            stbtt_vertex* vertices = nullptr;
+            s32 num_verts = stbtt_GetGlyphShape( fontInfo, glyphIndex, &vertices );
+            stbtt_Rasterize( &gbm, flatnessInPixels, vertices, num_verts, scale_x, scale_y, shift_x, shift_y, ix0, iy0, 1, fontInfo->userdata );
+            bsp::platform->free( vertices );
+          }
+          else
+          {
+            BREAK;
+          }
+        }
+        else if ( advance )
+        {
+          //it's a space
+        }
+        else
+        {
+          BREAK;
+        }
+      }
+      else // !( glyphIndex > 0 )
+      {
+        BREAK;
+      }
+    }
+    else // !( scale > 0.0f )
     {
       BREAK;
     }
+
+    return glyph;
+  }
+
+  Glyph get_glyph_dimensions( Font* font, s32 unicodeCodepoint )
+  {
+    stbtt_fontinfo* fontInfo = &font->fontInfo;
+    float scale = font->scaleForPixelHeight;
+
+    Glyph result = {};
+
+    if ( scale > 0.0f )
+    {
+      s32 glyphIndex = stbtt_FindGlyphIndex( fontInfo, unicodeCodepoint );
+
+      if ( glyphIndex > 0 )
+      {
+        s32 advance;
+        s32 lsb;
+        stbtt_GetGlyphHMetrics( fontInfo, glyphIndex, &advance, &lsb );
+
+        s32 ix0, ix1, iy0, iy1;
+        stbtt_GetGlyphBitmapBoxSubpixel( fontInfo, glyphIndex, scale, scale, 0, 0, &ix0, &iy0, &ix1, &iy1 );
+        result.uvSize.x = (ix1 - ix0);
+        result.uvSize.y = (iy1 - iy0);
+        result.offsetX = ix0;
+        result.offsetY = iy0;
+
+        result.advance = float( advance ) * scale;
+        result.lsb = float( lsb );
+      }
+      else // !( glyphIndex > 0 )
+      {
+        BREAK;
+      }
+    }
+    else // !( scale > 0.0f )
+    {
+      BREAK;
+    }
+
+    return result;
   }
 
 };

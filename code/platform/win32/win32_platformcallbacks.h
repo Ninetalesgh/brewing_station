@@ -9,6 +9,22 @@
 
 #include <stdio.h>
 
+
+s32 utf8_to_wchar( char const* utf8String, wchar_t* out_wcharString, s32 wcharLengthMax )
+{
+  s32 wcharLength = MultiByteToWideChar( CP_UTF8, 0, utf8String, -1, 0, 0 );
+  assert( wcharLength <= wcharLengthMax );
+  return MultiByteToWideChar( CP_UTF8, 0, utf8String, -1, out_wcharString, min( wcharLength, wcharLengthMax ) );
+}
+
+s32 wchar_to_utf8( wchar_t const* wcharString, char* out_utf8String, s32 utf8StringLengthMax )
+{
+  s32 utf8StringLength = WideCharToMultiByte( CP_UTF8, 0, wcharString, -1, 0, 0, 0, 0 );
+  assert( utf8StringLength <= utf8StringLengthMax );
+  return WideCharToMultiByte( CP_UTF8, 0, wcharString, -1, out_utf8String, min( utf8StringLength, utf8StringLengthMax ), 0, 0 );
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 /////      Debug Log      ///////////////////////////////////////////////////////////////////////////// 
@@ -49,6 +65,13 @@ void* win32_allocate( s64 size )
   return global::defaultArena->alloc( size );
 }
 
+void* win32_allocate_to_zero( s64 size )
+{
+  void* allocation = global::defaultArena->alloc( size );
+  memset( allocation, 0, size );
+  return allocation;
+}
+
 void win32_free( void* allocationToFree )
 {
   return global::defaultArena->free( allocationToFree );
@@ -60,21 +83,7 @@ void win32_free( void* allocationToFree )
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define MAX_BS_PATH 260
-
-s32 utf8_to_wchar( char const* utf8String, wchar_t* out_wcharString, s32 wcharLengthMax )
-{
-  s32 wcharLength = MultiByteToWideChar( CP_UTF8, 0, utf8String, -1, 0, 0 );
-  assert( wcharLength <= wcharLengthMax );
-  return MultiByteToWideChar( CP_UTF8, 0, utf8String, -1, out_wcharString, min( wcharLength, wcharLengthMax ) );
-}
-
-s32 wchar_to_utf8( wchar_t const* wcharString, char* out_utf8String, s32 utf8StringLengthMax )
-{
-  s32 utf8StringLength = WideCharToMultiByte( CP_UTF8, 0, wcharString, -1, 0, 0, 0, 0 );
-  assert( utf8StringLength <= utf8StringLengthMax );
-  return WideCharToMultiByte( CP_UTF8, 0, wcharString, -1, out_utf8String, min( utf8StringLength, utf8StringLengthMax ), 0, 0 );
-}
+#define MAX_BS_PATH 512
 
 
 bool win32_get_file_info( char const* filePath, u64* out_fileSize )
@@ -95,7 +104,7 @@ bool win32_get_file_info( char const* filePath, u64* out_fileSize )
     }
     else
     {
-      BREAK;
+      result = false; //file or directory doesn't exist 
     }
   }
   else
@@ -108,6 +117,11 @@ bool win32_get_file_info( char const* filePath, u64* out_fileSize )
 
 bool win32_load_file_part_fn( char const* filePath, u64 readOffset, void* targetBuffer, u32 bufferSize )
 {
+  if ( readOffset )
+  {
+    BREAK; //TODO
+  }
+
   bool result = false;
   if ( targetBuffer )
   {
@@ -194,8 +208,11 @@ bool win32_write_file( char const* filePath, void const* data, u32 size )
 void register_callbacks( bsp::PlatformCallbacks* platform )
 {
   platform->debug_log = &win32_debug_log;
+
   platform->allocate = &win32_allocate;
+  platform->allocate_to_zero = &win32_allocate_to_zero;
   platform->free = &win32_free;
+
   platform->get_file_info = &win32_get_file_info;
   platform->load_file_part = &win32_load_file_part_fn;
   platform->write_file = &win32_write_file;

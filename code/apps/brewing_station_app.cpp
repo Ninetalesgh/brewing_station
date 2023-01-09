@@ -19,7 +19,22 @@ namespace bsp
 {
   void app_on_load_internal( APP_ON_LOAD_PARAMETERS )
   {
-    platform = platformData;
+    platform = platformCallbacks;
+
+    if ( !defaultModules.defaultFileSystem )
+    {
+      defaultModules.defaultFileSystem = bsm::create_filesystem();
+      if ( executablePath )
+      {
+        bsm::mount_path_to_filesystem( defaultModules.defaultFileSystem, executablePath );
+        bsm::mount_path_to_filesystem( defaultModules.defaultFileSystem, "/../../data" );
+      }
+    }
+    if ( !defaultModules.defaultFont )
+    {
+
+    }
+
 
     bs::app_on_load( appData );
   }
@@ -30,5 +45,6 @@ namespace bsp
   }
 
   PlatformCallbacks* platform;
+  DefaultModules defaultModules;
 };
 

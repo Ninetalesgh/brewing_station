@@ -74,8 +74,39 @@ constexpr INLINE u64 GigaBytes( u64 gigaBytes ) { return MegaBytes( gigaBytes ) 
 
 namespace bs
 {
+  //PROBABLY REMOVING THIS POOP TODO
   namespace internal { template<class T> struct rem_ref { using type = T; };template<class T> struct rem_ref<T&> { using type = T; };template<class T> struct rem_ref<T&&> { using type = T; }; };
 
   template <class T> using remove_reference = typename internal::rem_ref<T>::type;
   template <class T> constexpr remove_reference<T>&& move( T&& object ) { return static_cast<remove_reference<T>&&>(object); }
+
+  template <class T>
+  class ownptr
+  {
+  public:
+    ownptr( ownptr<T>&& _movedPtr )
+      : ptr( _movedPtr )
+    {
+      _movedPtr.ptr = nullptr;
+    }
+    operator T* () { return ptr; }
+  private:
+    ownptr() = delete;
+    T* ptr;
+  };
+
+  template <class T>
+  class refptr
+  {
+  public:
+    refptr( ownptr<T> const& _ptr )
+      : ptr( _ptr )
+    {}
+
+    operator T* () { return ptr; }
+
+  private:
+    refptr() = delete;
+    T* ptr;
+  };
 };

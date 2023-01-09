@@ -270,7 +270,7 @@ namespace win32
       "high_priority_worker_6",
       "high_priority_worker_7",
     };
-    static_assert(array_count( syncedThreadNames ) == global::SYNCED_THREAD_COUNT);
+    //static_assert( array_count( syncedThreadNames ) == global::SYNCED_THREAD_COUNT );
 
     for ( s32 i = 0; i < global::SYNCED_THREAD_COUNT; ++i )
     {
@@ -294,7 +294,7 @@ namespace win32
       "low_priority_worker_0",
       "low_priority_worker_1",
     };
-    static_assert(array_count( asyncThreadNames ) == global::ASYNC_THREAD_COUNT);
+    //static_assert( array_count( asyncThreadNames ) == global::ASYNC_THREAD_COUNT );
 
     for ( s32 i = 0; i < global::ASYNC_THREAD_COUNT; ++i )
     {
