@@ -5,6 +5,7 @@
 
 #include <platform/opengl/bsopengl_ext.h>
 #include <core/bs_texture.h>
+#include <core/bs_camera.h>
 #include <common/bscolor.h>
 
 namespace opengl
@@ -108,6 +109,7 @@ namespace opengl
     static HGLRC renderContext;
     static HDC   deviceContext;
   };
+  void gl_debug_message_callback( GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param );
 
   void init_opengl_info()
   {
@@ -257,6 +259,10 @@ namespace opengl
       return 0;
     }
 
+    glEnable( GL_DEBUG_OUTPUT );
+    glDebugMessageCallback( gl_debug_message_callback, nullptr );
+    check_gl_error();
+
     init_opengl_info();
 
     oglglobal::defaultTextureFormat = oglglobal::info.GL_EXT_texture_sRGB ? GL_RGBA8 : GL_SRGB8_ALPHA8;
@@ -360,16 +366,77 @@ namespace opengl
       }
     }
   }
+};
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// callbacks
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include <map>
+#include <string>
 
+namespace opengl
+{
+  using ShaderID = u32;
+  using UniformID = u32;
+  using UniformBufferID = u32;
+  struct OGLFileData
+  {
+    char const* data;
+    s64 size;
+  };
 
+  bs::Mesh            allocate_mesh( bs::MeshData const* raw );
+  void                free_mesh( bs::Mesh const& mesh );
+  bs::TextureID       allocate_texture( bs::TextureData const* textureData );
+  void                free_texture( bs::TextureID texture );
+  bool                validate_shader( ShaderID shaderID );
+  bool                validate_program( bs::ShaderProgramID programID );
+  bs::ShaderProgramID create_shader_program( OGLFileData headerFileData, OGLFileData vsFileData, OGLFileData fsFileData );
+  bs::ShaderProgramID create_shader_program( char const* combinedglslData, s32 size );
+  void                init_mesh_vao( bs::Mesh* mesh );
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////
-  // callbacks
-  ////////////////////////////////////////////////////////////////////////////////////////////////////
 
   INLINE u32 get_size_for_index_format( bs::IndexFormat indexFormat ) { return indexFormat == bs::IndexFormat::U16 ? sizeof( u16 ) : sizeof( u32 ); }
+  INLINE GLenum get_gl_index_format( bs::IndexFormat indexFormat ) { return indexFormat == bs::IndexFormat::U16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT; }
+
+  void gl_debug_message_callback( GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param )
+  {
+    char const* sourceString = nullptr;
+    char const* typeString = nullptr;
+    char const* severityString = nullptr;
+    BREAK;
+
+    switch ( source )
+    {
+      case GL_DEBUG_SOURCE_API: sourceString = "API - "; break;
+      case GL_DEBUG_SOURCE_WINDOW_SYSTEM: sourceString = "WINDOW SYSTEM - "; break;
+      case GL_DEBUG_SOURCE_SHADER_COMPILER: sourceString = "SHADER COMPILER - "; break;
+      case GL_DEBUG_SOURCE_THIRD_PARTY: sourceString = "THIRD PARTY - "; break;
+      case GL_DEBUG_SOURCE_APPLICATION: sourceString = "APPLICATION - "; break;
+      case GL_DEBUG_SOURCE_OTHER: sourceString = "OTHER - "; break;
+    }
+    switch ( type )
+    {
+      case GL_DEBUG_TYPE_ERROR: typeString = "ERROR - "; break;
+      case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: typeString = "DEPRECATED_BEHAVIOR - "; break;
+      case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: typeString = "UNDEFINED_BEHAVIOR - "; break;
+      case GL_DEBUG_TYPE_PORTABILITY: typeString = "PORTABILITY - "; break;
+      case GL_DEBUG_TYPE_PERFORMANCE: typeString = "PERFORMANCE - "; break;
+      case GL_DEBUG_TYPE_MARKER: typeString = "MARKER - "; break;
+      case GL_DEBUG_TYPE_OTHER: typeString = "OTHER - "; break;
+    }
+    switch ( severity )
+    {
+      case GL_DEBUG_SEVERITY_NOTIFICATION: severityString = "NOTIFICATION - "; break;
+      case GL_DEBUG_SEVERITY_LOW: severityString = "LOW - "; break;
+      case GL_DEBUG_SEVERITY_MEDIUM: severityString = "MEDIUM - "; break;
+      case GL_DEBUG_SEVERITY_HIGH: severityString = "HIGH - "; break;
+    }
+
+    log_error( sourceString, typeString, severityString, message );
+  }
+
 
   bs::Mesh allocate_mesh( bs::MeshData const* raw )
   {
@@ -381,8 +448,6 @@ namespace opengl
 
     if ( indexFormat == bs::IndexFormat::INVALID ) BREAK;
 
-    check_gl_error();
-
     glCreateBuffers( 1, &resultMesh.vertexBuffer );
     glNamedBufferData( resultMesh.vertexBuffer, vertexCount * sizeof( float3 ), raw->vertices, GL_STATIC_DRAW );
 
@@ -391,8 +456,6 @@ namespace opengl
 
     glCreateBuffers( 1, &resultMesh.indexBuffer );
     glNamedBufferData( resultMesh.indexBuffer, indexCount * get_size_for_index_format( indexFormat ), raw->indices, GL_STATIC_DRAW );
-
-    check_gl_error();
 
     resultMesh.indexCount = indexCount;
     resultMesh.indexFormat = indexFormat;
@@ -404,7 +467,6 @@ namespace opengl
     if ( mesh.id )
     {
       glDeleteVertexArrays( 1, &mesh.id );
-      check_gl_error();
       BREAK;
     }
 
@@ -437,7 +499,6 @@ namespace opengl
     glDeleteTextures( 1, &handle );
   }
 
-  using ShaderID = u32;
 
   bool validate_shader( ShaderID shaderID )
   {
@@ -473,15 +534,11 @@ namespace opengl
     return result == GL_TRUE;
   }
 
+  void get_uniforms( bs::ShaderProgramID program );
 
-  struct OGLFileData
-  {
-    char const* data;
-    s64 size;
-  };
   bs::ShaderProgramID create_shader_program( OGLFileData headerFileData, OGLFileData vsFileData, OGLFileData fsFileData )
   {
-    log_info( "[OGL] Compiling shader." );
+    // log_info( "[OGL] Compiling shader." );
 
     GLint shaderCodeLengths[] = { (s32) headerFileData.size, (s32) vsFileData.size };
 
@@ -515,7 +572,7 @@ namespace opengl
       BREAK;
     }
 
-    log_info( "[OGL] Linking program." );
+    //  log_info( "[OGL] Linking program." );
 
     GLuint programID = glCreateProgram();
     glAttachShader( programID, vsID );
@@ -533,8 +590,10 @@ namespace opengl
     glDeleteShader( vsID );
     glDeleteShader( fsID );
 
+    get_uniforms( programID );
     return programID;
   }
+
 
   bs::ShaderProgramID create_shader_program( char const* combinedglslData, s32 size )
   {
@@ -573,71 +632,199 @@ namespace opengl
     return create_shader_program( h, vs, fs );
   }
 
-  bool render_retained_mode() { return false; }
-
-  bool render_immediate_mode()
+  void init_mesh_vao( bs::Mesh* mesh )
   {
-    return false;
+    check_gl_error();
+
+    glGenVertexArrays( 1, &mesh->id );
+    glBindVertexArray( mesh->id );
+
+    glBindBuffer( GL_ARRAY_BUFFER, mesh->vertexBuffer );
+    glEnableVertexAttribArray( 0 );
+    glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0 );
+
+    glBindBuffer( GL_ARRAY_BUFFER, mesh->uvBuffer );
+    glEnableVertexAttribArray( 1 );
+    glVertexAttribPointer( 1, 2, GL_FLOAT, GL_FALSE, 0, (void*) 0 );
+
+    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, mesh->indexBuffer );
+
+    check_gl_error();
+
+    glBindVertexArray( 0 );
+    glDisableVertexAttribArray( 0 );
+    glDisableVertexAttribArray( 1 );
+    glBindBuffer( GL_ARRAY_BUFFER, 0 );
+    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
+
+    check_gl_error();
+  }
+
+  //TODO
+  //UNFINISHED SECTION
+
+
+
+  void update_uniform_buffer( UniformBufferID buffer, s64 offset, s64 size, void* data )
+  {
+    glBindBuffer( GL_UNIFORM_BUFFER, buffer );
+    glBufferSubData( GL_UNIFORM_BUFFER, (GLintptr) offset, (GLintptr) size, data );
+    glBindBuffer( GL_UNIFORM_BUFFER, 0 );
+  }
+
+  UniformBufferID allocate_uniform_buffer( s64 size, void* data )
+  {
+    UniformBufferID bufferID;
+    glGenBuffers( 1, &bufferID );
+    glBindBuffer( GL_UNIFORM_BUFFER, bufferID );
+    glBufferData( GL_UNIFORM_BUFFER, size, data, GL_STATIC_DRAW );
+    glBindBuffer( GL_UNIFORM_BUFFER, 0 );
+    return bufferID;
+  }
+
+  void free_uniform_buffer( UniformBufferID buffer )
+  {
+    glDeleteBuffers( 1, &buffer );
+  }
+
+  void set_uniform( bs::ShaderProgramID program, char const* name, void* data )
+  {
+    //NOT DONE
+    UniformID location = glGetUniformLocation( program, name );
+    check_gl_error();
+
+    //?
+    glUniformMatrix4fv( location, 1, GL_FALSE, (const GLfloat*) data );
+  }
+
+
+  struct DrawCall
+  {
+    bs::Mesh* meshes;
+    u32 meshCount;
+    bs::ShaderProgramID programID;
+  };
+
+  void draw( bs::Mesh* mesh, bs::Camera* camera, bs::ShaderProgramID programID, bs::TextureID textureID )
+  {
+
+    //per batch
+    glUseProgram( programID );
+
+    //per mesh
+    {
+      glBindTexture( GL_TEXTURE_2D, textureID );
+
+      if ( !mesh->id )
+      {
+        init_mesh_vao( mesh );
+      }
+
+      glBindVertexArray( mesh->id );
+
+      //UNIFORMS HERE TODO
+
+
+      GLenum glIndexFormat = get_gl_index_format( mesh->indexFormat );
+      glDrawElements( GL_TRIANGLES, mesh->indexCount, glIndexFormat, (void*) 0 );
+
+      glBindVertexArray( 0 );
+      //glBindTexture( 0 );
+    }
+
+    glUseProgram( 0 );
   }
 
 
 
+  struct UniformInfo
+  {
+    GLint location;
+    GLsizei count;
+  };
+  void get_uniforms( bs::ShaderProgramID program )
+  {
+
+
+    GLint numBlocks;
+    glGetProgramiv( program, GL_ACTIVE_UNIFORM_BLOCKS, &numBlocks );
+
+    //std::vector<std::string> nameList;
+    //nameList.reserve( numBlocks );
+    for ( int blockIx = 0; blockIx < numBlocks; ++blockIx )
+    {
+      GLint nameLen;
+      glGetActiveUniformBlockiv( program, blockIx, GL_UNIFORM_BLOCK_NAME_LENGTH, &nameLen );
+
+      char name[32] = {};
+      glGetActiveUniformBlockName( program, blockIx, nameLen, NULL, name );
+      name[0] = name[0];
+      // nameList.push_back( std::string() );
+      // nameList.back().assign( name.begin(), name.end() - 1 ); //Remove the null terminator.
+    }
+
+
+
+    ///////////////////////////////////////////////
+
+
+    GLint uniformCount = 0;
+    glGetProgramiv( program, GL_ACTIVE_UNIFORMS, &uniformCount );
+
+    if ( uniformCount != 0 )
+    {
+      char uniformName[1024] = {};
+
+      GLint 	max_name_len = 0;
+      GLsizei length = 0;
+      GLsizei count = 0;
+      GLenum 	type = GL_NONE;
+      glGetProgramiv( program, GL_ACTIVE_UNIFORM_MAX_LENGTH, &max_name_len );
+
+      std::map<std::string, UniformInfo> uniforms;
+
+      for ( GLint i = 0; i < uniformCount; ++i )
+      {
+        glGetActiveUniform( program, i, max_name_len, &length, &count, &type, uniformName );
+
+        switch ( type )
+        {
+          case GL_FLOAT_VEC2: BREAK;break;
+          case GL_FLOAT_VEC3: BREAK;break;
+          case GL_FLOAT_VEC4: BREAK;break;
+          case GL_INT_VEC2: BREAK;break;
+          case GL_INT_VEC3: BREAK;break;
+          case GL_INT_VEC4: BREAK;break;
+          case GL_BOOL: BREAK;break;
+          case GL_BOOL_VEC2: BREAK;break;
+          case GL_BOOL_VEC3: BREAK;break;
+          case GL_BOOL_VEC4: BREAK;break;
+          case GL_FLOAT_MAT2: BREAK;break;
+          case GL_FLOAT_MAT3: BREAK;break;
+          case GL_FLOAT_MAT4: BREAK;break;
+          case GL_FLOAT_MAT2x3: BREAK;break;
+          case GL_FLOAT_MAT2x4: BREAK;break;
+          case GL_FLOAT_MAT3x2: BREAK;break;
+          case GL_FLOAT_MAT3x4: BREAK;break;
+          case GL_FLOAT_MAT4x2: BREAK;break;
+          case GL_FLOAT_MAT4x3: BREAK;break;
+          case GL_SAMPLER_1D: BREAK;break;
+          case GL_SAMPLER_2D: BREAK;break;
+          case GL_SAMPLER_3D: BREAK;break;
+          case GL_SAMPLER_CUBE: BREAK;break;
+          case GL_SAMPLER_1D_SHADOW: BREAK;break;
+          case GL_SAMPLER_2D_SHADOW: BREAK;break;
+          default:
+            BREAK;
+        };
+
+        UniformInfo uniformInfo = {};
+        uniformInfo.location = glGetUniformLocation( program, uniformName );
+        uniformInfo.count = count;
+
+        uniforms.emplace( std::make_pair( std::string( uniformName, length ), uniformInfo ) );
+      }
+    }
+  }
 };
 
-// void render_custom_bitmap( bs::RenderTarget* target, bs::Bitmap* bmp )
-// {
-//   int2 screenSize = ::global::mainWindow.size;
-
-//   bs::TextureData texData {};
-//   texData.pixel = bmp->pixel;
-//   texData.width = bmp->width;
-//   texData.height = bmp->height;
-//   texData.format = bs::TextureFormat::RGBA8;
-
-//   bs::TextureID id = allocate_texture( &texData );
-//   glEnable( GL_TEXTURE_2D );
-//   glBindTexture( GL_TEXTURE_2D, id );
-
-//   glMatrixMode( GL_TEXTURE );
-//   glLoadIdentity();
-//   glMatrixMode( GL_MODELVIEW );
-//   glLoadIdentity();
-//   glMatrixMode( GL_PROJECTION );
-//   glLoadIdentity();
-//   glOrtho( 0.f, screenSize.x, screenSize.y, 0.f, 0.f, 10.f );
-
-//   glEnable( GL_BLEND );
-//   glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-
-//   glBegin( GL_TRIANGLES );
-
-//   float2 min = { -1, -1 };
-//   float2 max = { (float) bmp->width, (float) bmp->height };
-//   glTexCoord2f( 0.0f, 1.0f );
-//   glVertex2f( min.x, max.y );
-
-//   glTexCoord2f( 1.0f, 1.0f );
-//   glVertex2f( max.x, max.y );
-
-//   glTexCoord2f( 1.0f, 0.0f );
-//   glVertex2f( max.x, min.y );
-
-//   glTexCoord2f( 0.0f, 1.0f );
-//   glVertex2f( min.x, max.y );
-
-//   glTexCoord2f( 1.0f, 0.0f );
-//   glVertex2f( max.x, min.y );
-
-//   glTexCoord2f( 0.0f, 0.0f );
-//   glVertex2f( min.x, min.y );
-
-//   glBindTexture( GL_TEXTURE_2D, 0 );
-//   glEnd();
-
-//   free_texture( id );
-// }
-
-// void render( bs::RenderTarget* target, bs::RenderGroup* group, bs::Camera* camera )
-// {
-//   render_custom_bitmap( target, (bs::Bitmap*) group->renderObject );
-// }

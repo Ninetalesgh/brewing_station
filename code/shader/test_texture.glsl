@@ -12,6 +12,19 @@ uniform mat4 MVP;
 
 out vec2 UV;
 
+layout (std140) uniform Matrices
+{
+    mat4 projection;
+    mat4 view;
+    mat4 popo;
+};
+
+layout (std140) uniform NORMIES
+{
+    mat4 prection;
+    mat4 vw;
+    mat4 po;
+};
 
 void main()
 {                                                   

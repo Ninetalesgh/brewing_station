@@ -37,4 +37,24 @@ namespace bs
     IndexFormat indexFormat;
     MeshID id;
   };
+
+  struct ShaderProgram
+  {
+
+  };
+
+
+  ShaderProgram* create_shader_program();
+};
+
+
+
+///////////////////////////////////////////////////////
+
+namespace bs
+{
+  ShaderProgram* create_shader_program()
+  {
+
+  }
 };
