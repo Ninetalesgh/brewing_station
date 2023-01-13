@@ -27,7 +27,8 @@ namespace bs
   char* string_contains( char* string, char const* subString );
   char const* string_contains( char const* string, char const* subString );
 
-  char const* string_find_last( char const* string, char const* subString );
+  //returns nullptr if the character doesn't exist in the string
+  char const* string_find_last( char const* string, char character );
 
   //returns the next character in the string after parsing the codepoint
   char const* string_parse_utf8( char const* utf8String, s32* out_codepoint );
@@ -467,6 +468,7 @@ namespace bs
 
   INLINE s32 string_line_count( char const* string )
   {
+    //TODO \r treatment
     char const* reader = string;
     s32 result = 1;
     while ( *reader != '\0' )

@@ -8,7 +8,7 @@ namespace compiledasset
 struct Index
 {
   char const* name;
-  void const* data;
+  void* data;
   u64 size;
 } assetIndex[] = {
 {"default_font.ttf", &default_font_ttf, 19472}

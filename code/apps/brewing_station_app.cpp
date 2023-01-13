@@ -1,8 +1,8 @@
 //#define BUILD_TESTAPP
 //#define BUILD_FIRST_APP
 
-//#define BUILD_BSANIM_APP
-#define BUILD_ASSETPRECOMPILER_APP
+#define BUILD_BSANIM_APP
+//#define BUILD_ASSETPRECOMPILER_APP
 
 
 #if defined(BUILD_BSANIM_APP)
@@ -25,25 +25,25 @@ namespace bsp
   {
     platform = platformCallbacks;
 
-    if ( !platform->defaultFileSystem )
+    if ( !platform->default.fileSystem )
     {
-      platform->defaultFileSystem = bsm::create_filesystem();
+      platform->default.fileSystem = bsm::create_filesystem();
       if ( executablePath )
       {
-        bsm::mount_path_to_filesystem( platform->defaultFileSystem, executablePath );
-        bsm::mount_path_to_filesystem( platform->defaultFileSystem, "/../../data" );
+        bsm::mount_path_to_filesystem( platform->default.fileSystem, executablePath );
+        bsm::mount_path_to_filesystem( platform->default.fileSystem, "/../../data" );
       }
     }
 
-    if ( platform->defaultFileSystem && !platform->defaultFont )
+    if ( platform->default.fileSystem && !platform->default.font )
     {
-      platform->defaultFont = bsm::create_font_from_ttf_file( "bs.ttf", platform->defaultFileSystem );
+      platform->default.font = bsm::create_font_from_ttf_file( "default_font.ttf", platform->default.fileSystem );
     }
 
-    if ( platform->defaultFont && !platform->defaultGlyphTable )
+    if ( platform->default.font && !platform->default.glyphTable )
     {
       char const chars[] = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
-      platform->defaultGlyphTable = bsm::create_glyph_table_for_utf8_characters( platform->defaultFont, chars );
+      platform->default.glyphTable = bsm::create_glyph_table_for_utf8_characters( platform->default.font, chars );
     }
 
     bs::app_on_load( appData );

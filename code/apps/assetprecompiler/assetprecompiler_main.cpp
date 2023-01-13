@@ -13,7 +13,7 @@ namespace bs
     s32 const entriesPerLine = 16;
     u32 hexArraySize = size * 5 + ((size / entriesPerLine) + ((size >= entriesPerLine && size % entriesPerLine) ? 1 : 0)) * 2;
 
-    char const preContent0[] = "\r\nchar const ";
+    char const preContent0[] = "\r\nchar ";
     char const preContent1[] = "[] = { \r\n";
     char const postContent[] = "};\r\n";
     u32 nameLength = bs::string_length( assetName );
@@ -124,7 +124,7 @@ namespace bs
 
   void app_on_load( bsp::AppData* appData )
   {
-    bsm::FileSystem* fs = bsp::platform->defaultFileSystem;
+    bsm::FileSystem* fs = bsp::platform->default.fileSystem;
 
     bsm::MountPathID precompiledAssetsMountPath = bsm::mount_path_to_filesystem( fs, "/../../code/precompiled_assets" );
 
@@ -135,7 +135,7 @@ namespace bs
       return;
     }
 
-    char const* const compiledAssetsFile = "precompiled_assets.cpp";
+    char const* const compiledAssetsFile = "precompiled_assets.generated.cpp";
 
     bsm::MountPathID existingPrecompiledAssetsMountPath;
     if ( bsm::find_file( fs, compiledAssetsFile, &existingPrecompiledAssetsMountPath ) )
@@ -151,7 +151,7 @@ namespace bs
     char index[INDEX_MAX_SIZE] = {};
     char* indexWriter = index;
 
-    char const preIndex[] = "\r\nstruct Index\r\n{\r\n  char const* name;\r\n  void const* data;\r\n  u64 size;\r\n} assetIndex[] = {";
+    char const preIndex[] = "\r\nstruct Index\r\n{\r\n  char const* name;\r\n  void* data;\r\n  u64 size;\r\n} assetIndex[] = {";
     char const postIndex[] = "\r\n};";
     indexWriter += bs::string_format( index, INDEX_MAX_SIZE, preIndex ) - 1;
 

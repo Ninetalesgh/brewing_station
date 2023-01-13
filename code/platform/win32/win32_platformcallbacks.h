@@ -85,8 +85,9 @@ void win32_free( void* allocationToFree )
 
 #define MAX_BS_PATH 512
 
-#include <precompiled_assets/precompiled_assets.cpp>
-bool win32_get_precompiled_asset( char const* name, void const** out_data, u64* out_size )
+//TODO precompiled asset poop, I guess for release purposes this can be fully hacked in
+#include <precompiled_assets/precompiled_assets.generated.cpp>
+bool win32_get_precompiled_asset( char const* name, void** out_data, u64* out_size )
 {
   s32 precompiledAssetCount = array_count( compiledasset::assetIndex );
   for ( s32 i = 0; i < precompiledAssetCount; ++i )

@@ -38,7 +38,13 @@ namespace bsm
     s32 offsetY;
   };
 
+
+
   [[nodiscard]]
+  /// @brief 
+  /// @param ttfPath .TTF asset
+  /// @param fs optional custom filesystem
+  /// @return 
   Font* create_font_from_ttf_file( char const* ttfPath, FileSystem* fs = nullptr );
 
   void destroy_font( Font* );
@@ -83,7 +89,7 @@ namespace bsm
 
   Font* create_font_from_ttf_file( char const* ttfPath, FileSystem* fs )
   {
-    if ( !fs ) fs = bsp::platform->defaultFileSystem;
+    if ( !fs ) fs = bsp::platform->default.fileSystem;
 
     File* ttfFile = load_file( fs, ttfPath );
     Font* font = nullptr;

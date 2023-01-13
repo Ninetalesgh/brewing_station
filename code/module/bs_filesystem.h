@@ -30,8 +30,6 @@ namespace bsm
   //keep the return value if you need the mounted path for writing, for reading it doesn't matter
   //path can be absolute or relative to the initial mounted path
   MountPathID mount_path_to_filesystem( FileSystem*, char const* path );
-  //also makes this filesystem interact with assets compiled into the exe
-  MountPathID mount_precompiled_assets( FileSystem* );
 
   char const* get_mounted_path_by_id( FileSystem* fs, MountPathID mountPathID );
 
@@ -224,26 +222,6 @@ namespace bsm
     return succeeded ? fs->mountedPathsCount++ : -1;
   }
 
-  // MountPathID mount_precompiled_assets( FileSystem* fs )
-  // {
-  //   char const precompiledAssetsPath[] = "!!PCA/";
-
-  //   char* end = fs->mountedPaths + FileSystem::FS_LL_BLOCK_SIZE;
-
-  //   s32 capacity = s32( end - fs->writer );
-  //   length = bs::string_length( precompiledAssetsPath );
-
-  //   if ( length < capacity )
-  //   {
-  //     fs->writer += bs::string_format( fs->writer, capacity, precompiledAssetsPath );
-  //   }
-  //   else
-  //   {
-  //     BREAK; //TODO allocate new file system block and check there
-  //     return false;
-  //   }
-  // }
-
   char const* get_mounted_path_by_id( FileSystem* fs, MountPathID mountPathID )
   {
     char const* result = fs->mountedPaths;
@@ -302,18 +280,19 @@ namespace bsm
     char actualPath[1024];
     if ( !find_first_valid_file_path( fs, actualPath, 1024, path, out_mountPathID ) )
     {
-      //TODO fetch precompiled assets somehow :shrug:
-      // void const* pcaData;
-      // u64 pcaSize;
-      // if ( bsp::platform->get_precompiled_asset( bs::string_find_last( path, '/' ), &pcaData, &pcaSize ) )
-      // {
-      //   LOCK_SCOPE( fs->fileSlotLock );
-      //   File* file = get_next_free_file_slot( fs );
-      //   file->data = pcaData;
-      //   file->size = pcaSize;
-      //   file->type = FileType::PCA;
-      //   return file;
-      // }
+      void* pcaData;
+      u64 pcaSize;
+      char const* filename = bs::string_find_last( path, '/' );
+      filename = filename ? filename : path;
+      if ( bsp::platform->get_precompiled_asset( filename, &pcaData, &pcaSize ) )
+      {
+        LOCK_SCOPE( fs->fileSlotLock );
+        File* file = get_next_free_file_slot( fs );
+        file->data = pcaData;
+        file->size = pcaSize;
+        file->type = FileType::PCA;
+        return file;
+      }
 
       return nullptr;
     }

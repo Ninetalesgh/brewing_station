@@ -76,64 +76,6 @@ static opengl_ext::wglSwapIntervalEXT* wglSwapIntervalEXT;
 
 namespace opengl_ext
 {
-  void* get_proc_address( char const* functionName );
-
-  u32 init()
-  {
-    ::wglChoosePixelFormatARB =    (opengl_ext::wglChoosePixelFormatARB*) get_proc_address( "wglChoosePixelFormatARB" );
-    ::wglCreateContextAttribsARB =  (opengl_ext::wglCreateContextAttribsARB*) get_proc_address( "wglCreateContextAttribsARB" );
-    ::wglGetPixelFormatAttribivARB = (opengl_ext::wglGetPixelFormatAttribivARB*) get_proc_address( "wglGetPixelFormatAttribivARB" );
-    ::wglGetPixelFormatAttribfvARB = (opengl_ext::wglGetPixelFormatAttribfvARB*) get_proc_address( "wglGetPixelFormatAttribfvARB" );
-    ::wglSwapIntervalEXT =         (opengl_ext::wglSwapIntervalEXT*) get_proc_address( "wglSwapIntervalEXT" );
-
-    if ( ::wglChoosePixelFormatARB == nullptr ) BREAK;
-    if ( ::wglCreateContextAttribsARB == nullptr ) BREAK;
-    if ( ::wglGetPixelFormatAttribivARB == nullptr ) BREAK;
-    if ( ::wglGetPixelFormatAttribfvARB == nullptr ) BREAK;
-    if ( ::wglSwapIntervalEXT == nullptr ) BREAK;
-
-    ::glShaderSource =             (opengl_ext::glShaderSource*) get_proc_address( "glShaderSource" );
-    ::glCreateShader =             (opengl_ext::glCreateShader*) get_proc_address( "glCreateShader" );
-    ::glCompileShader =            (opengl_ext::glCompileShader*) get_proc_address( "glCompileShader" );
-    ::glAttachShader =             (opengl_ext::glAttachShader*) get_proc_address( "glAttachShader" );
-    ::glDetachShader =             (opengl_ext::glDetachShader*) get_proc_address( "glDetachShader" );
-    ::glDeleteShader =             (opengl_ext::glDeleteShader*) get_proc_address( "glDeleteShader" );
-    ::glCreateProgram =            (opengl_ext::glCreateProgram*) get_proc_address( "glCreateProgram" );
-    ::glLinkProgram =              (opengl_ext::glLinkProgram*) get_proc_address( "glLinkProgram" );
-    ::glDeleteProgram =            (opengl_ext::glDeleteProgram*) get_proc_address( "glDeleteProgram" );
-    ::glCreateBuffers =            (opengl_ext::glCreateBuffers*) get_proc_address( "glCreateBuffers" );
-    ::glBufferData =               (opengl_ext::glBufferData*) get_proc_address( "glBufferData" );
-    ::glBindBuffer =               (opengl_ext::glBindBuffer*) get_proc_address( "glBindBuffer" );
-    ::glDeleteBuffers =            (opengl_ext::glDeleteBuffers*) get_proc_address( "glDeleteBuffers" );
-    ::glUseProgram =               (opengl_ext::glUseProgram*) get_proc_address( "glUseProgram" );
-    ::glGetProgramiv =             (opengl_ext::glGetProgramiv*) get_proc_address( "glGetProgramiv" );
-    ::glGetProgramInfoLog =        (opengl_ext::glGetProgramInfoLog*) get_proc_address( "glGetProgramInfoLog" );
-    ::glGetShaderiv =              (opengl_ext::glGetShaderiv*) get_proc_address( "glGetShaderiv" );
-    ::glGetShaderInfoLog =         (opengl_ext::glGetShaderInfoLog*) get_proc_address( "glGetShaderInfoLog" );
-    ::glVertexAttribPointer =      (opengl_ext::glVertexAttribPointer*) get_proc_address( "glVertexAttribPointer" );
-    ::glDisableVertexAttribArray = (opengl_ext::glDisableVertexAttribArray*) get_proc_address( "glDisableVertexAttribArray" );
-    ::glEnableVertexAttribArray =  (opengl_ext::glEnableVertexAttribArray*) get_proc_address( "glEnableVertexAttribArray" );
-    ::glGenBuffers =               (opengl_ext::glGenBuffers*) get_proc_address( "glGenBuffers" );
-    ::glGenVertexArrays =          (opengl_ext::glGenVertexArrays*) get_proc_address( "glGenVertexArrays" );
-    ::glBindVertexArray =          (opengl_ext::glBindVertexArray*) get_proc_address( "glBindVertexArray" );
-    ::glDeleteVertexArrays =       (opengl_ext::glDeleteVertexArrays*) get_proc_address( "glDeleteVertexArrays" );
-    ::glGetUniformLocation =       (opengl_ext::glGetUniformLocation*) get_proc_address( "glGetUniformLocation" );
-    ::glGetUniformfv =             (opengl_ext::glGetUniformfv*) get_proc_address( "glGetUniformfv" );
-    ::glGetUniformiv =             (opengl_ext::glGetUniformiv*) get_proc_address( "glGetUniformiv" );
-    ::glUniformMatrix4fv =         (opengl_ext::glUniformMatrix4fv*) get_proc_address( "glUniformMatrix4fv" );
-
-    ::glNamedBufferData = (opengl_ext::glNamedBufferData*) get_proc_address( "glNamedBufferData" );
-    ::glCreateVertexArrays = (opengl_ext::glCreateVertexArrays*) get_proc_address( "glCreateVertexArrays" );
-
-    ::glEnableVertexArrayAttrib = (opengl_ext::glEnableVertexArrayAttrib*) get_proc_address( "glEnableVertexArrayAttrib" );
-    ::glVertexArrayElementBuffer = (opengl_ext::glVertexArrayElementBuffer*) get_proc_address( "glVertexArrayElementBuffer" );
-    ::glVertexArrayAttribBinding = (opengl_ext::glVertexArrayAttribBinding*) get_proc_address( "glVertexArrayAttribBinding" );
-    ::glVertexArrayAttribFormat = (opengl_ext::glVertexArrayAttribFormat*) get_proc_address( "glVertexArrayAttribFormat" );
-    ::glVertexArrayVertexBuffer = (opengl_ext::glVertexArrayVertexBuffer*) get_proc_address( "glVertexArrayVertexBuffer" );
-
-    return validate_callbacks();
-  }
-
   void* get_proc_address( char const* functionName )
   {
     void* p = (void*) wglGetProcAddress( functionName );
@@ -255,6 +197,19 @@ namespace opengl
       {
         BREAK;
       }
+
+      ::wglChoosePixelFormatARB =    (opengl_ext::wglChoosePixelFormatARB*) opengl_ext::get_proc_address( "wglChoosePixelFormatARB" );
+      ::wglCreateContextAttribsARB =  (opengl_ext::wglCreateContextAttribsARB*) opengl_ext::get_proc_address( "wglCreateContextAttribsARB" );
+      ::wglGetPixelFormatAttribivARB = (opengl_ext::wglGetPixelFormatAttribivARB*) opengl_ext::get_proc_address( "wglGetPixelFormatAttribivARB" );
+      ::wglGetPixelFormatAttribfvARB = (opengl_ext::wglGetPixelFormatAttribfvARB*) opengl_ext::get_proc_address( "wglGetPixelFormatAttribfvARB" );
+      ::wglSwapIntervalEXT =         (opengl_ext::wglSwapIntervalEXT*) opengl_ext::get_proc_address( "wglSwapIntervalEXT" );
+
+      if ( ::wglChoosePixelFormatARB == nullptr ) BREAK;
+      if ( ::wglCreateContextAttribsARB == nullptr ) BREAK;
+      if ( ::wglGetPixelFormatAttribivARB == nullptr ) BREAK;
+      if ( ::wglGetPixelFormatAttribfvARB == nullptr ) BREAK;
+      if ( ::wglSwapIntervalEXT == nullptr ) BREAK;
+
       opengl_ext::init();
 
       wglMakeCurrent( 0, 0 );

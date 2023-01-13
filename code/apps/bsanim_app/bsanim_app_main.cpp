@@ -20,8 +20,7 @@ namespace bs
 
     // bsm::File* test = bsm::load_file( bsp::defaultModules.defaultFileSystem, "bs.ttf" );
 
-    bsm::Font* testFont = bsm::create_font_from_ttf_file( "bs.ttf" );
-    testFont = testFont;
+
     //    auto* fs = bsm::create_filesystem();
         //mount_path_to_filesystem( fs, "../../data/" );
 
