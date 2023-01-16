@@ -590,7 +590,7 @@ namespace opengl
     glDeleteShader( vsID );
     glDeleteShader( fsID );
 
-    get_uniforms( programID );
+    //get_uniforms( programID );
     return programID;
   }
 

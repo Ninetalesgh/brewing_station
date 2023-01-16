@@ -67,7 +67,7 @@ namespace bs
 };
 namespace global
 {
-  constexpr u64 APP_MEMORY_SIZE = GigaBytes( 1 );
+  constexpr u64 APP_MEMORY_SIZE = GigaBytes( 4 );
   constexpr u32 SYNCED_THREAD_COUNT = 8;
   constexpr u32 ASYNC_THREAD_COUNT = 2;
   static s64 performanceCounterFrequency;

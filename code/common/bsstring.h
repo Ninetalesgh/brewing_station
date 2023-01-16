@@ -22,6 +22,9 @@ namespace bs
   //returns 0 if they don't
   u32 string_match( char const* a, char const* b );
 
+  //returns destination
+  char* string_copy( char* destination, char const* origin, s32 size );
+
   //returns pointer to where subString begins in string
   //returns nullptr if the subString is not part of string
   char* string_contains( char* string, char const* subString );
@@ -423,7 +426,7 @@ namespace bs
   {
     char const* reader = string;
     while ( *reader++ != '\0' ) {}
-    return u32( reader - string ) - 1;
+    return u32( u64( reader - string ) ) - 1;
   }
 
   INLINE s32 string_length_utf8( char const* utf8String )
@@ -465,6 +468,16 @@ namespace bs
 
     return result;
   }
+
+  INLINE char* string_copy( char* destination, char const* origin, s32 size )
+  {
+    for ( s32 i = 0; i < size; ++i )
+    {
+      destination[i] = origin[i];
+    }
+    return destination;
+  }
+
 
   INLINE s32 string_line_count( char const* string )
   {

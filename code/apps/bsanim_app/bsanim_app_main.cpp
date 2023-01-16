@@ -3,10 +3,16 @@
 
 #include "klein.hpp"
 
+#include <core/bs_map.h>
+
 #include <module/bs_font.h>
 
 namespace bs
 {
+
+
+
+
 
   void app_on_load( bsp::AppData* appData )
   {
@@ -14,11 +20,26 @@ namespace bs
     // test = test;
    // BREAK;
     bsm::mount_path_to_filesystem( bsp::platform->default.fileSystem, "/../../code/shader" );
-    bsm::File* test = bsm::load_file( bsp::platform->default.fileSystem, "test_texture.glsl" );
+    bsm::File* testTexture = bsm::load_file( bsp::platform->default.fileSystem, "test_texture.glsl" );
 
 
-    bsp::platform->create_shader_program( (char const*) test->data, (s32) test->size );
+    bsp::platform->create_shader_program( (char const*) testTexture->data, (s32) testTexture->size );
 
+    // bs::Map<char const*, int> testMap;
+
+    // testMap.find( "test" );
+    // testMap[""];
+
+    u32 poop[] = { 12,15,33,41,42,47,51,52,53,54,61 };
+
+    s32 test = binary_search( poop, array_count( poop ), 50 );
+
+    test = test;
+
+
+
+    //hash_tester32( hash_name32, 10 );
+    hash_tester64( hash_name64, 1500 );
   }
 
   void app_tick( bsp::AppData* appData )

@@ -53,8 +53,17 @@ namespace bs
 
 namespace bs
 {
+
   ShaderProgram* create_shader_program()
   {
+    //TODO create a shader program? 
 
+    //create shader
+
+    //if valid get uniform names
+    //get uniform buffer names
+
+    return nullptr;
   }
+
 };
