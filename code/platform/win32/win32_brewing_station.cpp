@@ -234,7 +234,7 @@ LRESULT CALLBACK brewing_station_main_window_callback( HWND window, UINT message
   return result;
 }
 
-void brewing_station_init_release();
+void brewing_station_init_app();
 
 void brewing_station_main()
 {
@@ -297,22 +297,7 @@ void brewing_station_main()
 
   register_callbacks( &global::platformCallbacks );
 
-
-  #ifdef BS_RELEASE_BUILD
-  {
-    brewing_station_init_release();
-  }
-  #else
-  {
-    win32::PrmThreadDllLoader dllLoaderPrm = {};
-    thread::ThreadInfo standaloneDllLoadThread {};
-    dllLoaderPrm.threadInfo = &standaloneDllLoadThread;
-    dllLoaderPrm.appDll =  &global::appDll;
-    dllLoaderPrm.renderContext = opengl::create_render_context_for_worker_thread();
-    //    dllLoaderPrm.for_all_app_threads = &win32::for_all_app_threads;
-    CloseHandle( CreateThread( 0, 0, win32::thread_DllLoader, &dllLoaderPrm, 0, (LPDWORD) &dllLoaderPrm.threadInfo->id ) );
-  }
-  #endif
+  brewing_station_init_app();
 
   global::running = true;
   while ( global::running )
@@ -321,7 +306,6 @@ void brewing_station_main()
     brewing_station_loop();
 
     opengl::swap_buffers();
-
 
     ++global::appData.currentFrameIndex;
   }
@@ -333,7 +317,7 @@ void brewing_station_main()
 #ifdef BS_RELEASE_BUILD
 #include <apps/brewing_Station_app.cpp>
 
-void brewing_station_init_release()
+void brewing_station_init_app()
 {
   global::appDll.on_load = &bsp::app_on_load_internal;
   global::appDll.tick = &bsp::app_tick_internal;
@@ -341,13 +325,26 @@ void brewing_station_init_release()
   win32::get_exe_path( exePath, 512 );
   global::appDll.on_load( &global::appData, &global::platformCallbacks, exePath );
 }
+
 #else
 
-void brewing_station_init_release() {}
+void brewing_station_init_app()
+{
+  win32::PrmThreadDllLoader dllLoaderPrm = {};
+  thread::ThreadInfo standaloneDllLoadThread {};
+  dllLoaderPrm.threadInfo = &standaloneDllLoadThread;
+  dllLoaderPrm.appDll =  &global::appDll;
+  dllLoaderPrm.renderContext = opengl::create_render_context_for_worker_thread();
+  CloseHandle( CreateThread( 0, 0, win32::thread_DllLoader, &dllLoaderPrm, 0, (LPDWORD) &dllLoaderPrm.threadInfo->id ) );
+  while ( dllLoaderPrm.threadInfo != nullptr )
+  {
+    thread::sleep( 0 );
+  }
+}
 
 namespace bsp
 {
-  PlatformCallbacks* platform;
+  PlatformCallbacks* platform = &global::platformCallbacks;
 };
 #endif
 

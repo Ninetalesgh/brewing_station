@@ -36,7 +36,8 @@ namespace bs
 
     test = test;
 
-
+    HashMap32<s32> mappie;
+    mappie.allocate_containers();
 
     //hash_tester32( hash_name32, 10 );
     hash_tester64( hash_name64, 1500 );

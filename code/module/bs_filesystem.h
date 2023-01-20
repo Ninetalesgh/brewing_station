@@ -41,7 +41,11 @@ namespace bsm
   //returns false if the file wasn't loaded by this file system
   bool unload_file( FileSystem*, File* );
 
+  //returns true if the file exists anywhere in the filesystem
+  //out_mountPathID is the mounted path at which the file was found
   bool find_file( FileSystem*, char const* path, MountPathID* out_mountPathID = nullptr );
+
+  //returns true if the file exists at the specified mount path
   bool file_exists( FileSystem*, char const* path, MountPathID mountPathID = 0 );
 
   bool write_file( FileSystem*, char const* path, void const* data, u32 size, MountPathID mountPathID = 0 );
@@ -93,7 +97,6 @@ namespace bsm
       //TODO unload loaded files
       bsp::platform->free( part );
     }
-
   }
 
   bool is_absolute_path( char const* path )
@@ -175,6 +178,7 @@ namespace bsm
     if ( *fs->mountedPaths == '\0' )
     {
       //can't mount relative path, relative to what?
+      BREAK;
       return false;
     }
 

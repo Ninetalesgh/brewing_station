@@ -6,6 +6,231 @@
 
 namespace bs
 {
+  u32 hash_name32( char const* name );
+  u64 hash_name64( char const* name );
+  s32 binary_search( u32 const* hashes, s32 hashCount, u32 hashToFind );
+
+
+
+
+  //TODO permanent string allocator
+  //TODO multi-frame 
+
+
+
+
+
+
+  struct HashRegister64
+  {
+
+  };
+
+  struct HashRegister32
+  {
+    u32* hashes;
+    s32* nameIndices;
+    char* names;
+    s32 count;
+    s32 capacity;
+    s32 nameCapacity;
+  };
+
+  [[nodiscard]]
+  HashRegister32* create_hash_register_32( s32 startCapacity, s32 avgNameLengthEstimate = 5 )
+  {
+    HashRegister32* result = nullptr;
+    s32 nameCapacity = startCapacity * avgNameLengthEstimate;
+    s32 allocationSize = sizeof( HashRegister32 ) + (sizeof( u32 ) + sizeof( s32 )) * startCapacity + nameCapacity;
+    char* allocation = (char*) bsp::platform->allocate( allocationSize );
+    if ( allocation )
+    {
+      result               = (HashRegister32*) result;
+      result->hashes       = (u32*) (allocation + sizeof( HashRegister32 ));
+      result->nameIndices  = (s32*) (allocation + sizeof( HashRegister32 ) + sizeof( u32 ) * startCapacity);
+      result->names        = (char*) (allocation + sizeof( HashRegister32 ) + (sizeof( u32 ) + sizeof( s32 )) * startCapacity);
+      result->capacity     = startCapacity;
+      result->nameCapacity = nameCapacity;
+    }
+    else
+    {
+      BREAK;
+    }
+
+    return result;
+  }
+
+  void add_name_to_hash_register( HashRegister32* hashRegister, char const* name )
+  {
+    if ( !hashRegister || !name )
+    {
+      BREAK;
+    }
+    s32 count = hashRegister->count;
+    s32 capacity = hashRegister->capacity;
+
+    u32 hash = hash_name32( name );
+    s32 index = binary_search( hashRegister->hashes, count, hash );
+
+    if ( hashRegister->hashes[index] == hash )
+    {
+
+      BREAK; //TODO hash already exists
+    }
+    else
+    {
+      if ( count < capacity )
+      {
+        for ( s32 i = count; i > index; --i )
+        {
+          //   values[i] = values[i - 1];
+        }
+
+        for ( s32 i = count; i > index; --i )
+        {
+          //          hashes[i] = hashes[i - 1];
+        }
+
+        for ( s32 i = count; i > index; --i )
+        {
+          //     names[i] = names[i - 1];
+        }
+
+        // values[index] = value;
+      //  hashes[index] = hash;
+      //  names[index] = name;
+        ++count;
+      }
+      else
+      {
+        BREAK; //TODO
+      }
+    }
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  template<class Value> struct HashMap32
+  {
+    HashMap32()
+      : hashes( nullptr )
+      , names( nullptr )
+      , values( nullptr )
+      , count( 0 )
+      , capacity( 0 )
+    {}
+
+    bool contains_key( char const* name );
+    bool contains_key( u32 hash );
+
+    Value& add_key_value_pair( char const* name, Value value );
+    Value& add_key_value_pair( u32 hash, Value value );
+
+    Value& fetch_or_add_key( u32 hash );
+
+    void insert( s32 index, char const* name, u32 hash, Value value );
+
+    void allocate_containers();
+
+    Value  operator []( char const* key ) const;
+    Value& operator []( char const* key );
+
+    u32* hashes;
+    char const** names;
+    Value* values;
+    s32 count;
+    s32 capacity;
+  };
+
+  template<class Value> bool HashMap32<Value>::contains_key( char const* name )
+  {
+    return contains_key( hash_name32( name ) );
+  }
+
+  template<class Value> bool HashMap32<Value>::contains_key( u32 hash )
+  {
+    return hash == binary_search( hashes, count, hashToFind );
+  }
+
+  template<class Value> Value& HashMap32<Value>::add_key_value_pair( char const* name, Value value )
+  {
+    return add_key_value_pair( hash_name32( name ) );
+  }
+
+  template<class Value> Value& HashMap32<Value>::add_key_value_pair( u32 hash, Value value )
+  {
+    s32 bestIndex = binary_search( hashes, count, hashToFind );
+  }
+
+  template<class Value> void HashMap32<Value>::insert( s32 index, char const* name, u32 hash, Value value )
+  {
+    if ( count < capacity )
+    {
+      for ( s32 i = count; i > index; --i )
+      {
+        values[i] = values[i - 1];
+      }
+
+      for ( s32 i = count; i > index; --i )
+      {
+        hashes[i] = hashes[i - 1];
+      }
+
+      for ( s32 i = count; i > index; --i )
+      {
+        names[i] = names[i - 1];
+      }
+
+      values[index] = value;
+      hashes[index] = hash;
+      names[index] = name;
+      ++count;
+    }
+    else
+    {
+      BREAK; //TODO
+    }
+  }
+
+  template<class Value> void HashMap32<Value>::allocate_containers()
+  {
+    int i = 0;
+    i = 0;
+  }
+
+  template<class Value> Value& HashMap32<Value>::fetch_or_add_key( u32 hash )
+  {
+    s32 newHash = hash_name32( key );
+    s32 bestIndex = binary_search( hashes, count, hashToFind );
+
+    if ( )
+      return values[binary_search( hashes, count, hashToFind )];
+
+  }
+
+  template<class Value> Value HashMap32<Value>::operator[]( char const* key ) const
+  {
+    return fetch_or_add_key( hash_name32( key ) );
+  }
+
+  template<class Value> Value& HashMap32<Value>::operator[]( char const* key )
+  {
+
+    return values[binary_search( hashes, count, hashToFind )];
+  }
+
+
   u64 hash_name64( char const* name )
   {
     u64 result = 0;
@@ -76,12 +301,19 @@ namespace bs
     return index;
   }
 
-  template<class Value> struct HashMap
-  {
-    HashMap()
-    {
 
-    }
+
+
+  template<class Value> struct HasnhMap
+  {
+    HasnhMap()
+      : hashes( nullptr )
+      , names( nullptr )
+      , values( nullptr )
+      , count( 0 )
+      , capacity( 0 )
+    {}
+
     Value find( char const* const& key ) const
     {
       return *values;
@@ -94,23 +326,61 @@ namespace bs
 
     void insert( s32 index, char const* name, u32 hash, Value value )
     {
-      //
       if ( count < capacity )
       {
         for ( s32 i = count; i > index; --i )
         {
-          //TODO split those?
           values[i] = values[i - 1];
+        }
+
+        for ( s32 i = count; i > index; --i )
+        {
           hashes[i] = hashes[i - 1];
+        }
+
+        for ( s32 i = count; i > index; --i )
+        {
           names[i] = names[i - 1];
         }
 
         values[index] = value;
-        //TODO copy string over
         hashes[index] = hash;
         names[index] = name;
         ++count;
       }
+      else
+      {
+        BREAK; //TODO
+      }
+    }
+
+    void allocate_containers()
+    {
+      s32 newCapacity;
+      u32* newHashes = bsp::platform->allocate( sizeof( u32 ) * newCapacity );
+      char const** newNames = bsp::platform->allocate( sizeof( char const* ) * newCapacity );
+      Value* newValues = bsp::platform->allocate( sizeof( Value ) * newCapacity );
+
+      if ( hashes )
+      {
+        bsp::platform->free( hashes );
+        BREAK; //TODO copy over 
+      }
+      hashes = newHashes;
+
+      if ( names )
+      {
+        bsp::platform->free( names );
+      }
+      names = newNames;
+
+      if ( values )
+      {
+        bsp::platform->free( values );
+      }
+      values = newValues;
+
+      capacity = newCapacity;
     }
 
     Value  operator []( char const* key ) const { return find( key ); }
@@ -121,7 +391,6 @@ namespace bs
     Value* values;
     s32 count;
     s32 capacity;
-
   };
 
 
@@ -241,7 +510,7 @@ namespace bs
   void hash_tester64( hash64_fn* hash_call, s32 const testBatchCount )
   {
     u32 MAX = 100000;
-    s32 const max_name_length = 24;
+    s32 const max_name_length = 40;
     struct AAA
     {
       u64 hash;

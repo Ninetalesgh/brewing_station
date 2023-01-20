@@ -9,14 +9,27 @@ DEPRECATED
 namespace bs
 {
 
-
-  struct Memory
+  struct StackAllocator
   {
 
+    StackAllocator()
+      : writer( nullptr )
+      , next( nullptr )
+    {}
 
+    char* push( s32 size );
 
-    Platform* platform;
+    char* pop();
+
+    char dataBlock[MaxAllocationSize];
+    char* writer;
+    StackAllocator<MaxAllocationSize>* next;
   };
+
+
+  [[nodiscard]]
+  StackAllocator* create_stack_allocator( s32 maxAllocationSize );
+
 
 
 
