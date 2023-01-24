@@ -1,7 +1,7 @@
 #pragma once
 
 #ifdef _WIN32
-#include <common/bscommon.h>
+#include <common/bs_common.h>
 #include <intrin.h>
 namespace bs
 {

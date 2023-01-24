@@ -1,5 +1,5 @@
 
-#include <common/bsstring.h>
+#include <common/bs_string.h>
 #include <string.h>
 
 //

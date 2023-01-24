@@ -1,5 +1,5 @@
-#pragma once 
 DEPRECATED
+#pragma once 
 
 #ifndef BS_DEBUG
 
@@ -27,7 +27,7 @@ DEPRECATED
 #endif
 
 #ifdef _WIN32
-#include <common/bscommon.h>
+#include <common/bs_common.h>
 #include <intrin.h>
 namespace bs
 {
@@ -77,7 +77,7 @@ namespace bs
 
 
 #include <platform/platform_callbacks.h>
-#include <common/bsstring.h>
+#include <common/bs_string.h>
 namespace bs
 {
   namespace debug

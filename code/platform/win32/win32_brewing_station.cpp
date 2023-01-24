@@ -8,7 +8,7 @@
 #include <platform/bs_platform.h>
 #include <module/bs_performanceprofile.h>
 //#include <core/bsfont.h>
-#include <common/bsstring.h>
+#include <common/bs_string.h>
 
 //winsock
 #pragma comment(lib,"ws2_32.lib")

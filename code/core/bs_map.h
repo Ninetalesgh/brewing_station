@@ -1,8 +1,8 @@
 #pragma once
 
 #include <module/bs_allocator.h>
-#include <common/bsstring.h>
-#include <common/bscommon.h>
+#include <common/bs_string.h>
+#include <common/bs_common.h>
 
 namespace bs
 {

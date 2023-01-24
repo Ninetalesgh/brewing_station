@@ -1,6 +1,6 @@
 #pragma once
 
-#include "bscommon.h"
+#include "bs_common.h"
 
 
 #include <math.h>
@@ -19,14 +19,14 @@ constexpr float PIx2  = 6.28318548f;
 
 
 
-INLINE u32 is_negative( float x ) { return (*(u32*) &x) & 0x80000000; }
-INLINE u32 is_negative( s32 x ) { return (*(u32*) &x) & 0x80000000; }
+INLINE bool is_negative( float x ) { return (*(u32*) &x) & 0x80000000; }
+INLINE bool is_negative( s32 x ) { return (*(u32*) &x) & 0x80000000; }
 
 INLINE s32   get_sign( s32 x ) { return is_negative( x ) ? -1 : 1; }
 INLINE float get_sign( float x ) { return is_negative( x ) ? -1.0f : 1.0f; }
 
-INLINE u32 sign_match( s32 a, s32 b ) { return (a ^ b) >= 0; }
-INLINE u32 sign_match( float a, float b ) { return ((*(s32*) &a) ^ (*(s32*) &b)) >= 0; }
+INLINE bool sign_match( s32 a, s32 b ) { return (a ^ b) >= 0; }
+INLINE bool sign_match( float a, float b ) { return ((*(s32*) &a) ^ (*(s32*) &b)) >= 0; }
 
 INLINE float to_radians( float degrees ) { return degrees * 0.01745329251f; }
 INLINE float to_degrees( float radians ) { return radians * 57.2957795131f; }
@@ -48,8 +48,8 @@ float inv_sqrt( float number )
 struct int2
 {
   int2() {}
-  int2( s32 xy ) : x( xy ), y( xy ) {}
-  int2( s32 x, s32 y ) : x( x ), y( y ) {}
+  int2( s32 xy ): x( xy ), y( xy ) {}
+  int2( s32 x, s32 y ): x( x ), y( y ) {}
   union
   {
     s32 elements[2];
@@ -75,10 +75,10 @@ struct int2
 struct float2
 {
   float2() {}
-  float2( float xy ) : x( xy ), y( xy ) {}
-  float2( float x, float y ) : x( x ), y( y ) {}
-  float2( s32 x, s32 y ) : x( float( x ) ), y( float( y ) ) {}
-  float2( int2 const& other ) : x( float( other.x ) ), y( float( other.y ) ) {}
+  float2( float xy ): x( xy ), y( xy ) {}
+  float2( float x, float y ): x( x ), y( y ) {}
+  float2( s32 x, s32 y ): x( float( x ) ), y( float( y ) ) {}
+  float2( int2 const& other ): x( float( other.x ) ), y( float( other.y ) ) {}
 
   union
   {
@@ -105,8 +105,8 @@ struct float2
 struct float3
 {
   float3() {}
-  float3( float xyz ) : x( xyz ), y( xyz ), z( xyz ) {}
-  float3( float x, float y, float z ) : x( x ), y( y ), z( z ) {}
+  float3( float xyz ): x( xyz ), y( xyz ), z( xyz ) {}
+  float3( float x, float y, float z ): x( x ), y( y ), z( z ) {}
   union
   {
     float elements[3];
@@ -131,9 +131,9 @@ struct float3
 struct float4
 {
   float4() {}
-  float4( float x, float y, float z, float w ) : x( x ), y( y ), z( z ), w( w ) {}
-  float4( float3 const& v3, float w ) : x( v3.x ), y( v3.y ), z( v3.z ), w( w ) {}
-  float4( float xyzw ) : x( xyzw ), y( xyzw ), z( xyzw ), w( xyzw ) {}
+  float4( float x, float y, float z, float w ): x( x ), y( y ), z( z ), w( w ) {}
+  float4( float3 const& v3, float w ): x( v3.x ), y( v3.y ), z( v3.z ), w( w ) {}
+  float4( float xyzw ): x( xyzw ), y( xyzw ), z( xyzw ), w( xyzw ) {}
   union
   {
     float elements[4];
@@ -162,8 +162,8 @@ class float2x2
 {
 public:
   float2x2();
-  float2x2( float2 const& a ) : j0( a ), j1( a ) {}
-  float2x2( float2 const& j0, float2 const& b ) : j0( j0 ), j1( j1 ) {}
+  float2x2( float2 const& a ): j0( a ), j1( a ) {}
+  float2x2( float2 const& j0, float2 const& b ): j0( j0 ), j1( j1 ) {}
   float2x2( float i0j0, float i1j0, float i0j1, float i1j1 )
     : i0j0( i0j0 ), i1j0( i1j0 )
     , i0j1( i0j1 ), i1j1( i1j1 )
@@ -283,8 +283,8 @@ struct float4x4
 
 struct quaternion
 {
-  quaternion() : t( 1.f ), x( 0.f ), y( 0.f ), z( 0.f ) {}
-  quaternion( quaternion const& a ) : t( a.t ), x( a.x ), y( a.y ), z( a.z ) {}
+  quaternion(): t( 1.f ), x( 0.f ), y( 0.f ), z( 0.f ) {}
+  quaternion( quaternion const& a ): t( a.t ), x( a.x ), y( a.y ), z( a.z ) {}
   quaternion( float real, const float3& imaginary )
     : t( real ), v( imaginary ) {}
   quaternion( float real, float imaginary1, float imaginary2, float imaginary3 )

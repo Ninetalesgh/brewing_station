@@ -6,8 +6,8 @@ DEPRECATED
 
 //#include <module/bs_debuglog.h>
 #include <core/bsfile.h>
-#include <common/bsstring.h>
-#include <common/bscommon.h>
+#include <common/bs_string.h>
+#include <common/bs_common.h>
 
 #define MAX_BS_PATH 260
 namespace win32

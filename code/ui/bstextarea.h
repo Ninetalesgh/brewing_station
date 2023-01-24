@@ -2,7 +2,7 @@
 
 DEPRECATED
 
-#include <common/bscommon.h>
+#include <common/bs_common.h>
 
 namespace bs { namespace font { struct GlyphTable; struct GlyphSheet; }; };
 namespace bs

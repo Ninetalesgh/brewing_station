@@ -1,6 +1,6 @@
 #pragma once
 
-#include "bscommon.h"
+#include "bs_common.h"
 
 namespace bs
 {
@@ -15,7 +15,7 @@ namespace bs
   u64 byte_to_u64( u8* bytesStartingWithHighestByte );
   u64 byte_to_u64( char* bytesStartingWithHighestByte );
 
-  bool is_system_big_endian();
+  constexpr bool is_system_big_endian();
 };
 
 
@@ -97,7 +97,7 @@ namespace bs
                       , (u8) bytes[7] );
   }
 
-  bool is_system_big_endian()
+  constexpr bool is_system_big_endian()
   {
     union {
       u32 i;

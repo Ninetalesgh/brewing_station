@@ -1,6 +1,6 @@
 #pragma once
 
-#include <common/bscommon.h>
+#include <common/bs_common.h>
 
 #define LOCK_SCOPE(lockAtomic) thread::LockingObject prevent_locks_in_locks_tmp_object { &lockAtomic }
 
@@ -13,8 +13,8 @@ INLINE void* interlocked_compare_exchange_ptr( void* volatile* value, void* new_
 
 struct alignas(4) atomic32
 {
-  atomic32() : value( 0 ) {}
-  atomic32( s32 value ) : value( value ) {}
+  atomic32(): value( 0 ) {}
+  atomic32( s32 value ): value( value ) {}
   INLINE operator s32 volatile() const { return value; }
   INLINE s32 increment() { return interlocked_increment( &value ); }
   INLINE s32 increment_unsafe() { return ++value; }
@@ -59,7 +59,7 @@ namespace thread
 
 namespace thread
 {
-  INLINE LockingObject::LockingObject( atomic32* lock ) : lock( lock )
+  INLINE LockingObject::LockingObject( atomic32* lock ): lock( lock )
   {
     while ( lock->compare_exchange( 1, 0 ) )
     {

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <common/bsstring.h>
-#include <common/bscommon.h>
+#include <common/bs_string.h>
+#include <common/bs_common.h>
 
 #define APP_CLIENT_COUNT_MAX 24
 

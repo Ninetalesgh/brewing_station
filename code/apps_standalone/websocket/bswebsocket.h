@@ -3,7 +3,7 @@
 //https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API/Writing_WebSocket_server 
 //for easy to understand tutorials
 
-#include <common/bsstring.h>
+#include <common/bs_string.h>
 //#include <common/bsbit.h>
 #include <core/internal/bsnet.cpp>
 

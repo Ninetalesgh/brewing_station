@@ -5,7 +5,7 @@
 //   See end of file for license information.
 
 #include <module/bs_allocator.h>
-#include <common/bsstring.h>
+#include <common/bs_string.h>
 
 //TODO put a quicker allocator here
 #define STBTT_malloc(x,u)  ((void)(u),bsm::allocate(bsp::platform->default.allocator, x))

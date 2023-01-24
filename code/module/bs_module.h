@@ -1,6 +1,6 @@
 DEPRECATED
 #pragma once
-#include <common/bscommon.h>
+#include <common/bs_common.h>
 
 
 namespace bsm

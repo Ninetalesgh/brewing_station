@@ -2,7 +2,7 @@
 #include <platform/bs_platform.h>
 
 
-#include <common/bsstring.h>
+#include <common/bs_string.h>
 #include <module/bs_filesystem.h>
 #include <module/bs_allocator.h>
 

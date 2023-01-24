@@ -3,7 +3,7 @@
 #include <platform/bs_platform.h>
 #include <module/bs_debuglog.h>
 #include <core/bsthread.h>
-#include <common/bscommon.h>
+#include <common/bs_common.h>
 
 namespace bsm
 {

@@ -1,9 +1,8 @@
 #pragma once
 
 #include <platform/bs_platform.h>
-#include <core/bsmemory.h>
 #include <core/bsthread.h>
-#include <common/bscommon.h>
+#include <common/bs_common.h>
 
 #include <windows.h>
 #ifdef ERROR
@@ -82,7 +81,6 @@ namespace global
   static bsp::AppData           appData;
   static bsp::PlatformCallbacks platformCallbacks;
 
-  static bs::memory::Arena* defaultArena;
   static bs::font::GlyphTable* defaultGlyphTable;
   static bs::font::GlyphSheet* defaultGlyphSheet;
 

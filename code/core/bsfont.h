@@ -2,7 +2,7 @@ DEPRECATED
 
 #pragma once
 
-#include <common/bscommon.h>
+#include <common/bs_common.h>
 
 //todo
 /*
@@ -73,10 +73,8 @@ namespace bs
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
-//#include <platform/platform_callbacks.h>
-#include <core/bsmemory.h>
 #include <common/bscolor.h>
-#include <common/bsstring.h>
+#include <common/bs_string.h>
 
 //#define STBTT_STATIC
 #define STB_TRUETYPE_IMPLEMENTATION

@@ -2,7 +2,7 @@
 
 #include "bsfile.h"
 
-#include <common/bscommon.h>
+#include <common/bs_common.h>
 //things:
 
 //asset id 

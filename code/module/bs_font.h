@@ -1,7 +1,7 @@
 #pragma once
 
 #include <core/bs_texture.h>
-#include <common/bscommon.h>
+#include <common/bs_common.h>
 
 namespace bsm
 {
@@ -70,7 +70,7 @@ namespace bsm
 
 #include <platform/bs_platform.h>
 #include <module/bs_filesystem.h>
-#include <common/bscolor.h>
+#include <common/bs_color.h>
 #include <common/bs_bitmap.h>
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "internal/stb_truetype.h"

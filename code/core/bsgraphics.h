@@ -1,3 +1,4 @@
+DEPRECATED
 #pragma once
 
 #include <common/bsmath.h>
@@ -20,7 +21,7 @@ namespace bs
 
     struct Bitmap;
 
-    enum class IndexFormat : u32
+    enum class IndexFormat: u32
     {
       INVALID = 0,
       U16 = 1,
@@ -46,7 +47,7 @@ namespace bs
       IndexFormat indexFormat;
     };
 
-    enum class TextureFormat : u32
+    enum class TextureFormat: u32
     {
       INVALID = 0,
       RGBA8 = 1,
@@ -80,7 +81,7 @@ namespace bs
 
     struct RenderGroup
     {
-      enum : u32
+      enum: u32
       {
         SCENE_OBJECTS,
         TEXT_AREA,

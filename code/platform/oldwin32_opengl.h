@@ -12,7 +12,7 @@ DEPRECATED
 #include <core/bsfile.h>
 #include <core/bsfont.h>
 #include <common/bscolor.h>
-#include <common/bscommon.h>
+#include <common/bs_common.h>
 
 #include <opengl_ext.h>
 #include <windows.h>

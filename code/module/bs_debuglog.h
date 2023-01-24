@@ -1,6 +1,6 @@
 #pragma once
 
-#include <common/bscommon.h>
+#include <common/bs_common.h>
 
 
 # define log_info_con_only( ... )     bsm::_debug_log( bsm::DebugLogFlags::INFO, __VA_ARGS__ )
@@ -39,7 +39,7 @@ namespace bsm
 ///////////////////////////////////////////////////////////////////////////
 
 #include <platform/bs_platform.h>
-#include <common/bsstring.h>
+#include <common/bs_string.h>
 
 namespace bsm
 {

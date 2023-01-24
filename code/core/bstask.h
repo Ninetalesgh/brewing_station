@@ -1,7 +1,7 @@
 #pragma once
 
 #include <core/bsthread.h>
-#include <common/bscommon.h>
+#include <common/bs_common.h>
 
 namespace bs
 {
