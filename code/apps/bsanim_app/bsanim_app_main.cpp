@@ -7,6 +7,8 @@
 
 #include <module/bs_font.h>
 
+#include <module/bs_allocator.h>
+
 namespace bs
 {
 
@@ -30,6 +32,18 @@ namespace bs
     // testMap.find( "test" );
     // testMap[""];
 
+
+    // auto* allocator = bsm::create_slow_thread_safe_allocator( 50000 );
+
+
+    // auto* all = allocate( allocator, 5000 );
+    // auto* all2 = allocate( allocator, 5000 );
+    // auto* all3 = allocate( allocator, 5000 );
+    // auto* all4 = allocate( allocator, 5000 );
+
+    // free( allocator, all );
+    // all = allocate( allocator, 5000 );
+
     u32 poop[] = { 12,15,33,41,42,47,51,52,53,54,61 };
 
     s32 test = binary_search( poop, array_count( poop ), 50 );
@@ -40,7 +54,7 @@ namespace bs
     mappie.allocate_containers();
 
     //hash_tester32( hash_name32, 10 );
-    hash_tester64( hash_name64, 1500 );
+    //hash_tester64( hash_name64, 1500 );
   }
 
   void app_tick( bsp::AppData* appData )

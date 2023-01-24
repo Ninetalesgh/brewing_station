@@ -62,19 +62,13 @@ void win32_debug_log( bsm::DebugLogFlags flags, char const* string, s32 size )
 
 void* win32_allocate( s64 size )
 {
-  return global::defaultArena->alloc( size );
-}
-
-void* win32_allocate_to_zero( s64 size )
-{
-  void* allocation = global::defaultArena->alloc( size );
-  memset( allocation, 0, size );
-  return allocation;
+  log_info( "Allocating ", size, " Bytes of Application RAM." );
+  return VirtualAlloc( 0, (s64) global::APP_MEMORY_SIZE, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
 }
 
 void win32_free( void* allocationToFree )
 {
-  return global::defaultArena->free( allocationToFree );
+  VirtualFree( allocationToFree, 0, MEM_RELEASE );
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -248,9 +242,8 @@ void register_callbacks( bsp::PlatformCallbacks* platform )
   platform->debug_log = &win32_debug_log;
 
   //allocations for larger chunks
-  platform->allocate = &win32_allocate;
-  platform->allocate_to_zero = &win32_allocate_to_zero;
-  platform->free = &win32_free;
+  platform->allocate_new_app_memory = &win32_allocate;
+  platform->free_app_memory = &win32_free;
 
   //file IO
   platform->get_file_info = &win32_get_file_info;

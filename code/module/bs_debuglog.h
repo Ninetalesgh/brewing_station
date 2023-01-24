@@ -3,12 +3,12 @@
 #include <common/bscommon.h>
 
 
-# define log_info_con_only( ... )     _debug_log( bsm::DebugLogFlags::INFO, __VA_ARGS__ )
-# define log_warning_con_only( ... )  _debug_log( bsm::DebugLogFlags::WARNING, __VA_ARGS__ )
-# define log_error_con_only( ... )    _debug_log( bsm::DebugLogFlags::ERROR, __VA_ARGS__ )
-# define log_info( ... )     _debug_log( bsm::DebugLogFlags::WRITE_TO_DEBUG_LOG_FILE | bsm::DebugLogFlags::INFO, __VA_ARGS__ )
-# define log_warning( ... )  _debug_log( bsm::DebugLogFlags::WRITE_TO_DEBUG_LOG_FILE | bsm::DebugLogFlags::WARNING, __VA_ARGS__ )
-# define log_error( ... )    _debug_log( bsm::DebugLogFlags::WRITE_TO_DEBUG_LOG_FILE | bsm::DebugLogFlags::ERROR, __VA_ARGS__ )
+# define log_info_con_only( ... )     bsm::_debug_log( bsm::DebugLogFlags::INFO, __VA_ARGS__ )
+# define log_warning_con_only( ... )  bsm::_debug_log( bsm::DebugLogFlags::WARNING, __VA_ARGS__ )
+# define log_error_con_only( ... )    bsm::_debug_log( bsm::DebugLogFlags::ERROR, __VA_ARGS__ )
+# define log_info( ... )     bsm::_debug_log( bsm::DebugLogFlags::WRITE_TO_DEBUG_LOG_FILE | bsm::DebugLogFlags::INFO, __VA_ARGS__ )
+# define log_warning( ... )  bsm::_debug_log( bsm::DebugLogFlags::WRITE_TO_DEBUG_LOG_FILE | bsm::DebugLogFlags::WARNING, __VA_ARGS__ )
+# define log_error( ... )    bsm::_debug_log( bsm::DebugLogFlags::WRITE_TO_DEBUG_LOG_FILE | bsm::DebugLogFlags::ERROR, __VA_ARGS__ )
 
 
 

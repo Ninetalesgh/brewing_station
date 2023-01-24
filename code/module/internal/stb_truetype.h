@@ -4,17 +4,19 @@
 //
 //   See end of file for license information.
 
-#include <platform/bs_platform.h>
+#include <module/bs_allocator.h>
 #include <common/bsstring.h>
 
-#define STBTT_malloc(x,u)  ((void)(u),bsp::platform->allocate(x))
-#define STBTT_free(x,u)    ((void)(u),bsp::platform->free(x))
+//TODO put a quicker allocator here
+#define STBTT_malloc(x,u)  ((void)(u),bsm::allocate(bsp::platform->default.allocator, x))
+#define STBTT_free(x,u)    ((void)(u),bsm::free(bsp::platform->default.allocator, x))
 
 #define STBTT_assert(x)    assert(x)
 #define STBTT_strlen(x)    bs::string_length(x)
 
-//#define STBTT_memcpy       bs::memory::copy
-//#define STBTT_memset       bs::memory::set
+#include <memory>
+#define STBTT_memcpy       memcpy
+#define STBTT_memset       memset
 
 
 

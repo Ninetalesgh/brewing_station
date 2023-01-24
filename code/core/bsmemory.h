@@ -135,7 +135,7 @@ namespace bs
       //TODO compensate for fragmentation a bit?
       char* result = nullptr;
 
-      current += ((u64) current) & (alignment - 1);
+      current += ((u64) current) & (alignment - 1); //TODO this is wrong, right? it should be ^?
 
       if ( current + size < (char*) (lastEntry - 1) )
       {

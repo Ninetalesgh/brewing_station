@@ -1,6 +1,6 @@
 #pragma once
 
-#include <platform/bs_platform.h>
+#include <module/bs_allocator.h>
 #include <common/bsstring.h>
 #include <common/bscommon.h>
 
@@ -10,7 +10,48 @@ namespace bs
   u64 hash_name64( char const* name );
   s32 binary_search( u32 const* hashes, s32 hashCount, u32 hashToFind );
 
+  //user supplies hash table space, 
 
+
+
+  //allocate, deallocate, construct, destroy
+
+
+  template <class ValueType> class HashTable32
+  {
+
+
+
+  };
+
+  template<class Value> struct HashMap32
+  {
+    HashMap32()
+      : hashes( nullptr )
+      , values( nullptr )
+      , count( 0 )
+      , capacity( 0 )
+    {}
+
+    bool contains_key( char const* name );
+    bool contains_key( u32 hash );
+
+    Value& add_key_value_pair( char const* name, Value value );
+    Value& add_key_value_pair( u32 hash, Value value );
+
+    Value& fetch_or_add_entry( u32 hash );
+
+    void insert( s32 index, char const* name, u32 hash, Value value );
+
+    void allocate_containers();
+
+    Value& operator []( char const* key );
+
+    u32* hashes;
+    Value* values;
+    s32 count;
+    s32 capacity;
+  };
 
 
   //TODO permanent string allocator
@@ -42,7 +83,7 @@ namespace bs
     HashRegister32* result = nullptr;
     s32 nameCapacity = startCapacity * avgNameLengthEstimate;
     s32 allocationSize = sizeof( HashRegister32 ) + (sizeof( u32 ) + sizeof( s32 )) * startCapacity + nameCapacity;
-    char* allocation = (char*) bsp::platform->allocate( allocationSize );
+    char* allocation = (char*) bsm::allocate( bsp::platform->default.allocator, allocationSize );
     if ( allocation )
     {
       result               = (HashRegister32*) result;
@@ -60,98 +101,20 @@ namespace bs
     return result;
   }
 
-  void add_name_to_hash_register( HashRegister32* hashRegister, char const* name )
-  {
-    if ( !hashRegister || !name )
-    {
-      BREAK;
-    }
-    s32 count = hashRegister->count;
-    s32 capacity = hashRegister->capacity;
 
-    u32 hash = hash_name32( name );
-    s32 index = binary_search( hashRegister->hashes, count, hash );
-
-    if ( hashRegister->hashes[index] == hash )
-    {
-
-      BREAK; //TODO hash already exists
-    }
-    else
-    {
-      if ( count < capacity )
-      {
-        for ( s32 i = count; i > index; --i )
-        {
-          //   values[i] = values[i - 1];
-        }
-
-        for ( s32 i = count; i > index; --i )
-        {
-          //          hashes[i] = hashes[i - 1];
-        }
-
-        for ( s32 i = count; i > index; --i )
-        {
-          //     names[i] = names[i - 1];
-        }
-
-        // values[index] = value;
-      //  hashes[index] = hash;
-      //  names[index] = name;
-        ++count;
-      }
-      else
-      {
-        BREAK; //TODO
-      }
-    }
-  }
+};
 
 
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////  inl  /////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-
-
-
-
-
-
-
-
-
-  template<class Value> struct HashMap32
-  {
-    HashMap32()
-      : hashes( nullptr )
-      , names( nullptr )
-      , values( nullptr )
-      , count( 0 )
-      , capacity( 0 )
-    {}
-
-    bool contains_key( char const* name );
-    bool contains_key( u32 hash );
-
-    Value& add_key_value_pair( char const* name, Value value );
-    Value& add_key_value_pair( u32 hash, Value value );
-
-    Value& fetch_or_add_key( u32 hash );
-
-    void insert( s32 index, char const* name, u32 hash, Value value );
-
-    void allocate_containers();
-
-    Value  operator []( char const* key ) const;
-    Value& operator []( char const* key );
-
-    u32* hashes;
-    char const** names;
-    Value* values;
-    s32 count;
-    s32 capacity;
-  };
+namespace bs
+{
 
   template<class Value> bool HashMap32<Value>::contains_key( char const* name )
   {
@@ -187,14 +150,8 @@ namespace bs
         hashes[i] = hashes[i - 1];
       }
 
-      for ( s32 i = count; i > index; --i )
-      {
-        names[i] = names[i - 1];
-      }
-
       values[index] = value;
       hashes[index] = hash;
-      names[index] = name;
       ++count;
     }
     else
@@ -209,7 +166,7 @@ namespace bs
     i = 0;
   }
 
-  template<class Value> Value& HashMap32<Value>::fetch_or_add_key( u32 hash )
+  template<class Value> Value& HashMap32<Value>::fetch_or_add_entry( u32 hash )
   {
     s32 newHash = hash_name32( key );
     s32 bestIndex = binary_search( hashes, count, hashToFind );
@@ -219,11 +176,6 @@ namespace bs
 
   }
 
-  template<class Value> Value HashMap32<Value>::operator[]( char const* key ) const
-  {
-    return fetch_or_add_key( hash_name32( key ) );
-  }
-
   template<class Value> Value& HashMap32<Value>::operator[]( char const* key )
   {
 
@@ -231,6 +183,21 @@ namespace bs
   }
 
 
+};
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////  cpp  /////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#include <random>
+
+namespace bs
+{
   u64 hash_name64( char const* name )
   {
     u64 result = 0;
@@ -304,112 +271,6 @@ namespace bs
 
 
 
-  template<class Value> struct HasnhMap
-  {
-    HasnhMap()
-      : hashes( nullptr )
-      , names( nullptr )
-      , values( nullptr )
-      , count( 0 )
-      , capacity( 0 )
-    {}
-
-    Value find( char const* const& key ) const
-    {
-      return *values;
-    }
-
-    Value& find( char const* const& key )
-    {
-      return *values;
-    }
-
-    void insert( s32 index, char const* name, u32 hash, Value value )
-    {
-      if ( count < capacity )
-      {
-        for ( s32 i = count; i > index; --i )
-        {
-          values[i] = values[i - 1];
-        }
-
-        for ( s32 i = count; i > index; --i )
-        {
-          hashes[i] = hashes[i - 1];
-        }
-
-        for ( s32 i = count; i > index; --i )
-        {
-          names[i] = names[i - 1];
-        }
-
-        values[index] = value;
-        hashes[index] = hash;
-        names[index] = name;
-        ++count;
-      }
-      else
-      {
-        BREAK; //TODO
-      }
-    }
-
-    void allocate_containers()
-    {
-      s32 newCapacity;
-      u32* newHashes = bsp::platform->allocate( sizeof( u32 ) * newCapacity );
-      char const** newNames = bsp::platform->allocate( sizeof( char const* ) * newCapacity );
-      Value* newValues = bsp::platform->allocate( sizeof( Value ) * newCapacity );
-
-      if ( hashes )
-      {
-        bsp::platform->free( hashes );
-        BREAK; //TODO copy over 
-      }
-      hashes = newHashes;
-
-      if ( names )
-      {
-        bsp::platform->free( names );
-      }
-      names = newNames;
-
-      if ( values )
-      {
-        bsp::platform->free( values );
-      }
-      values = newValues;
-
-      capacity = newCapacity;
-    }
-
-    Value  operator []( char const* key ) const { return find( key ); }
-    Value& operator []( char const* key ) { return find( key ); }
-
-    u32* hashes;
-    char const** names;
-    Value* values;
-    s32 count;
-    s32 capacity;
-  };
-
-
-
-
-};
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////  cpp  /////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#include <random>
-
-namespace bs
-{
-
   using hash32_fn = u32( char const* );
   using hash64_fn = u64( char const* );
   void make_name( char* destination, s32 size )
@@ -441,7 +302,7 @@ namespace bs
       u32 hash;
       char name[max_name_length];
     };
-    void* allocation = bsp::platform->allocate_to_zero( MAX * sizeof( AAA ) );
+    void* allocation = bsm::allocate_to_zero( bsp::platform->default.allocator, MAX * sizeof( AAA ) );
 
     AAA* entries = (AAA*) allocation;
 
@@ -504,7 +365,7 @@ namespace bs
     log_info( "Total collisions: ", totalCollisions, " | Average collisions per batch: ", avgCollisions );
     log_info( "Collision rate: ", float( totalCollisions ) * 100.0f / float( totalBatches * MAX ), "%%" );
 
-    bsp::platform->free( allocation );
+    bsm::free( bsp::platform->default.allocator, allocation );
   }
 
   void hash_tester64( hash64_fn* hash_call, s32 const testBatchCount )
@@ -516,7 +377,7 @@ namespace bs
       u64 hash;
       char name[max_name_length];
     };
-    void* allocation = bsp::platform->allocate_to_zero( MAX * sizeof( AAA ) );
+    void* allocation = bsm::allocate_to_zero( bsp::platform->default.allocator, MAX * sizeof( AAA ) );
 
     AAA* entries = (AAA*) allocation;
 
@@ -579,7 +440,7 @@ namespace bs
     log_info( "Total collisions: ", totalCollisions, " | Average collisions per batch: ", avgCollisions );
     log_info( "Collision rate: ", float( totalCollisions ) * 100.0f / float( totalBatches * MAX ), "%%" );
 
-    bsp::platform->free( allocation );
+    bsm::free( bsp::platform->default.allocator, allocation );
   }
 
 };

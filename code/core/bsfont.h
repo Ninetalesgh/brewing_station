@@ -100,7 +100,7 @@ namespace bs
       if ( stbtt_GetFontOffsetForIndex( (u8 const*) data, 0 ) == 0 )
       {
         u32 allocSize = sizeof( GlyphTable ) + sizeof( stbtt_fontinfo );
-        u8* allocation = (u8*) bsp::platform->allocate( allocSize );
+        u8* allocation = (u8*) bsp::pla tform->allocate( allocSize );
         memset( allocation, 0, allocSize );
 
         glyphTable = (GlyphTable*) allocation;
@@ -212,7 +212,7 @@ namespace bs
 
           if ( gbm.w && gbm.h )
           {
-            u8* allocation = (u8*) bsp::platform->allocate( sizeof( RawGlyphData ) + gbm.w * gbm.h );
+            u8* allocation = (u8*) bsp::plat form->allocate( sizeof( RawGlyphData ) + gbm.w * gbm.h );
             glyph = (RawGlyphData*) allocation;
             gbm.pixels = allocation + sizeof( RawGlyphData );
             glyph->data = gbm.pixels;
@@ -266,7 +266,7 @@ namespace bs
       GlyphSheet* resultSheet = nullptr;
       {
         s32 allocSize = sizeof( GlyphSheet ) + sizeof( Glyph ) * glyphCount;
-        u8* allocation = (u8*) bsp::platform->allocate( allocSize );
+        u8* allocation = (u8*) bsp::pla form->allocate( allocSize );
         memset( allocation, 0, allocSize );
         resultSheet = (GlyphSheet*) allocation;
         rects = (Glyph*) (allocation + sizeof( GlyphSheet ));
@@ -304,7 +304,7 @@ namespace bs
       #define LUL
       graphics::Bitmap* sheetBMP = nullptr;
       {
-        u8* allocation = (u8*) bsp::platform->allocate( sizeof( graphics::Bitmap ) + sizeof( u32 ) * sheetDims.x * sheetDims.y );
+        u8* allocation = (u8*) bsp::platf orm->allocate( sizeof( graphics::Bitmap ) + sizeof( u32 ) * sheetDims.x * sheetDims.y );
         sheetBMP = (graphics::Bitmap*) allocation;
         sheetBMP->width = sheetDims.x;
         sheetBMP->height = sheetDims.y;
@@ -343,7 +343,7 @@ namespace bs
 
       resultSheet->glyphs =     rects;
       resultSheet->glyphCount = glyphCount;
-      resultSheet->textureID =  bsp::platform->allocate_texture( &texData );
+      resultSheet->textureID =  bsp::pla tform->allocate_texture( &texData );
       resultSheet->width =      sheetBMP->width;
       resultSheet->height =     sheetBMP->height;
 

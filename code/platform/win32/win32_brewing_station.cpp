@@ -282,10 +282,12 @@ void brewing_station_main()
     opengl::init( deviceContext, global::mainWindow.size );
   }
 
-  void* buffer = VirtualAlloc( 0, (s64) global::APP_MEMORY_SIZE, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
+  //void* buffer = VirtualAlloc( 0, (s64) global::APP_MEMORY_SIZE, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
+
+
   // bs::memory::init_arena( (char*) buffer, (s64) global::APP_MEMORY_SIZE, &global::mainArena );
 
-  global::defaultArena = bs::memory::init_arena_in_place( (char*) buffer, (s64) global::APP_MEMORY_SIZE );
+  // = bs::memory::init_arena_in_place( (char*) buffer, (s64) global::APP_MEMORY_SIZE );
 
   global::mainThread.id = thread::get_current_thread_id();
   global::mainThread.name = "thread_main";
@@ -336,6 +338,7 @@ void brewing_station_init_app()
   dllLoaderPrm.appDll =  &global::appDll;
   dllLoaderPrm.renderContext = opengl::create_render_context_for_worker_thread();
   CloseHandle( CreateThread( 0, 0, win32::thread_DllLoader, &dllLoaderPrm, 0, (LPDWORD) &dllLoaderPrm.threadInfo->id ) );
+  //wait until stack can pop
   while ( dllLoaderPrm.threadInfo != nullptr )
   {
     thread::sleep( 0 );

@@ -124,9 +124,9 @@ namespace global
 
 namespace win32
 {
-  u32 push_task( TaskQueue* queue, bs::Task const& task, bs::TaskState volatile* out_taskState )
+  bool push_task( TaskQueue* queue, bs::Task const& task, bs::TaskState volatile* out_taskState )
   {
-    u32 successfullyPushedTask = false;
+    bool successfullyPushedTask = false;
     {
       LOCK_SCOPE( queue->pushBarrierObject );
       s32 pushIndex = queue->pushIndex;

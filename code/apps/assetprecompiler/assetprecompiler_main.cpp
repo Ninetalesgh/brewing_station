@@ -4,6 +4,7 @@
 
 #include <common/bsstring.h>
 #include <module/bs_filesystem.h>
+#include <module/bs_allocator.h>
 
 #include <memory>
 namespace bs
@@ -23,7 +24,7 @@ namespace bs
 
     hexArraySize += nameLength + preContent0Length + preContent1Length + postContentLength;
 
-    char* hexArray = (char*) bsp::platform->allocate( hexArraySize );
+    char* hexArray = (char*) bsm::allocate( bsp::platform->default.allocator, hexArraySize );
     char* writer = hexArray;
 
     memcpy( writer, preContent0, preContent0Length );
@@ -184,7 +185,7 @@ namespace bs
           bs::string_format( newAssetPath, 256, "internal/", newAssetFileName );
           bsm::write_file( fs, newAssetPath, hexArrayString, hexArraySize, precompiledAssetsMountPath );
 
-          bsp::platform->free( hexArrayString );
+          bsm::free( bsp::platform->default.allocator, hexArrayString );
         }
       }
     }
