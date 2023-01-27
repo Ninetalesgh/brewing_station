@@ -167,7 +167,7 @@ namespace bsm
   struct BuddyAllocator;
 
   [[nodiscard]]
-  BuddyAllocator* create_buddy_allocator( s64 size, s32 suggestLeafSize = 0 );
+  BuddyAllocator* create_buddy_allocator( s64 size, u32 suggestLeafSize = 0 );
   void destroy_buddy_allocator( BuddyAllocator* allocator );
 
   [[nodiscard]]
@@ -181,18 +181,6 @@ namespace bsm
 
 ////////////////////////////////////////////////////////////////////////////
 
-#include <intrin.h>
-u32 INLINE count_trailing_zero( u32 value )
-{
-  unsigned long trailing_zero = 0;
-  return u32( _BitScanForward( &trailing_zero, value ) ? trailing_zero : 32 );
-}
-
-u32 INLINE count_leading_zero( u32 value )
-{
-  unsigned long leading_zero = 0;
-  return u32( _BitScanReverse( &leading_zero, value ) ? 31 - leading_zero : 32 );
-}
 
 namespace bsm
 {
@@ -207,10 +195,10 @@ namespace bsm
     char* buffer;
     FreeNode* freeNodesList;
     u8* metaData;
-    s64 leafSize;
+    u8* metaDataDebugEnd;
+    u32 leafSize;
     s32 maxLevel;
 
-    u8* metaDataDebugEnd;
   };
 
   void add_node( BuddyAllocator::FreeNode* list, BuddyAllocator::FreeNode* newNode )
@@ -227,51 +215,36 @@ namespace bsm
     node->prev->next = node->next;
   }
 
-  INLINE s64 get_size_for_level( BuddyAllocator* allocator, s32 level )
+  INLINE u64 get_size_for_level( BuddyAllocator* allocator, s32 level )
   {
-    return allocator->leafSize << level;
+    return u64( allocator->leafSize ) << level;
   }
 
   u64 get_block_index_for_address_and_level( BuddyAllocator* allocator, char* address, s32 level )
   {
-    u64 offset = (u64( 1 ) << allocator->maxLevel) + (u64( address - allocator->buffer ) / allocator->leafSize);
+    u64 offset = (u64( 1 ) << allocator->maxLevel) + (u64( address - allocator->buffer ) / u64( allocator->leafSize ));
     return offset >> level;
   }
 
   BuddyAllocator::FreeNode* get_node_for_block_index_and_level( BuddyAllocator* allocator, u64 blockIndex, s32 level )
   {
     u64 offset = (blockIndex << u64( level )) - (u64( 1 ) << u64( allocator->maxLevel ));
-    return (BuddyAllocator::FreeNode*) (char*) (allocator->buffer + (offset * allocator->leafSize));
+    char* const address = (allocator->buffer + (offset * u64( allocator->leafSize )));
+    //make sure we're actually getting into our memory
+    assert( address > (char*) allocator );
+    return (BuddyAllocator::FreeNode*) address;
   }
 
   s32 get_level_for_size( BuddyAllocator* allocator, s64 size )
   {
     s32 resultLevel = 0;
-    s64 blockSize = allocator->leafSize;
+    s64 blockSize = s64( allocator->leafSize );
     while ( blockSize < size )
     {
       blockSize *= 2;
       ++resultLevel;
     }
     return resultLevel;
-  }
-
-  void block_state_unset( BuddyAllocator* allocator, u64 blockIndex )
-  {
-    blockIndex >>= 1;
-    u8& data = allocator->metaData[blockIndex >> 3];
-    assert( &data < allocator->metaDataDebugEnd );
-    u8 const bit = 1 << (blockIndex % 8);
-    data = data & ~bit;
-  }
-
-  void block_state_set( BuddyAllocator* allocator, u64 blockIndex )
-  {
-    blockIndex >>= 1;
-    u8& data = allocator->metaData[blockIndex >> 3];
-    assert( &data < allocator->metaDataDebugEnd );
-    u8 const bit = 1 << (blockIndex % 8);
-    data = data | bit;
   }
 
   bool block_state_xor( BuddyAllocator* allocator, u64 blockIndex )
@@ -333,28 +306,6 @@ namespace bsm
     return blockIndex < controlIndex&& blockIndex >= (controlIndex >> 1);
   }
 
-  bool debug_node_matches_level( BuddyAllocator* allocator, BuddyAllocator::FreeNode* node, s32 level )
-  {
-    BuddyAllocator::FreeNode* expectedNode = &allocator->freeNodesList[level];
-    BuddyAllocator::FreeNode* startNode = node;
-
-    for ( ;; )
-    {
-      if ( node->next == expectedNode )
-      {
-        return true;
-      }
-      else if ( node->next == startNode || node->next == nullptr )
-      {
-        return false;
-      }
-      else
-      {
-        node = node->next;
-      }
-    }
-  }
-
   void* allocate( BuddyAllocator* allocator, s64 size )
   {
     s32 desiredLevel = get_level_for_size( allocator, size );
@@ -373,7 +324,7 @@ namespace bsm
 
     u64 blockIndex = get_block_index_for_address_and_level( allocator, (char*) desiredNode, desiredLevel );
 
-    //set block below for finder
+    //set control extra bit at lower level for finder
     if ( desiredLevel || !(blockIndex & 1) )
     {
       assert( !block_state_get_lower( allocator, blockIndex ) );
@@ -424,6 +375,7 @@ namespace bsm
     u64 blockIndex = get_block_index_for_address_and_level( allocator, address, level );
     assert( debug_block_index_matches_level( allocator, blockIndex, level ) );
 
+    // control extra bit at lowest level
     if ( !(blockIndex & 1) || level )
     {
       assert( block_state_get_lower( allocator, blockIndex ) );
@@ -435,7 +387,6 @@ namespace bsm
       if ( !block_state_xor( allocator, blockIndex ) )
       {
         BuddyAllocator::FreeNode* buddy = get_node_for_block_index_and_level( allocator, blockIndex ^ 1, level );
-        assert( debug_node_matches_level( allocator, buddy, level ) );
         remove_node( buddy );
         blockIndex>>=1;
       }
@@ -473,29 +424,40 @@ namespace bsm
     return result;
   }
 
-  BuddyAllocator* create_buddy_allocator( s64 size, s32 suggestLeafSize )
+  BuddyAllocator* create_buddy_allocator( s64 size, u32 suggestLeafSize )
   {
+    u32 leafSize = max( suggestLeafSize, sizeof( BuddyAllocator::FreeNode ) );
+    s32 maxLevel = 0;
+    {
+      s64 blockSize = s64( leafSize );
+      while ( blockSize < size )
+      {
+        blockSize *= 2;
+        ++maxLevel;
+      }
+    }
+
+    u64 const sizeAtMaxLevel = u64( leafSize ) << maxLevel;
+    u64 metaDataSize = 1 + ((sizeAtMaxLevel + (sizeAtMaxLevel >> 1) - 1) / (u64( leafSize ) * 8));
+
+    u64 const deadSpaceOffset = sizeAtMaxLevel - size;
+    s64 overheadSize = deadSpaceOffset + sizeof( BuddyAllocator ) + sizeof( BuddyAllocator::FreeNode ) * maxLevel + metaDataSize;
+    if ( u64( overheadSize ) * 2 >= sizeAtMaxLevel )
+    {
+      BREAK;
+      return nullptr;
+    }
+
     char* allocation = (char*) bsp::platform->allocate_new_app_memory( size );
     BuddyAllocator* result = (BuddyAllocator*) allocation;
 
-    //TODO account for non-power of 2 size, should be fine
-    result->buffer = allocation;
+    //offset buffer pointer into unreachable space for non-power of 2 allocator sizes to make sure pointer math works
+    result->buffer = allocation - deadSpaceOffset;
     result->freeNodesList = (BuddyAllocator::FreeNode*) (allocation + sizeof( BuddyAllocator ));
-    result->leafSize = max( suggestLeafSize, sizeof( BuddyAllocator::FreeNode ) );
-    result->maxLevel = get_level_for_size( result, size );
+    result->leafSize = leafSize;
+    result->maxLevel = maxLevel;
     result->metaData = ((u8*) result->freeNodesList) + sizeof( BuddyAllocator::FreeNode ) * result->maxLevel;
-
-    s64 metaDataSize = 1 + ((get_size_for_level( result, result->maxLevel ) - 1) / (result->leafSize * 8));
-    metaDataSize = metaDataSize + ((metaDataSize - 1) / 2) + 1;
     result->metaDataDebugEnd = result->metaData + metaDataSize;
-
-    s64 overheadSize = sizeof( BuddyAllocator ) + sizeof( BuddyAllocator::FreeNode ) * result->maxLevel + metaDataSize;
-    if ( overheadSize * 2 >= size )
-    {
-      BREAK;
-      bsp::platform->free_app_memory( allocation );
-      return nullptr;
-    }
 
     memset( result->metaData, 0, metaDataSize );
 
