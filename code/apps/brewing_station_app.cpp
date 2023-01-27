@@ -28,7 +28,7 @@ namespace bsp
 
     if ( !platform->default.allocator )
     {
-      platform->default.allocator = bsm::create_slow_thread_safe_allocator( GigaBytes( 2 ) );
+      platform->default.allocator = bsm::create_slow_thread_safe_allocator( GigaBytes( 4 ) );
     }
 
     if ( !platform->default.fileSystem )

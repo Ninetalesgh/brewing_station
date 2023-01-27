@@ -16,6 +16,8 @@
 #pragma comment(lib,"user32.lib")
 //time
 #pragma comment(lib,"winmm.lib")
+//CoInitialize
+#pragma comment(lib,"Ole32.lib")
 
 void brewing_station_loop();
 void brewing_station_main();
@@ -238,7 +240,7 @@ void brewing_station_init_app();
 
 void brewing_station_main()
 {
-  // win32::fetch_paths();
+  CoInitializeEx( 0, COINIT_MULTITHREADED );
 
   s32 result = 1;
   HINSTANCE hInstance = GetModuleHandle( NULL );

@@ -33,9 +33,26 @@ namespace bs
     // testMap[""];
 
 
-    // auto* allocator = bsm::create_slow_thread_safe_allocator( 50000 );
+    auto* allocator = bsm::create_buddy_allocator( GigaBytes( 1 ) );
+    //  auto* allocator = bsm::create_buddy_allocator( 256 );
+
+      //auto* al1 = bsm::allocate( allocator, 2000 );
+     // auto* al = bsm::allocate( allocator, KiloBytes( 4 ) );
+    auto* al1 = bsm::allocate( allocator, 20 );
+    auto* al = bsm::allocate( allocator, 16 );
+    auto* al2 = bsm::allocate( allocator, 16 );
+
+    bsm::free( allocator, al2 );
+    bsm::free( allocator, al );
+
+    al1 = bsm::allocate( allocator, KiloBytes( 3 ) );
+    al = bsm::allocate( allocator, 12345678 );
 
 
+
+
+    bsm::destroy_buddy_allocator( allocator );
+    al = nullptr;
     // auto* all = allocate( allocator, 5000 );
     // auto* all2 = allocate( allocator, 5000 );
     // auto* all3 = allocate( allocator, 5000 );
