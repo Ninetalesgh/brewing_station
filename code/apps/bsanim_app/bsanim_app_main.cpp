@@ -34,7 +34,7 @@ namespace bs
 
 
    // auto* allocator = bsm::create_buddy_allocator2( GigaBytes( 1 ) );
-    auto* allocator = bsm::create_buddy_allocator2( GigaBytes( 1 ) );
+    auto* allocator = bsm::create_buddy_allocator( GigaBytes( 1 ) );
     //  auto* allocator = bsm::create_buddy_allocator( 256 );
 
       //auto* al1 = bsm::allocate( allocator, 2000 );

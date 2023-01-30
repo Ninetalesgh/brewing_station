@@ -159,25 +159,25 @@ namespace bsm
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////buddy allocator//////////////////////////////////////////////////////////////////
+///////////////buddy allocator, simple version//////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
 namespace bsm
 {
 
-  struct BuddyAllocator;
+  struct SimpleBuddyAllocator;
 
   [[nodiscard]]
-  BuddyAllocator* create_buddy_allocator( s64 size, u32 suggestLeafSize = 0 );
-  void destroy_buddy_allocator( BuddyAllocator* allocator );
+  SimpleBuddyAllocator* create_simple_buddy_allocator( s64 size, u32 suggestLeafSize = 0 );
+  void destroy_buddy_allocator( SimpleBuddyAllocator* allocator );
 
   [[nodiscard]]
-  void* allocate( BuddyAllocator* allocator, s64 size );
+  void* allocate( SimpleBuddyAllocator* allocator, s64 size );
   [[nodiscard]]
-  void* allocate_to_zero( BuddyAllocator* allocator, s64 size );
-  void free( BuddyAllocator* allocator, void* allocation );
-  void free( BuddyAllocator* allocator, void* allocation, s64 size );
+  void* allocate_to_zero( SimpleBuddyAllocator* allocator, s64 size );
+  void free( SimpleBuddyAllocator* allocator, void* allocation );
+  void free( SimpleBuddyAllocator* allocator, void* allocation, s64 size );
 
 };
 
@@ -186,7 +186,7 @@ namespace bsm
 
 namespace bsm
 {
-  struct BuddyAllocator
+  struct SimpleBuddyAllocator
   {
     struct FreeNode
     {
@@ -203,7 +203,7 @@ namespace bsm
 
   };
 
-  void add_node( BuddyAllocator::FreeNode* list, BuddyAllocator::FreeNode* newNode )
+  void add_node( SimpleBuddyAllocator::FreeNode* list, SimpleBuddyAllocator::FreeNode* newNode )
   {
     newNode->next = list;
     newNode->prev = list->prev;
@@ -211,33 +211,33 @@ namespace bsm
     list->prev = newNode;
   }
 
-  void remove_node( BuddyAllocator::FreeNode* node )
+  void remove_node( SimpleBuddyAllocator::FreeNode* node )
   {
     node->next->prev = node->prev;
     node->prev->next = node->next;
   }
 
-  INLINE u64 get_size_for_level( BuddyAllocator* allocator, s32 level )
+  INLINE u64 get_size_for_level( SimpleBuddyAllocator* allocator, s32 level )
   {
     return u64( allocator->leafSize ) << level;
   }
 
-  u64 get_block_index_for_address_and_level( BuddyAllocator* allocator, char* address, s32 level )
+  u64 get_block_index_for_address_and_level( SimpleBuddyAllocator* allocator, char* address, s32 level )
   {
     u64 offset = (u64( 1 ) << allocator->maxLevel) + (u64( address - allocator->buffer ) / u64( allocator->leafSize ));
     return offset >> level;
   }
 
-  BuddyAllocator::FreeNode* get_node_for_block_index_and_level( BuddyAllocator* allocator, u64 blockIndex, s32 level )
+  SimpleBuddyAllocator::FreeNode* get_node_for_block_index_and_level( SimpleBuddyAllocator* allocator, u64 blockIndex, s32 level )
   {
     u64 offset = (blockIndex << u64( level )) - (u64( 1 ) << u64( allocator->maxLevel ));
     char* const address = (allocator->buffer + (offset * u64( allocator->leafSize )));
     //make sure we're actually getting into our memory
     assert( address > (char*) allocator );
-    return (BuddyAllocator::FreeNode*) address;
+    return (SimpleBuddyAllocator::FreeNode*) address;
   }
 
-  s32 get_level_for_size( BuddyAllocator* allocator, s64 size )
+  s32 get_level_for_size( SimpleBuddyAllocator* allocator, s64 size )
   {
     s32 resultLevel = 0;
     s64 blockSize = s64( allocator->leafSize );
@@ -249,7 +249,7 @@ namespace bsm
     return resultLevel;
   }
 
-  bool block_state_xor( BuddyAllocator* allocator, u64 blockIndex )
+  bool block_state_xor( SimpleBuddyAllocator* allocator, u64 blockIndex )
   {
     blockIndex >>= 1;
     u8& data = allocator->metaData[blockIndex >> 3];
@@ -259,7 +259,7 @@ namespace bsm
     return data & bit;
   }
 
-  bool block_state_get( BuddyAllocator* allocator, u64 blockIndex )
+  bool block_state_get( SimpleBuddyAllocator* allocator, u64 blockIndex )
   {
     blockIndex >>= 1;
     u8& data = allocator->metaData[blockIndex >> 3];
@@ -268,7 +268,7 @@ namespace bsm
     return data & bit;
   }
 
-  bool block_state_get_lower( BuddyAllocator* allocator, u64 blockIndex )
+  bool block_state_get_lower( SimpleBuddyAllocator* allocator, u64 blockIndex )
   {
     u64 const startIndex = (u64( 1 ) << allocator->maxLevel);
     if ( blockIndex < startIndex )
@@ -285,7 +285,7 @@ namespace bsm
     }
   }
 
-  void block_state_xor_lower( BuddyAllocator* allocator, u64 blockIndex )
+  void block_state_xor_lower( SimpleBuddyAllocator* allocator, u64 blockIndex )
   {
     u64 const startIndex = (u64( 1 ) << allocator->maxLevel);
     if ( blockIndex < startIndex )
@@ -302,13 +302,13 @@ namespace bsm
     }
   }
 
-  bool debug_block_index_matches_level( BuddyAllocator* allocator, u64 blockIndex, s32 level )
+  bool debug_block_index_matches_level( SimpleBuddyAllocator* allocator, u64 blockIndex, s32 level )
   {
     u64 const controlIndex = (u64( 1 ) << (1 + allocator->maxLevel - level));
     return blockIndex < controlIndex&& blockIndex >= (controlIndex >> 1);
   }
 
-  void* allocate( BuddyAllocator* allocator, s64 size )
+  void* allocate( SimpleBuddyAllocator* allocator, s64 size )
   {
     s32 desiredLevel = get_level_for_size( allocator, size );
 
@@ -321,7 +321,7 @@ namespace bsm
       return nullptr; //no space for desired allocation? 
     }
 
-    BuddyAllocator::FreeNode* desiredNode = allocator->freeNodesList[listedLevel].next;
+    SimpleBuddyAllocator::FreeNode* desiredNode = allocator->freeNodesList[listedLevel].next;
     remove_node( desiredNode );
 
     u64 blockIndex = get_block_index_for_address_and_level( allocator, (char*) desiredNode, desiredLevel );
@@ -335,7 +335,7 @@ namespace bsm
 
     for ( s32 i = desiredLevel; i < listedLevel; ++i )
     {
-      BuddyAllocator::FreeNode* node = get_node_for_block_index_and_level( allocator, blockIndex ^ 1, i );
+      SimpleBuddyAllocator::FreeNode* node = get_node_for_block_index_and_level( allocator, blockIndex ^ 1, i );
       assert( debug_block_index_matches_level( allocator, blockIndex ^ 1, i ) );
       add_node( &allocator->freeNodesList[i], node );
 
@@ -349,7 +349,7 @@ namespace bsm
     return desiredNode;
   }
 
-  s32 find_level_of_address_for_deallocation( BuddyAllocator* allocator, char* address )
+  s32 find_level_of_address_for_deallocation( SimpleBuddyAllocator* allocator, char* address )
   {
     s32 level = 0;
     u64 blockIndex = get_block_index_for_address_and_level( allocator, address, 0 );
@@ -372,7 +372,7 @@ namespace bsm
     return level;
   }
 
-  void free_at_level( BuddyAllocator* allocator, char* address, s32 level )
+  void free_at_level( SimpleBuddyAllocator* allocator, char* address, s32 level )
   {
     u64 blockIndex = get_block_index_for_address_and_level( allocator, address, level );
     assert( debug_block_index_matches_level( allocator, blockIndex, level ) );
@@ -388,7 +388,7 @@ namespace bsm
     {
       if ( !block_state_xor( allocator, blockIndex ) )
       {
-        BuddyAllocator::FreeNode* buddy = get_node_for_block_index_and_level( allocator, blockIndex ^ 1, level );
+        SimpleBuddyAllocator::FreeNode* buddy = get_node_for_block_index_and_level( allocator, blockIndex ^ 1, level );
         remove_node( buddy );
         blockIndex>>=1;
       }
@@ -398,18 +398,18 @@ namespace bsm
       }
     }
 
-    BuddyAllocator::FreeNode* newNode = get_node_for_block_index_and_level( allocator, blockIndex, level );
+    SimpleBuddyAllocator::FreeNode* newNode = get_node_for_block_index_and_level( allocator, blockIndex, level );
     assert( debug_block_index_matches_level( allocator, blockIndex, level ) );
     add_node( &allocator->freeNodesList[level], newNode );
   }
 
-  void free( BuddyAllocator* allocator, void* allocation )
+  void free( SimpleBuddyAllocator* allocator, void* allocation )
   {
     s32 level = find_level_of_address_for_deallocation( allocator, (char*) allocation );
     free_at_level( allocator, (char*) allocation, level );
   }
 
-  void free( BuddyAllocator* allocator, void* allocation, s64 size )
+  void free( SimpleBuddyAllocator* allocator, void* allocation, s64 size )
   {
     s32 level = get_level_for_size( allocator, size );
 
@@ -419,16 +419,16 @@ namespace bsm
     free_at_level( allocator, (char*) allocation, level );
   }
 
-  void* allocate_to_zero( BuddyAllocator* allocator, s64 size )
+  void* allocate_to_zero( SimpleBuddyAllocator* allocator, s64 size )
   {
     void* result = allocate( allocator, size );
     memset( result, 0, size );
     return result;
   }
 
-  BuddyAllocator* create_buddy_allocator( s64 size, u32 suggestLeafSize )
+  SimpleBuddyAllocator* create_simple_buddy_allocator( s64 size, u32 suggestLeafSize )
   {
-    u32 leafSize = max( suggestLeafSize, sizeof( BuddyAllocator::FreeNode ) );
+    u32 leafSize = max( suggestLeafSize, sizeof( SimpleBuddyAllocator::FreeNode ) );
     s32 maxLevel = 0;
     {
       s64 blockSize = s64( leafSize );
@@ -443,7 +443,7 @@ namespace bsm
     u64 metaDataSize = 1 + ((sizeAtMaxLevel + (sizeAtMaxLevel >> 1) - 1) / (u64( leafSize ) * 8));
 
     u64 const deadSpaceOffset = sizeAtMaxLevel - size;
-    s64 overheadSize = deadSpaceOffset + sizeof( BuddyAllocator ) + sizeof( BuddyAllocator::FreeNode ) * maxLevel + metaDataSize;
+    s64 overheadSize = deadSpaceOffset + sizeof( SimpleBuddyAllocator ) + sizeof( SimpleBuddyAllocator::FreeNode ) * maxLevel + metaDataSize;
     if ( u64( overheadSize ) * 2 >= sizeAtMaxLevel )
     {
       BREAK;
@@ -451,14 +451,14 @@ namespace bsm
     }
 
     char* allocation = (char*) bsp::platform->allocate_new_app_memory( size );
-    BuddyAllocator* result = (BuddyAllocator*) allocation;
+    SimpleBuddyAllocator* result = (SimpleBuddyAllocator*) allocation;
 
     //offset buffer pointer into unreachable space for non-power of 2 allocator sizes to make sure pointer math works
     result->buffer = allocation - deadSpaceOffset;
-    result->freeNodesList = (BuddyAllocator::FreeNode*) (allocation + sizeof( BuddyAllocator ));
+    result->freeNodesList = (SimpleBuddyAllocator::FreeNode*) (allocation + sizeof( SimpleBuddyAllocator ));
     result->leafSize = leafSize;
     result->maxLevel = maxLevel;
-    result->metaData = ((u8*) result->freeNodesList) + sizeof( BuddyAllocator::FreeNode ) * result->maxLevel;
+    result->metaData = ((u8*) result->freeNodesList) + sizeof( SimpleBuddyAllocator::FreeNode ) * result->maxLevel;
     result->metaDataDebugEnd = result->metaData + metaDataSize;
 
     memset( result->metaData, 0, metaDataSize );
@@ -477,7 +477,7 @@ namespace bsm
     {
       block_state_xor( allocator, blockIndex );
 
-      BuddyAllocator::FreeNode* node = get_node_for_block_index_and_level( allocator, blockIndex ^ 1, i );
+      SimpleBuddyAllocator::FreeNode* node = get_node_for_block_index_and_level( allocator, blockIndex ^ 1, i );
       add_node( &allocator->freeNodesList[i], node );
       blockIndex >>= 1;
     }
@@ -485,12 +485,12 @@ namespace bsm
     return result;
   }
 
-  void destroy_buddy_allocator( BuddyAllocator* allocator )
+  void destroy_buddy_allocator( SimpleBuddyAllocator* allocator )
   {
     bsp::platform->free_app_memory( allocator );
   }
 
-  bool validate_buddy_allocator( BuddyAllocator* allocator )
+  bool validate_buddy_allocator( SimpleBuddyAllocator* allocator )
   {
     bool result = true;
 
