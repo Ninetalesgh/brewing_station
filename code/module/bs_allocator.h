@@ -1,5 +1,7 @@
 #pragma once
 
+#include "allocator/bs_buddy_allocator.h"
+
 #include <platform/bs_platform.h>
 #include <module/bs_debuglog.h>
 #include <core/bsthread.h>
@@ -487,8 +489,6 @@ namespace bsm
   {
     bsp::platform->free_app_memory( allocator );
   }
-
-
 
   bool validate_buddy_allocator( BuddyAllocator* allocator )
   {

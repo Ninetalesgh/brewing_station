@@ -83,7 +83,7 @@ namespace bs
     HashRegister32* result = nullptr;
     s32 nameCapacity = startCapacity * avgNameLengthEstimate;
     s32 allocationSize = sizeof( HashRegister32 ) + (sizeof( u32 ) + sizeof( s32 )) * startCapacity + nameCapacity;
-    char* allocation = (char*) bsm::allocate( bsp::platform->default.allocator, allocationSize );
+    char* allocation = (char*) bsm::allocate( bsp::platform->default.allocator, (s64) allocationSize );
     if ( allocation )
     {
       result               = (HashRegister32*) result;

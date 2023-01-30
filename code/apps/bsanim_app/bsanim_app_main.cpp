@@ -33,13 +33,14 @@ namespace bs
     // testMap[""];
 
 
-    auto* allocator = bsm::create_buddy_allocator( GigaBytes( 1 ) );
+   // auto* allocator = bsm::create_buddy_allocator2( GigaBytes( 1 ) );
+    auto* allocator = bsm::create_buddy_allocator2( GigaBytes( 1 ) );
     //  auto* allocator = bsm::create_buddy_allocator( 256 );
 
       //auto* al1 = bsm::allocate( allocator, 2000 );
-     // auto* al = bsm::allocate( allocator, KiloBytes( 4 ) );
+    auto* al = bsm::allocate( allocator, KiloBytes( 4 ) );
     auto* al1 = bsm::allocate( allocator, 20 );
-    auto* al = bsm::allocate( allocator, 16 );
+    // auto* al = bsm::allocate( allocator, 16 );
     auto* al2 = bsm::allocate( allocator, 16 );
 
     bsm::free( allocator, al2 );
@@ -47,9 +48,6 @@ namespace bs
 
     al1 = bsm::allocate( allocator, KiloBytes( 3 ) );
     al = bsm::allocate( allocator, 12345678 );
-
-
-
 
     bsm::destroy_buddy_allocator( allocator );
     al = nullptr;
