@@ -32,19 +32,20 @@ namespace bs
     // testMap.find( "test" );
     // testMap[""];
 
-
-   // auto* allocator = bsm::create_buddy_allocator2( GigaBytes( 1 ) );
+    // auto* allocator = bsm::create_buddy_allocator2( GigaBytes( 1 ) );
     auto* allocator = bsm::create_buddy_allocator( GigaBytes( 1 ) );
-    //  auto* allocator = bsm::create_buddy_allocator( 256 );
+    // auto* allocator = bsm::create_buddy_allocator( 256 );
 
-      //auto* al1 = bsm::allocate( allocator, 2000 );
+    //auto* al1 = bsm::allocate( allocator, 2000 );
     auto* al = bsm::allocate( allocator, KiloBytes( 4 ) );
-    auto* al1 = bsm::allocate( allocator, 20 );
+    auto* al1 = bsm::allocate( allocator, 512 + 128 );
     // auto* al = bsm::allocate( allocator, 16 );
-    auto* al2 = bsm::allocate( allocator, 16 );
+    // auto* al2 = bsm::allocate( allocator, 16 );
 
-    bsm::free( allocator, al2 );
-    bsm::free( allocator, al );
+    bsm::tight_fit_existing_allocation( allocator, (char*) al1, 512 + 128 );
+
+    bsm::free( allocator, al, KiloBytes( 4 ) );
+    bsm::free( allocator, al1, 20 );
 
     al1 = bsm::allocate( allocator, KiloBytes( 3 ) );
     al = bsm::allocate( allocator, 12345678 );

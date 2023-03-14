@@ -1,10 +1,5 @@
 #pragma once
 
-
-//BA2 is attempting to make this thread safe and block indexing more cache friendly
-
-
-
 #include <platform/bs_platform.h>
 #include <core/bsthread.h>
 #include <common/bs_common.h>
@@ -124,17 +119,13 @@ namespace bsm
     }
 
     iterations = (levelCount % 9) + 1;
-    result = 1 + (result << iterations);    return result;
+    result = 1 + (result << iterations);
+    return result;
   }
 
   u64 get_offset_in_level( BuddyAllocator* allocator, u64 blockIndex, s32 level )
   {
     return blockIndex - (u64( 1 ) << (allocator->maxLevel - level));
-  }
-
-  s32 get_meta_level( BuddyAllocator* allocator, s32 level )
-  {
-    return (allocator->maxLevel - level) / 9;
   }
 
   s32 get_meta_origin_level( BuddyAllocator* allocator, s32 level )
@@ -177,6 +168,7 @@ namespace bsm
     return result;
   }
 
+  //returns new state
   bool block_state_xor( BuddyAllocator* allocator, u64 blockIndex )
   {
     u64 metaIndex = get_meta_index( allocator, blockIndex );
@@ -203,7 +195,7 @@ namespace bsm
   bool debug_block_index_matches_level( BuddyAllocator* allocator, u64 blockIndex, s32 level )
   {
     u64 const controlIndex = (u64( 1 ) << (1 + allocator->maxLevel - level));
-    return blockIndex < controlIndex&& blockIndex >= (controlIndex >> 1);
+    return blockIndex < controlIndex && blockIndex >= (controlIndex >> 1);
   }
 
   void* allocate( BuddyAllocator* allocator, s64 size )
@@ -250,14 +242,9 @@ namespace bsm
     s32 level = 0;
     u64 blockIndex = get_block_index_for_address_and_level( allocator, address, 0 );
 
-    while ( !(blockIndex & 1) )
+    while ( !(blockIndex & 1) && !block_state_get( allocator, blockIndex ) )
     {
-      if ( block_state_get( allocator, blockIndex ) )
-      {
-        break;
-      }
       ++level;
-
       blockIndex >>= 1;
     }
 
@@ -269,11 +256,13 @@ namespace bsm
     u64 blockIndex = get_block_index_for_address_and_level( allocator, address, level );
     assert( debug_block_index_matches_level( allocator, blockIndex, level ) );
 
-    // control extra bit at lowest level
+    // control bit
     block_state_xor( allocator, blockIndex );
 
+    //merge
     for ( ; level < allocator->maxLevel; ++level )
     {
+      //see if buddy is mergable
       if ( !block_state_xor( allocator, blockIndex >> 1 ) )
       {
         BuddyAllocator::FreeNode* buddy = get_node_for_block_index_and_level( allocator, blockIndex ^ 1, level );
@@ -301,6 +290,7 @@ namespace bsm
   {
     s32 level = get_level_for_size( allocator, size );
 
+    //TODO remove this line whenever confident the leveling is fine
     s32 debugLevel = find_level_of_address_for_deallocation( allocator, (char*) allocation );
     assert( level == debugLevel );
 
@@ -374,4 +364,176 @@ namespace bsm
   {
     bsp::platform->free_app_memory( allocator->meta );
   }
+
+  ///TIGHT FIT WIP
+
+  INLINE u64 get_tight_fit_block_index( u64 blockIndex )
+  {
+    return u64( 1 ) + (blockIndex << 2);
+  }
+  INLINE u64 get_right_child_block_index( u64 blockIndex )
+  {
+    return u64( 1 ) + (blockIndex << 1);
+  }
+  INLINE u64 get_left_child_block_index( u64 blockIndex )
+  {
+    return blockIndex << 1;
+  }
+  INLINE u64 get_parent_block_index( u64 blockIndex )
+  {
+    return blockIndex >> 1;
+  }
+
+  void tight_fit_existing_allocation( BuddyAllocator* allocator, char* allocation, s64 size )
+  {
+    s32 level = get_level_for_size( allocator, size );
+
+    if ( level < 3 )
+    {
+      //we can't split, we leave
+      BREAK;
+      return;
+    }
+
+    //round up size to next leaf size
+    size += allocator->leafSize - (((size - 1) % allocator->leafSize) + 1);
+
+    u64 blockIndex = get_block_index_for_address_and_level( allocator, allocation, level );
+    u64 leftIndex = get_left_child_block_index( blockIndex );
+    u64 rightIndex = get_right_child_block_index( blockIndex );
+    u64 tightFitIndex = get_tight_fit_block_index( leftIndex );
+
+    if ( !block_state_get( allocator, blockIndex ) )
+    {
+      //make sure it was indicated as split.
+      assert( !block_state_get( allocator, tightFitIndex ) );
+      //make sure the left child is properly marked, which means this was already tightly fit
+      assert( block_state_get( allocator, leftIndex ) );
+      return;
+    }
+
+    assert( !block_state_get( allocator, tightFitIndex ) );
+    block_state_xor( allocator, tightFitIndex );
+
+    u64 controlBlockIndex = leftIndex;
+    while ( level-- )
+    {
+      s64 levelSize = get_size_for_level( allocator, level );
+      if ( levelSize < size )
+      {
+        size -= levelSize;
+
+        //mark this level appended to the allocation in the control branch
+        assert( !block_state_get( allocator, controlBlockIndex ) );
+        block_state_xor( allocator, controlBlockIndex );
+
+        //continue with right branch
+        leftIndex = get_left_child_block_index( rightIndex );
+        rightIndex = get_right_child_block_index( rightIndex );
+      }
+      else
+      {
+        //free right block
+        BuddyAllocator::FreeNode* node = get_node_for_block_index_and_level( allocator, rightIndex, level );
+        add_node( &allocator->freeNodesList[level], node );
+
+        //mark parent split
+        assert( !block_state_get( allocator, leftIndex >> 1 ) );
+        block_state_xor( allocator, leftIndex >> 1 );
+
+        if ( size == levelSize )
+        {
+          break;
+        }
+
+        //continue with left branch
+        rightIndex = get_right_child_block_index( leftIndex );
+        leftIndex = get_left_child_block_index( leftIndex );
+      }
+
+      controlBlockIndex = get_right_child_block_index( controlBlockIndex );
+    }
+  }
+
+  void free_tight_fit_at_level_INCOMPLETE( BuddyAllocator* allocator, char* allocation, s32 level )
+  {
+    if ( level < 2 )
+    {
+      //not a valid split, we leave
+      BREAK;
+      return;
+    }
+
+    u64 blockIndex = get_block_index_for_address_and_level( allocator, allocation, level );
+    u64 tightFitIndex = get_tight_fit_block_index( blockIndex );
+
+    if ( !block_state_get( allocator, tightFitIndex ) )
+    {
+      //not a tight fit allocation
+      BREAK;
+      return;
+    }
+
+    u64 controlIndex = blockIndex;
+    s32 controlLevel = level;
+
+    while ( controlLevel-- )
+    {
+      controlIndex = get_right_child_block_index( controlIndex );
+    }
+
+    //0 -> looking for  
+    //1 -> TODOTODO
+    //
+//    s32 processState = 0;
+
+    while ( controlIndex > blockIndex )
+    {
+      if ( block_state_get( allocator, controlIndex ) )
+      {
+        //start for process is here
+
+        //clean up
+        block_state_xor( allocator, controlIndex );
+
+
+      }
+
+      controlIndex = get_parent_block_index( controlIndex );
+    }
+
+
+    //walk down parts of the control branch to free as far as possible every part?
+    //find tight fit end 
+  }
+
+  void free_at_levelCOPY_DELETABLE( BuddyAllocator* allocator, char* address, s32 level )
+  {
+    u64 blockIndex = get_block_index_for_address_and_level( allocator, address, level );
+    assert( debug_block_index_matches_level( allocator, blockIndex, level ) );
+
+    // control bit
+    block_state_xor( allocator, blockIndex );
+
+    //merge
+    for ( ; level < allocator->maxLevel; ++level )
+    {
+      //see if buddy is mergable
+      if ( !block_state_xor( allocator, blockIndex >> 1 ) )
+      {
+        BuddyAllocator::FreeNode* buddy = get_node_for_block_index_and_level( allocator, blockIndex ^ 1, level );
+        remove_node( buddy );
+        blockIndex>>=1;
+      }
+      else
+      {
+        break;
+      }
+    }
+
+    BuddyAllocator::FreeNode* newNode = get_node_for_block_index_and_level( allocator, blockIndex, level );
+    assert( debug_block_index_matches_level( allocator, blockIndex, level ) );
+    add_node( &allocator->freeNodesList[level], newNode );
+  }
+
 };

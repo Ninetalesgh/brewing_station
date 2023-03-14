@@ -37,6 +37,7 @@ namespace bsp
       if ( executablePath )
       {
         bsm::mount_path_to_filesystem( platform->default.fileSystem, executablePath );
+        //TODO this only while debugging
         bsm::mount_path_to_filesystem( platform->default.fileSystem, "/../../data" );
       }
     }

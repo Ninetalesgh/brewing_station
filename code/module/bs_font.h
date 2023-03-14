@@ -236,6 +236,7 @@ namespace bsm
     texData.pixel = sheetBMP->pixel;
     texData.width = sheetBMP->width;
     texData.height = sheetBMP->height;
+    //TODO change pixel format to save space
     texData.format = bs::TextureFormat::RGBA8;
 
     resultGlyphTable->glyphs =     rects;

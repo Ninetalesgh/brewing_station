@@ -2,9 +2,9 @@
 
 #include <common/bs_common.h>
 
-#include<module/bs_debuglog.h>
-#include<core/bs_texture.h>
-#include<core/bs_mesh.h>
+#include <module/bs_debuglog.h>
+#include <core/bs_texture.h>
+#include <core/bs_mesh.h>
 #include <core/bsinput.h>
 #include <core/bstask.h>
 
@@ -78,6 +78,13 @@ namespace bsp
   //void main() { ... }
   //
   using create_shader_program_fn = bs::ShaderProgramID( char const* combinedglslData, s32 size );
+  using destroy_shader_program_fn = void( bs::ShaderProgramID );
+
+  //TODO WIP
+  using set_shader_program_data_fn = void( bs::ShaderProgramID, char** names );
+
+  using render_to_target_fn = void( int renderTarget, bs::ShaderProgramID shaderProgram, void** drawCalls );
+
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////   memory     //////////////////////////////////////////////////////////////////////////////////////////////////

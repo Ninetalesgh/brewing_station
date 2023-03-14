@@ -12,10 +12,6 @@ DEPRECATED
 
 namespace bs
 {
-
-
-
-
   struct AppData
   {
     u64 currentFrameIndex;

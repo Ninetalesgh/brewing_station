@@ -181,12 +181,39 @@ namespace opengl_ext
   using glDisableVertexAttribArray = void   WINAPI( GLuint index );
   using glEnableVertexAttribArray  = void   WINAPI( GLuint index );
   using glGenBuffers               = void   WINAPI( GLsizei n, GLuint* buffers );
-  using glGetActiveUniform         = void( GLuint program, GLuint index, GLsizei bufSize, GLsizei* length, GLint* size, GLenum* type, GLchar* name );
+  using glGetActiveUniform         = void   WINAPI( GLuint program, GLuint index, GLsizei bufSize, GLsizei* length, GLint* size, GLenum* type, GLchar* name );
   using glGetUniformLocation       = GLint  WINAPI( GLuint program, const GLchar* name );
   using glGetUniformfv             = void   WINAPI( GLuint program, GLint location, GLfloat* params );
   using glGetUniformiv             = void   WINAPI( GLuint program, GLint location, GLint* params );
+  using glUniform1f                = void   WINAPI( GLint location, GLfloat v0 );
+  using glUniform2f                = void   WINAPI( GLint location, GLfloat v0, GLfloat v1 );
+  using glUniform3f                = void   WINAPI( GLint location, GLfloat v0, GLfloat v1, GLfloat v2 );
+  using glUniform4f                = void   WINAPI( GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3 );
+  using glUniform1i                = void   WINAPI( GLint location, GLint v0 );
+  using glUniform2i                = void   WINAPI( GLint location, GLint v0, GLint v1 );
+  using glUniform3i                = void   WINAPI( GLint location, GLint v0, GLint v1, GLint v2 );
+  using glUniform4i                = void   WINAPI( GLint location, GLint v0, GLint v1, GLint v2, GLint v3 );
+  using glUniform1fv               = void   WINAPI( GLint location, GLsizei count, const GLfloat* value );
+  using glUniform2fv               = void   WINAPI( GLint location, GLsizei count, const GLfloat* value );
+  using glUniform3fv               = void   WINAPI( GLint location, GLsizei count, const GLfloat* value );
+  using glUniform4fv               = void   WINAPI( GLint location, GLsizei count, const GLfloat* value );
+  using glUniform1iv               = void   WINAPI( GLint location, GLsizei count, const GLint* value );
+  using glUniform2iv               = void   WINAPI( GLint location, GLsizei count, const GLint* value );
+  using glUniform3iv               = void   WINAPI( GLint location, GLsizei count, const GLint* value );
+  using glUniform4iv               = void   WINAPI( GLint location, GLsizei count, const GLint* value );
+  using glUniformMatrix2fv         = void   WINAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
+  using glUniformMatrix3fv         = void   WINAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
   using glUniformMatrix4fv         = void   WINAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
 
+  // OPENGL 2.1 ///////////////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  using glUniformMatrix2x3fv = void WINAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
+  using glUniformMatrix3x2fv = void WINAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
+  using glUniformMatrix2x4fv = void WINAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
+  using glUniformMatrix4x2fv = void WINAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
+  using glUniformMatrix3x4fv = void WINAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
+  using glUniformMatrix4x3fv = void WINAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
 
   // OPENGL 3.0 ///////////////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -196,21 +223,28 @@ namespace opengl_ext
   using glDeleteVertexArrays = void WINAPI( GLsizei n, const GLuint* arrays );
   using glBindBufferBase     = void WINAPI( GLenum target, GLuint index, GLuint buffer );
   using glBindBufferRange    = void WINAPI( GLenum target, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size );
+  using glUniform1ui         = void WINAPI( GLint location, GLuint v0 );
+  using glUniform2ui         = void WINAPI( GLint location, GLuint v0, GLuint v1 );
+  using glUniform3ui         = void WINAPI( GLint location, GLuint v0, GLuint v1, GLuint v2 );
+  using glUniform4ui         = void WINAPI( GLint location, GLuint v0, GLuint v1, GLuint v2, GLuint v3 );
+  using glUniform1uiv        = void WINAPI( GLint location, GLsizei count, const GLuint* value );
+  using glUniform2uiv        = void WINAPI( GLint location, GLsizei count, const GLuint* value );
+  using glUniform3uiv        = void WINAPI( GLint location, GLsizei count, const GLuint* value );
+  using glUniform4uiv        = void WINAPI( GLint location, GLsizei count, const GLuint* value );
 
   // OPENGL 3.1 ///////////////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   using glGetUniformBlockIndex      = GLuint WINAPI( GLuint program, const GLchar* uniformBlockName );
   using glUniformBlockBinding       = void   WINAPI( GLuint program, GLuint uniformBlockIndex, GLuint uniformBlockBinding );
-  using glGetActiveUniformBlockiv   = void( GLuint program, GLuint uniformBlockIndex, GLenum pname, GLint* params );
-  using glGetActiveUniformBlockName = void( GLuint program, GLuint uniformBlockIndex, GLsizei bufSize, GLsizei* length, GLchar* uniformBlockName );
+  using glGetActiveUniformBlockiv   = void   WINAPI( GLuint program, GLuint uniformBlockIndex, GLenum pname, GLint* params );
+  using glGetActiveUniformBlockName = void   WINAPI( GLuint program, GLuint uniformBlockIndex, GLsizei bufSize, GLsizei* length, GLchar* uniformBlockName );
 
   // OPENGL 4.3 ///////////////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-  using DEBUG_MESSAGE_CALLBACK_SIGNATURE = void( GLenum src, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* msg, void const* user_param );
-  using glDebugMessageCallback = void( DEBUG_MESSAGE_CALLBACK_SIGNATURE callback, const void* userParam );
+  using DEBUG_MESSAGE_CALLBACK_SIGNATURE = void WINAPI( GLenum src, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* msg, void const* user_param );
+  using glDebugMessageCallback           = void WINAPI( DEBUG_MESSAGE_CALLBACK_SIGNATURE callback, const void* userParam );
 
   // OPENGL 4.5 ///////////////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -256,7 +290,39 @@ DEFINE_GL( glGetActiveUniform );
 DEFINE_GL( glGetUniformLocation );
 DEFINE_GL( glGetUniformfv );
 DEFINE_GL( glGetUniformiv );
+DEFINE_GL( glUniform1f );
+DEFINE_GL( glUniform2f );
+DEFINE_GL( glUniform3f );
+DEFINE_GL( glUniform4f );
+DEFINE_GL( glUniform1i );
+DEFINE_GL( glUniform2i );
+DEFINE_GL( glUniform3i );
+DEFINE_GL( glUniform4i );
+DEFINE_GL( glUniform1ui );
+DEFINE_GL( glUniform2ui );
+DEFINE_GL( glUniform3ui );
+DEFINE_GL( glUniform4ui );
+DEFINE_GL( glUniform1fv );
+DEFINE_GL( glUniform2fv );
+DEFINE_GL( glUniform3fv );
+DEFINE_GL( glUniform4fv );
+DEFINE_GL( glUniform1iv );
+DEFINE_GL( glUniform2iv );
+DEFINE_GL( glUniform3iv );
+DEFINE_GL( glUniform4iv );
+DEFINE_GL( glUniform1uiv );
+DEFINE_GL( glUniform2uiv );
+DEFINE_GL( glUniform3uiv );
+DEFINE_GL( glUniform4uiv );
+DEFINE_GL( glUniformMatrix2fv );
+DEFINE_GL( glUniformMatrix3fv );
 DEFINE_GL( glUniformMatrix4fv );
+DEFINE_GL( glUniformMatrix2x3fv );
+DEFINE_GL( glUniformMatrix3x2fv );
+DEFINE_GL( glUniformMatrix2x4fv );
+DEFINE_GL( glUniformMatrix4x2fv );
+DEFINE_GL( glUniformMatrix3x4fv );
+DEFINE_GL( glUniformMatrix4x3fv );
 DEFINE_GL( glGenVertexArrays );
 DEFINE_GL( glBindVertexArray );
 DEFINE_GL( glDeleteVertexArrays );
@@ -311,7 +377,39 @@ namespace opengl_ext
     INIT_GL( glGetUniformLocation );
     INIT_GL( glGetUniformfv );
     INIT_GL( glGetUniformiv );
+    INIT_GL( glUniform1f );
+    INIT_GL( glUniform2f );
+    INIT_GL( glUniform3f );
+    INIT_GL( glUniform4f );
+    INIT_GL( glUniform1i );
+    INIT_GL( glUniform2i );
+    INIT_GL( glUniform3i );
+    INIT_GL( glUniform4i );
+    INIT_GL( glUniform1ui );
+    INIT_GL( glUniform2ui );
+    INIT_GL( glUniform3ui );
+    INIT_GL( glUniform4ui );
+    INIT_GL( glUniform1fv );
+    INIT_GL( glUniform2fv );
+    INIT_GL( glUniform3fv );
+    INIT_GL( glUniform4fv );
+    INIT_GL( glUniform1iv );
+    INIT_GL( glUniform2iv );
+    INIT_GL( glUniform3iv );
+    INIT_GL( glUniform4iv );
+    INIT_GL( glUniform1uiv );
+    INIT_GL( glUniform2uiv );
+    INIT_GL( glUniform3uiv );
+    INIT_GL( glUniform4uiv );
+    INIT_GL( glUniformMatrix2fv );
+    INIT_GL( glUniformMatrix3fv );
     INIT_GL( glUniformMatrix4fv );
+    INIT_GL( glUniformMatrix2x3fv );
+    INIT_GL( glUniformMatrix3x2fv );
+    INIT_GL( glUniformMatrix2x4fv );
+    INIT_GL( glUniformMatrix4x2fv );
+    INIT_GL( glUniformMatrix3x4fv );
+    INIT_GL( glUniformMatrix4x3fv );
     INIT_GL( glGenVertexArrays );
     INIT_GL( glBindVertexArray );
     INIT_GL( glDeleteVertexArrays );

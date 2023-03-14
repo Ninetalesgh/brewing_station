@@ -502,7 +502,7 @@ namespace opengl
 
   bool validate_shader( ShaderID shaderID )
   {
-    constexpr s32 MAX_INFO_LOG_LENGTH = 512;
+    constexpr s32 MAX_INFO_LOG_LENGTH = 8192;
     char infoLog[MAX_INFO_LOG_LENGTH];
     GLint result = GL_FALSE;
     s32 infoLogLength = 0;
@@ -519,7 +519,7 @@ namespace opengl
 
   bool validate_program( bs::ShaderProgramID programID )
   {
-    constexpr s32 MAX_INFO_LOG_LENGTH = 512;
+    constexpr s32 MAX_INFO_LOG_LENGTH = 8192;
     char infoLog[MAX_INFO_LOG_LENGTH];
     GLint result = GL_FALSE;
     s32 infoLogLength = 0;
@@ -632,6 +632,11 @@ namespace opengl
     return create_shader_program( h, vs, fs );
   }
 
+  void delete_shader_prorgam( bs::ShaderProgramID program )
+  {
+    glDeleteProgram( program );
+  }
+
   void init_mesh_vao( bs::Mesh* mesh )
   {
     check_gl_error();
@@ -707,7 +712,6 @@ namespace opengl
 
   void draw( bs::Mesh* mesh, bs::Camera* camera, bs::ShaderProgramID programID, bs::TextureID textureID )
   {
-
     //per batch
     glUseProgram( programID );
 
