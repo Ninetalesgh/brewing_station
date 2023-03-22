@@ -8,10 +8,9 @@ namespace bs
 {
   u32 hash_name32( char const* name );
   u64 hash_name64( char const* name );
+
+  //returns the index of the slot this hash is in or should be in
   s32 binary_search( u32 const* hashes, s32 hashCount, u32 hashToFind );
-
-  //user supplies hash table space, 
-
 
 
   //allocate, deallocate, construct, destroy

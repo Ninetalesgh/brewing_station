@@ -1,3 +1,5 @@
+#define BREWING_STATION_APP
+
 //#define BUILD_TESTAPP
 //#define BUILD_FIRST_APP
 

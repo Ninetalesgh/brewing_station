@@ -1,4 +1,5 @@
 #define UNICODE
+#define BREWING_STATION_PLATFORM
 
 void brewing_station_main();
 

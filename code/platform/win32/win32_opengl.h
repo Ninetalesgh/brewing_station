@@ -2,8 +2,8 @@
 #pragma comment(lib,"Gdi32.lib")
 #pragma comment(lib,"opengl32.lib")
 
-
 #include <platform/opengl/bsopengl_ext.h>
+
 #include <core/bs_texture.h>
 #include <core/bs_camera.h>
 #include <common/bs_color.h>

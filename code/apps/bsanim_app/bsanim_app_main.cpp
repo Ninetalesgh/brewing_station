@@ -9,18 +9,27 @@
 
 #include <module/bs_allocator.h>
 
+struct AppUserData
+{
+  int test;
+};
+
 namespace bs
 {
-
-
-
-
-
   void app_on_load( bsp::AppData* appData )
   {
-    // bsm::Font* test = bsm::create_font_from_ttf_file( "../../data/bs.ttf" );
-    // test = test;
-   // BREAK;
+    if ( !appData->userData )
+    {
+      appData->userData = (AppUserData*) bsm::allocate( bsp::platform->default.allocator, sizeof( AppUserData ) );
+    }
+
+    // AppUserData& app = *appData->userData;
+
+
+
+     // bsm::Font* test = bsm::create_font_from_ttf_file( "../../data/bs.ttf" );
+     // test = test;
+    // BREAK;
     bsm::mount_path_to_filesystem( bsp::platform->default.fileSystem, "/../../code/shader" );
     bsm::File* testTexture = bsm::load_file( bsp::platform->default.fileSystem, "test_texture.glsl" );
 
@@ -32,33 +41,22 @@ namespace bs
     // testMap.find( "test" );
     // testMap[""];
 
-    // auto* allocator = bsm::create_buddy_allocator2( GigaBytes( 1 ) );
-    auto* allocator = bsm::create_buddy_allocator( GigaBytes( 1 ) );
-    // auto* allocator = bsm::create_buddy_allocator( 256 );
 
-    //auto* al1 = bsm::allocate( allocator, 2000 );
-    auto* al = bsm::allocate( allocator, KiloBytes( 4 ) );
-    auto* al1 = bsm::allocate( allocator, 512 + 128 );
-    // auto* al = bsm::allocate( allocator, 16 );
-    // auto* al2 = bsm::allocate( allocator, 16 );
 
-    bsm::tight_fit_existing_allocation( allocator, (char*) al1, 512 + 128 );
 
-    bsm::free( allocator, al, KiloBytes( 4 ) );
-    bsm::free( allocator, al1, 20 );
 
-    al1 = bsm::allocate( allocator, KiloBytes( 3 ) );
-    al = bsm::allocate( allocator, 12345678 );
+//    int textArea;
 
-    bsm::destroy_buddy_allocator( allocator );
-    al = nullptr;
-    // auto* all = allocate( allocator, 5000 );
-    // auto* all2 = allocate( allocator, 5000 );
-    // auto* all3 = allocate( allocator, 5000 );
-    // auto* all4 = allocate( allocator, 5000 );
+    //screen virtualisation
+    //textmesh
 
-    // free( allocator, all );
-    // all = allocate( allocator, 5000 );
+    //canvas
+    // -> canvas transformation to screen
+    //textarea location on that canvas
+    //textarea text content
+
+
+
 
     u32 poop[] = { 12,15,33,41,42,47,51,52,53,54,61 };
 
@@ -75,6 +73,11 @@ namespace bs
 
   void app_tick( bsp::AppData* appData )
   {
+
+
+
+
+
 
 
 

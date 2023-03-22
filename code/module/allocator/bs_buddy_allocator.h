@@ -21,6 +21,10 @@ namespace bsm
   void free( BuddyAllocator* allocator, void* allocation );
   void free( BuddyAllocator* allocator, void* allocation, s64 size );
 
+  //If you are planning to keep your allocation around for longer,
+  //use this after allocating to have the buddy allocator waste less memory.
+  void defragment_existing_allocation( BuddyAllocator* allocator, void* allocation, s64 size );
+
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -109,7 +113,7 @@ namespace bsm
     return resultLevel;
   }
 
-  u64 get_meta_count_for_level_count( s32 levelCount )
+  u64 get_meta_block_count_for_max_level( s32 levelCount )
   {
     u64 result = 0;
     s32 iterations = levelCount / 9;
@@ -192,6 +196,23 @@ namespace bsm
     return data & bit;
   }
 
+  INLINE u64 get_defragmentation_index( u64 blockIndex )
+  {
+    return u64( 1 ) + (blockIndex << 2);
+  }
+  INLINE u64 get_right_child_block_index( u64 blockIndex )
+  {
+    return u64( 1 ) + (blockIndex << 1);
+  }
+  INLINE u64 get_left_child_block_index( u64 blockIndex )
+  {
+    return blockIndex << 1;
+  }
+  INLINE u64 get_parent_block_index( u64 blockIndex )
+  {
+    return blockIndex >> 1;
+  }
+
   bool debug_block_index_matches_level( BuddyAllocator* allocator, u64 blockIndex, s32 level )
   {
     u64 const controlIndex = (u64( 1 ) << (1 + allocator->maxLevel - level));
@@ -251,52 +272,6 @@ namespace bsm
     return level;
   }
 
-  void free_at_level( BuddyAllocator* allocator, char* address, s32 level )
-  {
-    u64 blockIndex = get_block_index_for_address_and_level( allocator, address, level );
-    assert( debug_block_index_matches_level( allocator, blockIndex, level ) );
-
-    // control bit
-    block_state_xor( allocator, blockIndex );
-
-    //merge
-    for ( ; level < allocator->maxLevel; ++level )
-    {
-      //see if buddy is mergable
-      if ( !block_state_xor( allocator, blockIndex >> 1 ) )
-      {
-        BuddyAllocator::FreeNode* buddy = get_node_for_block_index_and_level( allocator, blockIndex ^ 1, level );
-        remove_node( buddy );
-        blockIndex>>=1;
-      }
-      else
-      {
-        break;
-      }
-    }
-
-    BuddyAllocator::FreeNode* newNode = get_node_for_block_index_and_level( allocator, blockIndex, level );
-    assert( debug_block_index_matches_level( allocator, blockIndex, level ) );
-    add_node( &allocator->freeNodesList[level], newNode );
-  }
-
-  void free( BuddyAllocator* allocator, void* allocation )
-  {
-    s32 level = find_level_of_address_for_deallocation( allocator, (char*) allocation );
-    free_at_level( allocator, (char*) allocation, level );
-  }
-
-  void free( BuddyAllocator* allocator, void* allocation, s64 size )
-  {
-    s32 level = get_level_for_size( allocator, size );
-
-    //TODO remove this line whenever confident the leveling is fine
-    s32 debugLevel = find_level_of_address_for_deallocation( allocator, (char*) allocation );
-    assert( level == debugLevel );
-
-    free_at_level( allocator, (char*) allocation, level );
-  }
-
   void* allocate_to_zero( BuddyAllocator* allocator, s64 size )
   {
     void* result = allocate( allocator, size );
@@ -306,7 +281,7 @@ namespace bsm
 
   BuddyAllocator* create_buddy_allocator( s64 size, u32 suggestLeafSize )
   {
-    u32 leafSize = max( suggestLeafSize, 64UL );
+    u32 leafSize = max( suggestLeafSize, sizeof( BuddyAllocator::FreeNode ) );
     s32 maxLevel = 0;
 
     u64 sizeAtMaxLevel = s64( leafSize );
@@ -316,7 +291,7 @@ namespace bsm
       ++maxLevel;
     }
 
-    u64 metaDataSize = get_meta_count_for_level_count( maxLevel ) * sizeof( BuddyAllocator::MetaDataBlock );
+    u64 metaDataSize = get_meta_block_count_for_max_level( maxLevel ) * sizeof( BuddyAllocator::MetaDataBlock );
 
     u64 const deadSpaceOffset = sizeAtMaxLevel - u64( size );
     s64 overheadSize = deadSpaceOffset + sizeof( BuddyAllocator ) + sizeof( BuddyAllocator::FreeNode ) * maxLevel + metaDataSize;
@@ -357,6 +332,7 @@ namespace bsm
       blockIndex >>= 1;
     }
 
+    defragment_existing_allocation( allocator, result->buffer, overheadSize );
     return result;
   }
 
@@ -365,26 +341,7 @@ namespace bsm
     bsp::platform->free_app_memory( allocator->meta );
   }
 
-  ///TIGHT FIT WIP
-
-  INLINE u64 get_tight_fit_block_index( u64 blockIndex )
-  {
-    return u64( 1 ) + (blockIndex << 2);
-  }
-  INLINE u64 get_right_child_block_index( u64 blockIndex )
-  {
-    return u64( 1 ) + (blockIndex << 1);
-  }
-  INLINE u64 get_left_child_block_index( u64 blockIndex )
-  {
-    return blockIndex << 1;
-  }
-  INLINE u64 get_parent_block_index( u64 blockIndex )
-  {
-    return blockIndex >> 1;
-  }
-
-  void tight_fit_existing_allocation( BuddyAllocator* allocator, char* allocation, s64 size )
+  void defragment_existing_allocation( BuddyAllocator* allocator, void* allocation, s64 size )
   {
     s32 level = get_level_for_size( allocator, size );
 
@@ -395,25 +352,32 @@ namespace bsm
       return;
     }
 
-    //round up size to next leaf size
+    //round up to next leaf size
     size += allocator->leafSize - (((size - 1) % allocator->leafSize) + 1);
+    s64 fullSizeAtLevel = (s64) get_size_for_level( allocator, level );
+    if ( size > fullSizeAtLevel - allocator->leafSize )
+    {
+      //this has no relevant inner fragmentation
+      BREAK;
+      return;
+    }
 
-    u64 blockIndex = get_block_index_for_address_and_level( allocator, allocation, level );
+    u64 blockIndex = get_block_index_for_address_and_level( allocator, (char*) allocation, level );
     u64 leftIndex = get_left_child_block_index( blockIndex );
     u64 rightIndex = get_right_child_block_index( blockIndex );
-    u64 tightFitIndex = get_tight_fit_block_index( leftIndex );
+    u64 defragmentationIndex = get_defragmentation_index( leftIndex );
 
     if ( !block_state_get( allocator, blockIndex ) )
     {
       //make sure it was indicated as split.
-      assert( !block_state_get( allocator, tightFitIndex ) );
+      assert( !block_state_get( allocator, defragmentationIndex ) );
       //make sure the left child is properly marked, which means this was already tightly fit
       assert( block_state_get( allocator, leftIndex ) );
       return;
     }
 
-    assert( !block_state_get( allocator, tightFitIndex ) );
-    block_state_xor( allocator, tightFitIndex );
+    assert( !block_state_get( allocator, defragmentationIndex ) );
+    block_state_xor( allocator, defragmentationIndex );
 
     u64 controlBlockIndex = leftIndex;
     while ( level-- )
@@ -443,6 +407,7 @@ namespace bsm
 
         if ( size == levelSize )
         {
+          block_state_xor( allocator, controlBlockIndex );
           break;
         }
 
@@ -455,62 +420,98 @@ namespace bsm
     }
   }
 
-  void free_tight_fit_at_level_INCOMPLETE( BuddyAllocator* allocator, char* allocation, s32 level )
+  void free_defragmented_block_at_level( BuddyAllocator* allocator, u64 blockIndex, s32 level )
   {
-    if ( level < 2 )
-    {
-      //not a valid split, we leave
-      BREAK;
-      return;
-    }
+    u64 defragmentationIndex = get_defragmentation_index( blockIndex );
+    assert( block_state_get( allocator, defragmentationIndex ) );
+    assert( block_state_get( allocator, blockIndex ) );
+    assert( block_state_get( allocator, get_parent_block_index( blockIndex ) ) );
 
-    u64 blockIndex = get_block_index_for_address_and_level( allocator, allocation, level );
-    u64 tightFitIndex = get_tight_fit_block_index( blockIndex );
-
-    if ( !block_state_get( allocator, tightFitIndex ) )
-    {
-      //not a tight fit allocation
-      BREAK;
-      return;
-    }
+    block_state_xor( allocator, defragmentationIndex );
 
     u64 controlIndex = blockIndex;
     s32 controlLevel = level;
 
+    blockIndex = blockIndex ^ 1;
+
     while ( controlLevel-- )
     {
       controlIndex = get_right_child_block_index( controlIndex );
-    }
-
-    //0 -> looking for  
-    //1 -> TODOTODO
-    //
-//    s32 processState = 0;
-
-    while ( controlIndex > blockIndex )
-    {
       if ( block_state_get( allocator, controlIndex ) )
       {
-        //start for process is here
-
-        //clean up
+        blockIndex = get_right_child_block_index( blockIndex );
         block_state_xor( allocator, controlIndex );
-
-
       }
-
-      controlIndex = get_parent_block_index( controlIndex );
+      else
+      {
+        blockIndex = get_left_child_block_index( blockIndex );
+      }
     }
 
+    bool doMerge = false;
+    while ( ++controlLevel < level )
+    {
+      bool isPart = blockIndex & 1;
+      blockIndex = (blockIndex | 1) ^ 1;
+      if ( isPart )
+      {
+        if ( !doMerge )
+        {
+          if ( block_state_xor( allocator, blockIndex >> 1 ) )
+          {
+            //buddy is not free
+            BuddyAllocator::FreeNode* newNode = get_node_for_block_index_and_level( allocator, blockIndex ^ 1, controlLevel );
+            add_node( &allocator->freeNodesList[controlLevel], newNode );
 
-    //walk down parts of the control branch to free as far as possible every part?
-    //find tight fit end 
+            doMerge = false;
+          }
+          else
+          {
+            //buddy is free, this should only ever be possible at the beginning
+            BuddyAllocator::FreeNode* buddy = get_node_for_block_index_and_level( allocator, blockIndex ^ 1, controlLevel );
+            remove_node( buddy );
+            doMerge = true;
+          }
+        }
+      }
+      else
+      {
+        if ( doMerge )
+        {
+          if ( block_state_xor( allocator, blockIndex >> 1 ) )
+          {
+            //buddy is not free
+            doMerge = false;
+          }
+          else
+          {
+            //buddy is free, remove it and continue
+            BuddyAllocator::FreeNode* buddy = get_node_for_block_index_and_level( allocator, blockIndex ^ 1, controlLevel );
+            remove_node( buddy );
+          }
+        }
+      }
+
+      blockIndex = get_parent_block_index( blockIndex );
+    }
+
+    if ( doMerge )
+    {
+      //add the largest block too, this will just get merged right away, but this way we can use the existing free function
+      BuddyAllocator::FreeNode* newNode = get_node_for_block_index_and_level( allocator, blockIndex | 1, controlLevel );
+      add_node( &allocator->freeNodesList[controlLevel], newNode );
+    }
+    else
+    {
+      //we weren't able to free all the fragments in the block, unset the parent and we're good to go.
+      block_state_xor( allocator, get_parent_block_index( blockIndex ) );
+    }
   }
 
-  void free_at_levelCOPY_DELETABLE( BuddyAllocator* allocator, char* address, s32 level )
+  void free_block_at_level( BuddyAllocator* allocator, u64 blockIndex, s32 level )
   {
-    u64 blockIndex = get_block_index_for_address_and_level( allocator, address, level );
     assert( debug_block_index_matches_level( allocator, blockIndex, level ) );
+    assert( block_state_get( allocator, blockIndex ) );
 
     // control bit
     block_state_xor( allocator, blockIndex );
@@ -519,11 +520,11 @@ namespace bsm
     for ( ; level < allocator->maxLevel; ++level )
     {
       //see if buddy is mergable
-      if ( !block_state_xor( allocator, blockIndex >> 1 ) )
+      if ( !block_state_xor( allocator, get_parent_block_index( blockIndex ) ) )
       {
         BuddyAllocator::FreeNode* buddy = get_node_for_block_index_and_level( allocator, blockIndex ^ 1, level );
         remove_node( buddy );
-        blockIndex>>=1;
+        blockIndex = get_parent_block_index( blockIndex );
       }
       else
       {
@@ -536,4 +537,46 @@ namespace bsm
     add_node( &allocator->freeNodesList[level], newNode );
   }
 
+  void free( BuddyAllocator* allocator, void* allocation, s64 size )
+  {
+    s32 level = get_level_for_size( allocator, size );
+    u64 blockIndex = get_block_index_for_address_and_level( allocator, (char*) allocation, level );
+
+    if ( level >= 3 )
+    {
+      u64 leftIndex = get_left_child_block_index( blockIndex );
+      u64 defragmentationIndex = get_defragmentation_index( leftIndex );
+
+      if ( block_state_get( allocator, defragmentationIndex ) )
+      {
+        //this allocation has been defragmented, we go down a level
+        --level;
+        blockIndex = leftIndex;
+
+        //clean up defragmentation before attempting to free & merge up to higher levels
+        free_defragmented_block_at_level( allocator, blockIndex, level );
+      }
+    }
+
+    free_block_at_level( allocator, blockIndex, level );
+  }
+
+  void free( BuddyAllocator* allocator, void* allocation )
+  {
+    s32 level = find_level_of_address_for_deallocation( allocator, (char*) allocation );
+    u64 blockIndex = get_block_index_for_address_and_level( allocator, (char*) allocation, level );
+
+    if ( level >= 2 )
+    {
+      u64 defragmentationIndex = get_defragmentation_index( blockIndex );
+
+      if ( block_state_get( allocator, defragmentationIndex ) )
+      {
+        //clean up defragmentation before attempting to free & merge up to higher levels
+        free_defragmented_block_at_level( allocator, blockIndex, level );
+      }
+    }
+
+    free_block_at_level( allocator, blockIndex, level );
+  }
 };

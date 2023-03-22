@@ -4,15 +4,12 @@
 
 #include <gl/gl.h>
 
+#define BS_OGLAPI __stdcall
+
 using GLchar = char;
 using GLsizeiptr = s64;
 using GLintptr = intptr_t;
-#define GL_NO_ERROR                       0
-#define GL_INVALID_ENUM                   0x0500
-#define GL_INVALID_VALUE                  0x0501
-#define GL_INVALID_OPERATION              0x0502
-#define GL_STACK_OVERFLOW                 0x0503
-#define GL_STACK_UNDERFLOW                0x0504
+
 #define GL_OUT_OF_MEMORY                  0x0505
 #define GL_SHADING_LANGUAGE_VERSION       0x8B8C
 #define GL_FRAGMENT_SHADER                0x8B30
@@ -159,105 +156,105 @@ namespace opengl_ext
   // OPENGL 2.0 ///////////////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  using glShaderSource             = void   WINAPI( GLuint shader, GLsizei count, const GLchar** string, const GLint* length );
-  using glCreateShader             = GLuint WINAPI( GLenum type );
-  using glCompileShader            = void   WINAPI( GLuint shader );
-  using glAttachShader             = void   WINAPI( GLuint program, GLuint shader );
-  using glDetachShader             = void   WINAPI( GLuint program, GLuint shader );
-  using glDeleteShader             = void   WINAPI( GLuint shader );
-  using glCreateProgram            = GLuint WINAPI( void );
-  using glLinkProgram              = void   WINAPI( GLuint program );
-  using glDeleteProgram            = void   WINAPI( GLuint program );
-  using glBufferData               = void   WINAPI( GLenum target, GLsizeiptr size, const void* data, GLenum usage );
-  using glBufferSubData            = void   WINAPI( GLenum target, GLintptr offset, GLsizeiptr size, const void* data );
-  using glBindBuffer               = void   WINAPI( GLenum target, GLuint buffer );
-  using glDeleteBuffers            = void   WINAPI( GLsizei n, const GLuint* buffers );
-  using glUseProgram               = void   WINAPI( GLuint program );
-  using glGetProgramiv             = void   WINAPI( GLuint program, GLenum pname, GLint* params );
-  using glGetProgramInfoLog        = void   WINAPI( GLuint program, GLsizei bufSize, GLsizei* length, GLchar* infoLog );
-  using glGetShaderiv              = void   WINAPI( GLuint shader, GLenum pname, GLint* params );
-  using glGetShaderInfoLog         = void   WINAPI( GLuint shader, GLsizei bufSize, GLsizei* length, GLchar* infoLog );
-  using glVertexAttribPointer      = void   WINAPI( GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void* pointer );
-  using glDisableVertexAttribArray = void   WINAPI( GLuint index );
-  using glEnableVertexAttribArray  = void   WINAPI( GLuint index );
-  using glGenBuffers               = void   WINAPI( GLsizei n, GLuint* buffers );
-  using glGetActiveUniform         = void   WINAPI( GLuint program, GLuint index, GLsizei bufSize, GLsizei* length, GLint* size, GLenum* type, GLchar* name );
-  using glGetUniformLocation       = GLint  WINAPI( GLuint program, const GLchar* name );
-  using glGetUniformfv             = void   WINAPI( GLuint program, GLint location, GLfloat* params );
-  using glGetUniformiv             = void   WINAPI( GLuint program, GLint location, GLint* params );
-  using glUniform1f                = void   WINAPI( GLint location, GLfloat v0 );
-  using glUniform2f                = void   WINAPI( GLint location, GLfloat v0, GLfloat v1 );
-  using glUniform3f                = void   WINAPI( GLint location, GLfloat v0, GLfloat v1, GLfloat v2 );
-  using glUniform4f                = void   WINAPI( GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3 );
-  using glUniform1i                = void   WINAPI( GLint location, GLint v0 );
-  using glUniform2i                = void   WINAPI( GLint location, GLint v0, GLint v1 );
-  using glUniform3i                = void   WINAPI( GLint location, GLint v0, GLint v1, GLint v2 );
-  using glUniform4i                = void   WINAPI( GLint location, GLint v0, GLint v1, GLint v2, GLint v3 );
-  using glUniform1fv               = void   WINAPI( GLint location, GLsizei count, const GLfloat* value );
-  using glUniform2fv               = void   WINAPI( GLint location, GLsizei count, const GLfloat* value );
-  using glUniform3fv               = void   WINAPI( GLint location, GLsizei count, const GLfloat* value );
-  using glUniform4fv               = void   WINAPI( GLint location, GLsizei count, const GLfloat* value );
-  using glUniform1iv               = void   WINAPI( GLint location, GLsizei count, const GLint* value );
-  using glUniform2iv               = void   WINAPI( GLint location, GLsizei count, const GLint* value );
-  using glUniform3iv               = void   WINAPI( GLint location, GLsizei count, const GLint* value );
-  using glUniform4iv               = void   WINAPI( GLint location, GLsizei count, const GLint* value );
-  using glUniformMatrix2fv         = void   WINAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
-  using glUniformMatrix3fv         = void   WINAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
-  using glUniformMatrix4fv         = void   WINAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
+  using glShaderSource             = void   BS_OGLAPI( GLuint shader, GLsizei count, const GLchar** string, const GLint* length );
+  using glCreateShader             = GLuint BS_OGLAPI( GLenum type );
+  using glCompileShader            = void   BS_OGLAPI( GLuint shader );
+  using glAttachShader             = void   BS_OGLAPI( GLuint program, GLuint shader );
+  using glDetachShader             = void   BS_OGLAPI( GLuint program, GLuint shader );
+  using glDeleteShader             = void   BS_OGLAPI( GLuint shader );
+  using glCreateProgram            = GLuint BS_OGLAPI( void );
+  using glLinkProgram              = void   BS_OGLAPI( GLuint program );
+  using glDeleteProgram            = void   BS_OGLAPI( GLuint program );
+  using glBufferData               = void   BS_OGLAPI( GLenum target, GLsizeiptr size, const void* data, GLenum usage );
+  using glBufferSubData            = void   BS_OGLAPI( GLenum target, GLintptr offset, GLsizeiptr size, const void* data );
+  using glBindBuffer               = void   BS_OGLAPI( GLenum target, GLuint buffer );
+  using glDeleteBuffers            = void   BS_OGLAPI( GLsizei n, const GLuint* buffers );
+  using glUseProgram               = void   BS_OGLAPI( GLuint program );
+  using glGetProgramiv             = void   BS_OGLAPI( GLuint program, GLenum pname, GLint* params );
+  using glGetProgramInfoLog        = void   BS_OGLAPI( GLuint program, GLsizei bufSize, GLsizei* length, GLchar* infoLog );
+  using glGetShaderiv              = void   BS_OGLAPI( GLuint shader, GLenum pname, GLint* params );
+  using glGetShaderInfoLog         = void   BS_OGLAPI( GLuint shader, GLsizei bufSize, GLsizei* length, GLchar* infoLog );
+  using glVertexAttribPointer      = void   BS_OGLAPI( GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void* pointer );
+  using glDisableVertexAttribArray = void   BS_OGLAPI( GLuint index );
+  using glEnableVertexAttribArray  = void   BS_OGLAPI( GLuint index );
+  using glGenBuffers               = void   BS_OGLAPI( GLsizei n, GLuint* buffers );
+  using glGetActiveUniform         = void   BS_OGLAPI( GLuint program, GLuint index, GLsizei bufSize, GLsizei* length, GLint* size, GLenum* type, GLchar* name );
+  using glGetUniformLocation       = GLint  BS_OGLAPI( GLuint program, const GLchar* name );
+  using glGetUniformfv             = void   BS_OGLAPI( GLuint program, GLint location, GLfloat* params );
+  using glGetUniformiv             = void   BS_OGLAPI( GLuint program, GLint location, GLint* params );
+  using glUniform1f                = void   BS_OGLAPI( GLint location, GLfloat v0 );
+  using glUniform2f                = void   BS_OGLAPI( GLint location, GLfloat v0, GLfloat v1 );
+  using glUniform3f                = void   BS_OGLAPI( GLint location, GLfloat v0, GLfloat v1, GLfloat v2 );
+  using glUniform4f                = void   BS_OGLAPI( GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3 );
+  using glUniform1i                = void   BS_OGLAPI( GLint location, GLint v0 );
+  using glUniform2i                = void   BS_OGLAPI( GLint location, GLint v0, GLint v1 );
+  using glUniform3i                = void   BS_OGLAPI( GLint location, GLint v0, GLint v1, GLint v2 );
+  using glUniform4i                = void   BS_OGLAPI( GLint location, GLint v0, GLint v1, GLint v2, GLint v3 );
+  using glUniform1fv               = void   BS_OGLAPI( GLint location, GLsizei count, const GLfloat* value );
+  using glUniform2fv               = void   BS_OGLAPI( GLint location, GLsizei count, const GLfloat* value );
+  using glUniform3fv               = void   BS_OGLAPI( GLint location, GLsizei count, const GLfloat* value );
+  using glUniform4fv               = void   BS_OGLAPI( GLint location, GLsizei count, const GLfloat* value );
+  using glUniform1iv               = void   BS_OGLAPI( GLint location, GLsizei count, const GLint* value );
+  using glUniform2iv               = void   BS_OGLAPI( GLint location, GLsizei count, const GLint* value );
+  using glUniform3iv               = void   BS_OGLAPI( GLint location, GLsizei count, const GLint* value );
+  using glUniform4iv               = void   BS_OGLAPI( GLint location, GLsizei count, const GLint* value );
+  using glUniformMatrix2fv         = void   BS_OGLAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
+  using glUniformMatrix3fv         = void   BS_OGLAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
+  using glUniformMatrix4fv         = void   BS_OGLAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
 
   // OPENGL 2.1 ///////////////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  using glUniformMatrix2x3fv = void WINAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
-  using glUniformMatrix3x2fv = void WINAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
-  using glUniformMatrix2x4fv = void WINAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
-  using glUniformMatrix4x2fv = void WINAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
-  using glUniformMatrix3x4fv = void WINAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
-  using glUniformMatrix4x3fv = void WINAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
+  using glUniformMatrix2x3fv = void BS_OGLAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
+  using glUniformMatrix3x2fv = void BS_OGLAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
+  using glUniformMatrix2x4fv = void BS_OGLAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
+  using glUniformMatrix4x2fv = void BS_OGLAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
+  using glUniformMatrix3x4fv = void BS_OGLAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
+  using glUniformMatrix4x3fv = void BS_OGLAPI( GLint location, GLsizei count, GLboolean transpose, const GLfloat* value );
 
   // OPENGL 3.0 ///////////////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  using glGenVertexArrays    = void WINAPI( GLsizei n, GLuint* arrays );
-  using glBindVertexArray    = void WINAPI( GLuint array );
-  using glDeleteVertexArrays = void WINAPI( GLsizei n, const GLuint* arrays );
-  using glBindBufferBase     = void WINAPI( GLenum target, GLuint index, GLuint buffer );
-  using glBindBufferRange    = void WINAPI( GLenum target, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size );
-  using glUniform1ui         = void WINAPI( GLint location, GLuint v0 );
-  using glUniform2ui         = void WINAPI( GLint location, GLuint v0, GLuint v1 );
-  using glUniform3ui         = void WINAPI( GLint location, GLuint v0, GLuint v1, GLuint v2 );
-  using glUniform4ui         = void WINAPI( GLint location, GLuint v0, GLuint v1, GLuint v2, GLuint v3 );
-  using glUniform1uiv        = void WINAPI( GLint location, GLsizei count, const GLuint* value );
-  using glUniform2uiv        = void WINAPI( GLint location, GLsizei count, const GLuint* value );
-  using glUniform3uiv        = void WINAPI( GLint location, GLsizei count, const GLuint* value );
-  using glUniform4uiv        = void WINAPI( GLint location, GLsizei count, const GLuint* value );
+  using glGenVertexArrays    = void BS_OGLAPI( GLsizei n, GLuint* arrays );
+  using glBindVertexArray    = void BS_OGLAPI( GLuint array );
+  using glDeleteVertexArrays = void BS_OGLAPI( GLsizei n, const GLuint* arrays );
+  using glBindBufferBase     = void BS_OGLAPI( GLenum target, GLuint index, GLuint buffer );
+  using glBindBufferRange    = void BS_OGLAPI( GLenum target, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size );
+  using glUniform1ui         = void BS_OGLAPI( GLint location, GLuint v0 );
+  using glUniform2ui         = void BS_OGLAPI( GLint location, GLuint v0, GLuint v1 );
+  using glUniform3ui         = void BS_OGLAPI( GLint location, GLuint v0, GLuint v1, GLuint v2 );
+  using glUniform4ui         = void BS_OGLAPI( GLint location, GLuint v0, GLuint v1, GLuint v2, GLuint v3 );
+  using glUniform1uiv        = void BS_OGLAPI( GLint location, GLsizei count, const GLuint* value );
+  using glUniform2uiv        = void BS_OGLAPI( GLint location, GLsizei count, const GLuint* value );
+  using glUniform3uiv        = void BS_OGLAPI( GLint location, GLsizei count, const GLuint* value );
+  using glUniform4uiv        = void BS_OGLAPI( GLint location, GLsizei count, const GLuint* value );
 
   // OPENGL 3.1 ///////////////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  using glGetUniformBlockIndex      = GLuint WINAPI( GLuint program, const GLchar* uniformBlockName );
-  using glUniformBlockBinding       = void   WINAPI( GLuint program, GLuint uniformBlockIndex, GLuint uniformBlockBinding );
-  using glGetActiveUniformBlockiv   = void   WINAPI( GLuint program, GLuint uniformBlockIndex, GLenum pname, GLint* params );
-  using glGetActiveUniformBlockName = void   WINAPI( GLuint program, GLuint uniformBlockIndex, GLsizei bufSize, GLsizei* length, GLchar* uniformBlockName );
+  using glGetUniformBlockIndex      = GLuint BS_OGLAPI( GLuint program, const GLchar* uniformBlockName );
+  using glUniformBlockBinding       = void   BS_OGLAPI( GLuint program, GLuint uniformBlockIndex, GLuint uniformBlockBinding );
+  using glGetActiveUniformBlockiv   = void   BS_OGLAPI( GLuint program, GLuint uniformBlockIndex, GLenum pname, GLint* params );
+  using glGetActiveUniformBlockName = void   BS_OGLAPI( GLuint program, GLuint uniformBlockIndex, GLsizei bufSize, GLsizei* length, GLchar* uniformBlockName );
 
   // OPENGL 4.3 ///////////////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  using DEBUG_MESSAGE_CALLBACK_SIGNATURE = void WINAPI( GLenum src, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* msg, void const* user_param );
-  using glDebugMessageCallback           = void WINAPI( DEBUG_MESSAGE_CALLBACK_SIGNATURE callback, const void* userParam );
+  using DEBUG_MESSAGE_CALLBACK_SIGNATURE = void BS_OGLAPI( GLenum src, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* msg, void const* user_param );
+  using glDebugMessageCallback           = void BS_OGLAPI( DEBUG_MESSAGE_CALLBACK_SIGNATURE callback, const void* userParam );
 
   // OPENGL 4.5 ///////////////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  using glCreateBuffers            = void WINAPI( GLsizei n, GLuint* buffers );
-  using glNamedBufferData          = void WINAPI( GLuint buffer, GLsizeiptr size, const void* data, GLenum usage );
-  using glNamedBufferSubData       = void WINAPI( GLuint buffer, GLintptr offset, GLsizeiptr size, const void* data );
-  using glCreateVertexArrays       = void WINAPI( GLsizei n, GLuint* arrays );
-  using glEnableVertexArrayAttrib  = void WINAPI( GLuint vaobj, GLuint index );
-  using glVertexArrayElementBuffer = void WINAPI( GLuint vaobj, GLuint buffer );
-  using glVertexArrayAttribBinding = void WINAPI( GLuint vaobj, GLuint attribindex, GLuint bindingindex );
-  using glVertexArrayAttribFormat  = void WINAPI( GLuint vaobj, GLuint attribindex, GLint size, GLenum type, GLboolean normalized, GLuint relativeoffset );
-  using glVertexArrayVertexBuffer  = void WINAPI( GLuint vaobj, GLuint bindingindex, GLuint buffer, GLintptr offset, GLsizei stride );
+  using glCreateBuffers            = void BS_OGLAPI( GLsizei n, GLuint* buffers );
+  using glNamedBufferData          = void BS_OGLAPI( GLuint buffer, GLsizeiptr size, const void* data, GLenum usage );
+  using glNamedBufferSubData       = void BS_OGLAPI( GLuint buffer, GLintptr offset, GLsizeiptr size, const void* data );
+  using glCreateVertexArrays       = void BS_OGLAPI( GLsizei n, GLuint* arrays );
+  using glEnableVertexArrayAttrib  = void BS_OGLAPI( GLuint vaobj, GLuint index );
+  using glVertexArrayElementBuffer = void BS_OGLAPI( GLuint vaobj, GLuint buffer );
+  using glVertexArrayAttribBinding = void BS_OGLAPI( GLuint vaobj, GLuint attribindex, GLuint bindingindex );
+  using glVertexArrayAttribFormat  = void BS_OGLAPI( GLuint vaobj, GLuint attribindex, GLint size, GLenum type, GLboolean normalized, GLuint relativeoffset );
+  using glVertexArrayVertexBuffer  = void BS_OGLAPI( GLuint vaobj, GLuint bindingindex, GLuint buffer, GLintptr offset, GLsizei stride );
   //GLAPI void APIENTRY glNamedBufferSubData (GLuint buffer, GLintptr offset, GLsizeiptr size, const void *data);
 
 };
@@ -343,6 +340,7 @@ DEFINE_GL( glVertexArrayAttribBinding );
 DEFINE_GL( glVertexArrayAttribFormat );
 DEFINE_GL( glVertexArrayVertexBuffer );
 
+#if defined(BREWING_STATION_PLATFORM)
 namespace opengl_ext
 {
   void* get_proc_address( char const* functionName );
@@ -433,5 +431,4 @@ namespace opengl_ext
     return result;
   }
 };
-
-
+#endif

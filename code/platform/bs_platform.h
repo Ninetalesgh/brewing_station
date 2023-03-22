@@ -8,7 +8,6 @@
 #include <core/bsinput.h>
 #include <core/bstask.h>
 
-
 namespace bsm
 {
   struct SlowThreadSafeAllocator;
@@ -16,6 +15,8 @@ namespace bsm
   struct Font;
   struct GlyphTable;
 };
+
+struct AppUserData;
 
 namespace bsp
 {
@@ -81,7 +82,15 @@ namespace bsp
   using destroy_shader_program_fn = void( bs::ShaderProgramID );
 
   //TODO WIP
+
   using set_shader_program_data_fn = void( bs::ShaderProgramID, char** names );
+
+
+  //choose a frame buffer
+  //initiate draw calls with program
+
+//  void update_uniform_buffer( UniformBufferID buffer, s64 offset, s64 size, void* data )
+
 
   using render_to_target_fn = void( int renderTarget, bs::ShaderProgramID shaderProgram, void** drawCalls );
 
@@ -146,14 +155,15 @@ namespace bsp
 
   } extern* platform;
 
-
   struct AppData
   {
     u64 currentFrameIndex;
     float deltaTime;
     bs::input::State input;
     // net::NetworkData network;
-    void* userData;
+
+    //This is to be user defined
+    AppUserData* userData;
   };
 
   #define APP_ON_LOAD_PARAMETERS bsp::AppData* appData, bsp::PlatformCallbacks* platformCallbacks, char const* executablePath
