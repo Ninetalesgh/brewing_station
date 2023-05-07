@@ -7,7 +7,7 @@ pushd ..\build
 
 set codepath=..\..\code
 
-set compiler_options=/I %codepath% /GR- /EHa- /FC /MT /nologo /volatile:iso /W4 /wd4068 /wd4100 /wd4201 /wd4701
+set compiler_options=/I %codepath% /GR- /EHa- /FC /MT /nologo /volatile:iso /W4 /wd4068 /wd4100 /wd4201 /wd4701 /wd4189
 set linker_options=/link /opt:ref /incremental:no
 
 set app_exports=/EXPORT:app_on_load_internal /EXPORT:app_tick_internal

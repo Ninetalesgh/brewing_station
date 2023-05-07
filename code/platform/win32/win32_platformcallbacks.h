@@ -4,7 +4,7 @@
 #include "win32_global.h"
 #include "win32_thread.h"
 
-#include <module/bs_debuglog.h>
+#include <core/bs_debuglog.h>
 #include <core/bs_texture.h>
 
 #include <stdio.h>
@@ -31,14 +31,14 @@ s32 wchar_to_utf8( wchar_t const* wcharString, char* out_utf8String, s32 utf8Str
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void win32_debug_log( bsm::DebugLogFlags flags, char const* string, s32 size )
+void win32_debug_log( bs::DebugLogFlags flags, char const* string, s32 size )
 {
   //wchar_t wideChars[bs::debug::MAX_DEBUG_MESSAGE_LENGTH];
  // utf8_to_wchar( string, wideChars, array_count( wideChars ) );
 
  // OutputDebugStringA( string );
   printf( string );
-  if ( flags & bsm::DebugLogFlags::WRITE_TO_DEBUG_LOG_FILE )
+  if ( flags & bs::DebugLogFlags::WRITE_TO_DEBUG_LOG_FILE )
   {
     static HANDLE debug_log_file = CreateFileW( L"debug.log", GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0 );
     s32 bytesWritten {};
@@ -48,7 +48,7 @@ void win32_debug_log( bsm::DebugLogFlags flags, char const* string, s32 size )
     // UnlockFile(debug_log_file, dwPos, 0, dwBytesRead, 0);
 
   }
-  if ( flags & bsm::DebugLogFlags::SEND_TO_SERVER )
+  if ( flags & bs::DebugLogFlags::SEND_TO_SERVER )
   {
 
   }
@@ -63,11 +63,13 @@ void win32_debug_log( bsm::DebugLogFlags flags, char const* string, s32 size )
 void* win32_allocate( s64 size )
 {
   log_info( "Allocating ", size, " Bytes of Application RAM." );
+  // return malloc( size );
   return VirtualAlloc( 0, (s64) global::APP_MEMORY_SIZE, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
 }
 
 void win32_free( void* allocationToFree )
 {
+  //free( allocationToFree );
   VirtualFree( allocationToFree, 0, MEM_RELEASE );
 }
 

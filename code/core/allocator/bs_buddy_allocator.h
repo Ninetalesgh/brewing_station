@@ -4,10 +4,11 @@
 #include <core/bsthread.h>
 #include <common/bs_common.h>
 
+//first draft, unoptimized, general use case slightly slower than malloc.
 
-namespace bsm
+
+namespace bs
 {
-
   struct BuddyAllocator;
 
   [[nodiscard]]
@@ -18,13 +19,13 @@ namespace bsm
   void* allocate( BuddyAllocator* allocator, s64 size );
   [[nodiscard]]
   void* allocate_to_zero( BuddyAllocator* allocator, s64 size );
+
   void free( BuddyAllocator* allocator, void* allocation );
   void free( BuddyAllocator* allocator, void* allocation, s64 size );
 
   //If you are planning to keep your allocation around for longer,
   //use this after allocating to have the buddy allocator waste less memory.
   void defragment_existing_allocation( BuddyAllocator* allocator, void* allocation, s64 size );
-
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -35,7 +36,7 @@ namespace bsm
 
 #include <memory>
 
-namespace bsm
+namespace bs
 {
   struct BuddyAllocator
   {
@@ -57,7 +58,7 @@ namespace bsm
     s32 maxLevel;
   };
 
-  void add_node( BuddyAllocator::FreeNode* list, BuddyAllocator::FreeNode* newNode )
+  INLINE void add_node( BuddyAllocator::FreeNode* list, BuddyAllocator::FreeNode* newNode )
   {
     newNode->next = list;
     newNode->prev = list->prev;
@@ -65,7 +66,7 @@ namespace bsm
     list->prev = newNode;
   }
 
-  void remove_node( BuddyAllocator::FreeNode* node )
+  INLINE void remove_node( BuddyAllocator::FreeNode* node )
   {
     node->next->prev = node->prev;
     node->prev->next = node->next;
@@ -76,13 +77,13 @@ namespace bsm
     return u64( allocator->leafSize ) << level;
   }
 
-  u64 get_block_index_for_address_and_level( BuddyAllocator* allocator, char* address, s32 level )
+  INLINE u64 get_block_index_for_address_and_level( BuddyAllocator* allocator, char* address, s32 level )
   {
     u64 offset = (u64( 1 ) << allocator->maxLevel) + (u64( address - allocator->buffer ) / u64( allocator->leafSize ));
     return offset >> level;
   }
 
-  s32 get_level_for_block_index( BuddyAllocator* allocator, u64 blockIndex )
+  INLINE s32 get_level_for_block_index( BuddyAllocator* allocator, u64 blockIndex )
   {
     s32 result = allocator->maxLevel;
     while ( blockIndex>>=1 )
@@ -92,7 +93,7 @@ namespace bsm
     return result;
   }
 
-  BuddyAllocator::FreeNode* get_node_for_block_index_and_level( BuddyAllocator* allocator, u64 blockIndex, s32 level )
+  INLINE BuddyAllocator::FreeNode* get_node_for_block_index_and_level( BuddyAllocator* allocator, u64 blockIndex, s32 level )
   {
     u64 offset = (blockIndex << u64( level )) - (u64( 1 ) << u64( allocator->maxLevel ));
     char* const address = (allocator->buffer + (offset * u64( allocator->leafSize )));
@@ -127,15 +128,17 @@ namespace bsm
     return result;
   }
 
-  u64 get_offset_in_level( BuddyAllocator* allocator, u64 blockIndex, s32 level )
+  INLINE u64 get_offset_in_level( BuddyAllocator* allocator, u64 blockIndex, s32 level )
   {
     return blockIndex - (u64( 1 ) << (allocator->maxLevel - level));
   }
 
-  s32 get_meta_origin_level( BuddyAllocator* allocator, s32 level )
+  INLINE s32 get_meta_origin_level( BuddyAllocator* allocator, s32 level )
   {
     return min( level + 8 - (level % 9), allocator->maxLevel );
   }
+
+  //TODO get block state get and set is a little convoluted still, optimizing block_state_xor and block_state_get wouldn't be bad 
 
   u64 get_meta_index( BuddyAllocator* allocator, u64 blockIndex )
   {

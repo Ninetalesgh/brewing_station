@@ -19,8 +19,8 @@
 //#include <core/internal/bsnet.cpp>
 //#include <core/internal/bsgraphics.cpp>
 #include <platform/bs_platform.h>
-#include <module/bs_allocator.h>
-#include <module/bs_font.h>
+#include <core/bs_allocator.h>
+#include <core/bs_font.h>
 
 namespace bsp
 {
@@ -30,17 +30,22 @@ namespace bsp
 
     if ( !platform->default.allocator )
     {
-      platform->default.allocator = bsm::create_slow_thread_safe_allocator( GigaBytes( 4 ) );
+      platform->default.allocator = bs::create_thread_safe_linear_allocator( GigaBytes( 1 ) );
+    }
+
+    if ( !platform->default.mainThreadAllocator )
+    {
+      platform->default.mainThreadAllocator = bs::create_buddy_allocator( GigaBytes( 2 ) );
     }
 
     if ( !platform->default.fileSystem )
     {
-      platform->default.fileSystem = bsm::create_filesystem();
+      platform->default.fileSystem = bs::create_filesystem();
       if ( executablePath )
       {
-        bsm::mount_path_to_filesystem( platform->default.fileSystem, executablePath );
+        bs::mount_path_to_filesystem( platform->default.fileSystem, executablePath );
         //TODO this only while debugging
-        bsm::mount_path_to_filesystem( platform->default.fileSystem, "/../../data" );
+        bs::mount_path_to_filesystem( platform->default.fileSystem, "/../../data" );
       }
     }
 
@@ -50,7 +55,7 @@ namespace bsp
       {
         BREAK;
       }
-      platform->default.font = bsm::create_font_from_ttf_file( "default_font.ttf", platform->default.fileSystem );
+      platform->default.font = bs::create_font_from_ttf_file( "default_font.ttf", platform->default.fileSystem );
     }
 
     if ( !platform->default.glyphTable )
@@ -60,7 +65,7 @@ namespace bsp
         BREAK;
       }
       char const chars[] = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
-      platform->default.glyphTable = bsm::create_glyph_table_for_utf8_characters( platform->default.font, chars );
+      platform->default.glyphTable = bs::create_glyph_table_for_utf8_characters( platform->default.font, chars );
     }
 
     bs::app_on_load( appData );

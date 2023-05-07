@@ -2,15 +2,16 @@
 
 #include <common/bs_common.h>
 
-#include <module/bs_debuglog.h>
+#include <core/bs_debuglog.h>
 #include <core/bs_texture.h>
 #include <core/bs_mesh.h>
 #include <core/bsinput.h>
 #include <core/bstask.h>
 
-namespace bsm
+namespace bs
 {
-  struct SlowThreadSafeAllocator;
+  struct BuddyAllocator;
+  struct ThreadSafeLinearAllocator;
   struct FileSystem;
   struct Font;
   struct GlyphTable;
@@ -21,7 +22,7 @@ struct AppUserData;
 namespace bsp
 {
 
-  using debug_log_fn = void( bsm::DebugLogFlags, char const* message, s32 messageSize );
+  using debug_log_fn = void( bs::DebugLogFlags, char const* message, s32 messageSize );
 
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////    file io    //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -92,7 +93,12 @@ namespace bsp
 //  void update_uniform_buffer( UniformBufferID buffer, s64 offset, s64 size, void* data )
 
 
-  using render_to_target_fn = void( int renderTarget, bs::ShaderProgramID shaderProgram, void** drawCalls );
+  enum class DrawCallSelection: u32
+  {
+    MESHES_UI
+  };
+
+  using render_to_target_fn = void( int renderTarget, bs::ShaderProgramID shaderProgram, void* drawCalls );
 
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -147,10 +153,11 @@ namespace bsp
     //default modules
     struct DefaultModules
     {
-      bsm::SlowThreadSafeAllocator* allocator = nullptr;
-      bsm::FileSystem* fileSystem = nullptr;
-      bsm::Font* font = nullptr;
-      bsm::GlyphTable* glyphTable = nullptr;
+      bs::ThreadSafeLinearAllocator* allocator = nullptr;
+      bs::BuddyAllocator* mainThreadAllocator = nullptr;
+      bs::FileSystem* fileSystem = nullptr;
+      bs::Font* font = nullptr;
+      bs::GlyphTable* glyphTable = nullptr;
     } default;
 
   } extern* platform;

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <module/bs_allocator.h>
+#include <core/bs_allocator.h>
 #include <common/bs_string.h>
 #include <common/bs_common.h>
 
@@ -82,7 +82,7 @@ namespace bs
     HashRegister32* result = nullptr;
     s32 nameCapacity = startCapacity * avgNameLengthEstimate;
     s32 allocationSize = sizeof( HashRegister32 ) + (sizeof( u32 ) + sizeof( s32 )) * startCapacity + nameCapacity;
-    char* allocation = (char*) bsm::allocate( bsp::platform->default.allocator, (s64) allocationSize );
+    char* allocation = (char*) bs::allocate( bsp::platform->default.allocator, (s64) allocationSize );
     if ( allocation )
     {
       result               = (HashRegister32*) result;
@@ -301,7 +301,7 @@ namespace bs
       u32 hash;
       char name[max_name_length];
     };
-    void* allocation = bsm::allocate_to_zero( bsp::platform->default.allocator, MAX * sizeof( AAA ) );
+    void* allocation = bs::allocate_to_zero( bsp::platform->default.allocator, MAX * sizeof( AAA ) );
 
     AAA* entries = (AAA*) allocation;
 
@@ -364,7 +364,7 @@ namespace bs
     log_info( "Total collisions: ", totalCollisions, " | Average collisions per batch: ", avgCollisions );
     log_info( "Collision rate: ", float( totalCollisions ) * 100.0f / float( totalBatches * MAX ), "%%" );
 
-    bsm::free( bsp::platform->default.allocator, allocation );
+    bs::free( bsp::platform->default.allocator, allocation );
   }
 
   void hash_tester64( hash64_fn* hash_call, s32 const testBatchCount )
@@ -376,7 +376,7 @@ namespace bs
       u64 hash;
       char name[max_name_length];
     };
-    void* allocation = bsm::allocate_to_zero( bsp::platform->default.allocator, MAX * sizeof( AAA ) );
+    void* allocation = bs::allocate_to_zero( bsp::platform->default.allocator, MAX * sizeof( AAA ) );
 
     AAA* entries = (AAA*) allocation;
 
@@ -439,7 +439,7 @@ namespace bs
     log_info( "Total collisions: ", totalCollisions, " | Average collisions per batch: ", avgCollisions );
     log_info( "Collision rate: ", float( totalCollisions ) * 100.0f / float( totalBatches * MAX ), "%%" );
 
-    bsm::free( bsp::platform->default.allocator, allocation );
+    bs::free( bsp::platform->default.allocator, allocation );
   }
 
 };

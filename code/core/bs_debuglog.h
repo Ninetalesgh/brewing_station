@@ -3,17 +3,17 @@
 #include <common/bs_common.h>
 
 
-# define log_info_con_only( ... )     bsm::_debug_log( bsm::DebugLogFlags::INFO, __VA_ARGS__ )
-# define log_warning_con_only( ... )  bsm::_debug_log( bsm::DebugLogFlags::WARNING, __VA_ARGS__ )
-# define log_error_con_only( ... )    bsm::_debug_log( bsm::DebugLogFlags::ERROR, __VA_ARGS__ )
-# define log_info( ... )     bsm::_debug_log( bsm::DebugLogFlags::WRITE_TO_DEBUG_LOG_FILE | bsm::DebugLogFlags::INFO, __VA_ARGS__ )
-# define log_warning( ... )  bsm::_debug_log( bsm::DebugLogFlags::WRITE_TO_DEBUG_LOG_FILE | bsm::DebugLogFlags::WARNING, __VA_ARGS__ )
-# define log_error( ... )    bsm::_debug_log( bsm::DebugLogFlags::WRITE_TO_DEBUG_LOG_FILE | bsm::DebugLogFlags::ERROR, __VA_ARGS__ )
+# define log_info_con_only( ... )     bs::_debug_log( bs::DebugLogFlags::INFO, __VA_ARGS__ )
+# define log_warning_con_only( ... )  bs::_debug_log( bs::DebugLogFlags::WARNING, __VA_ARGS__ )
+# define log_error_con_only( ... )    bs::_debug_log( bs::DebugLogFlags::ERROR, __VA_ARGS__ )
+# define log_info( ... )     bs::_debug_log( bs::DebugLogFlags::WRITE_TO_DEBUG_LOG_FILE | bs::DebugLogFlags::INFO, __VA_ARGS__ )
+# define log_warning( ... )  bs::_debug_log( bs::DebugLogFlags::WRITE_TO_DEBUG_LOG_FILE | bs::DebugLogFlags::WARNING, __VA_ARGS__ )
+# define log_error( ... )    bs::_debug_log( bs::DebugLogFlags::WRITE_TO_DEBUG_LOG_FILE | bs::DebugLogFlags::ERROR, __VA_ARGS__ )
 
 
 
 
-namespace bsm
+namespace bs
 {
 
   enum DebugLogFlags: u32
@@ -41,7 +41,7 @@ namespace bsm
 #include <platform/bs_platform.h>
 #include <common/bs_string.h>
 
-namespace bsm
+namespace bs
 {
 
   template<typename... Args> void _debug_log( DebugLogFlags flags, Args... args )

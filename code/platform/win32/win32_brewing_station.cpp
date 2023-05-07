@@ -6,7 +6,7 @@
 #include "win32_thread.h"
 #include <platform/win32/win32_opengl.h>
 #include <platform/bs_platform.h>
-#include <module/bs_performanceprofile.h>
+#include <core/bs_performanceprofile.h>
 //#include <core/bsfont.h>
 #include <common/bs_string.h>
 

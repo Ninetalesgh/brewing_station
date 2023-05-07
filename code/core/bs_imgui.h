@@ -1,6 +1,6 @@
 #pragma once
 
-namespace bsm
+namespace bs
 {
 
   namespace imgui
@@ -20,7 +20,7 @@ namespace bsm
 ///////////////////////////////////////////////////////////////////////////
 
 
-namespace bsm
+namespace bs
 {
   namespace imgui
   {

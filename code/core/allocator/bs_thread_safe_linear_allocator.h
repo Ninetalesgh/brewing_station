@@ -1,15 +1,47 @@
 #pragma once
 
-#include "allocator/bs_buddy_allocator.h"
-
 #include <platform/bs_platform.h>
-#include <module/bs_debuglog.h>
+#include <core/bs_debuglog.h>
 #include <core/bsthread.h>
 #include <common/bs_common.h>
 
-namespace bsm
+namespace bs
 {
-  struct SlowThreadSafeAllocator
+  struct ThreadSafeLinearAllocator;
+
+  [[nodiscard]]
+  /// @brief 
+  /// @param size will be the total size of the allocation including the allocator and overhead, 
+  /// this is not to be precisely sized.  
+  /// @return 
+  ThreadSafeLinearAllocator* create_thread_safe_linear_allocator( s64 size );
+
+  void destroy_thread_safe_linear_allocator( ThreadSafeLinearAllocator* allocator );
+
+  [[nodiscard]]
+  /// @brief 
+  /// @param allocator 
+  /// @param size 
+  /// @return 64 byte aligned memory block of asked size
+  void* allocate( ThreadSafeLinearAllocator* allocator, s64 size );
+  [[nodiscard]]
+  void* allocate_to_zero( ThreadSafeLinearAllocator* allocator, s64 size );
+  void free( ThreadSafeLinearAllocator* allocator, void* address );
+
+};
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////cpp/////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+#include <memory>
+
+namespace bs
+{
+  struct ThreadSafeLinearAllocator
   {
     struct Entry
     {
@@ -23,60 +55,28 @@ namespace bsm
     atomic32 threadGuard;
   };
 
-  [[nodiscard]]
-  /// @brief 
-  /// @param size will be the total size of the allocation including the allocator and overhead, 
-  /// this is not to be precisely sized.  
-  /// @return 
-  SlowThreadSafeAllocator* create_slow_thread_safe_allocator( s64 size );
-
-  void destroy_slow_thread_safe_allocator( SlowThreadSafeAllocator* allocator );
-
-  [[nodiscard]]
-  /// @brief 
-  /// @param allocator 
-  /// @param size 
-  /// @return 64 byte aligned memory block of asked size
-  void* allocate( SlowThreadSafeAllocator* allocator, s64 size );
-  [[nodiscard]]
-  void* allocate_to_zero( SlowThreadSafeAllocator* allocator, s64 size );
-  void free( SlowThreadSafeAllocator* allocator, void* address );
-
-};
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////cpp/////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////
-
-#include <memory>
-
-namespace bsm
-{
   INLINE char* align_pointer_forward( char* ptr, s32 byteAlignment ) { return (char*) (((u64( ptr ) - 1) | (byteAlignment - 1)) + 1); }
 
-  void* allocate_to_zero( SlowThreadSafeAllocator* allocator, s64 size )
+  void* allocate_to_zero( ThreadSafeLinearAllocator* allocator, s64 size )
   {
     void* result = allocate( allocator, size );
     memset( result, 0, size );
     return result;
   }
-  void* allocate( SlowThreadSafeAllocator* allocator, s64 size )
+  void* allocate( ThreadSafeLinearAllocator* allocator, s64 size )
   {
     LOCK_SCOPE( allocator->threadGuard ); //This isn't meant to be called often, not necessary to optimize now
 
     //make sure there's space for entry
-    if ( allocator->entries->end + sizeof( SlowThreadSafeAllocator::Entry ) > (char*) allocator->entries )
+    if ( allocator->entries->end + sizeof( ThreadSafeLinearAllocator::Entry ) > (char*) allocator->entries )
     {
       BREAK; //TODO more space
       return nullptr;
     }
 
     s64 bestSlotSize = s64( ((char*) (allocator->entries - 1)) - allocator->entries->end );
-    SlowThreadSafeAllocator::Entry* bestSlot = allocator->entries;
-    SlowThreadSafeAllocator::Entry* search = allocator->lastEntry;
+    ThreadSafeLinearAllocator::Entry* bestSlot = allocator->entries;
+    ThreadSafeLinearAllocator::Entry* search = allocator->lastEntry;
 
     //linear find smallest space that fits O(n)
     while ( search > allocator->entries )
@@ -96,7 +96,7 @@ namespace bsm
       return nullptr;
     }
 
-    size_t bytes = (bestSlot - allocator->entries) * sizeof( SlowThreadSafeAllocator::Entry );
+    size_t bytes = (bestSlot - allocator->entries) * sizeof( ThreadSafeLinearAllocator::Entry );
     memmove( allocator->entries - 1, allocator->entries, bytes );
     --allocator->entries;
     --bestSlot;
@@ -106,17 +106,17 @@ namespace bsm
     return bestSlot->begin;
   }
 
-  void free( SlowThreadSafeAllocator* allocator, void* address )
+  void free( ThreadSafeLinearAllocator* allocator, void* address )
   {
     LOCK_SCOPE( allocator->threadGuard );
 
-    SlowThreadSafeAllocator::Entry* search = allocator->entries;
+    ThreadSafeLinearAllocator::Entry* search = allocator->entries;
 
     while ( search < allocator->lastEntry )
     {
       if ( search->begin == (char*) address )
       {
-        size_t bytes = (search - allocator->entries) * sizeof( SlowThreadSafeAllocator::Entry );
+        size_t bytes = (search - allocator->entries) * sizeof( ThreadSafeLinearAllocator::Entry );
         memmove( allocator->entries + 1, allocator->entries, bytes );
         ++allocator->entries;
         return;
@@ -127,16 +127,16 @@ namespace bsm
     BREAK; //TODO address wasn't in this allocator? 
   }
 
-  SlowThreadSafeAllocator* create_slow_thread_safe_allocator( s64 size )
+  ThreadSafeLinearAllocator* create_thread_safe_linear_allocator( s64 size )
   {
     char* allocation = (char*) bsp::platform->allocate_new_app_memory( size );
-    SlowThreadSafeAllocator* result = (SlowThreadSafeAllocator*) allocation;
+    ThreadSafeLinearAllocator* result = (ThreadSafeLinearAllocator*) allocation;
 
     if ( allocation )
     {
-      result->buffer = align_pointer_forward( allocation + sizeof( SlowThreadSafeAllocator ), 64 );
+      result->buffer = align_pointer_forward( allocation + sizeof( ThreadSafeLinearAllocator ), 64 );
 
-      result->entries = (SlowThreadSafeAllocator::Entry*) (allocation + size - sizeof( SlowThreadSafeAllocator::Entry ));
+      result->entries = (ThreadSafeLinearAllocator::Entry*) (allocation + size - sizeof( ThreadSafeLinearAllocator::Entry ));
       result->entries[0].end = (char*) result->buffer;
       result->entries[0].begin = nullptr;
       result->lastEntry = result->entries;
@@ -150,7 +150,7 @@ namespace bsm
     return result;
   }
 
-  void destroy_slow_thread_safe_allocator( SlowThreadSafeAllocator* allocator )
+  void destroy_thread_safe_linear_allocator( ThreadSafeLinearAllocator* allocator )
   {
     bsp::platform->free_app_memory( allocator );
   }
@@ -163,7 +163,7 @@ namespace bsm
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace bsm
+namespace bs
 {
 
   struct SimpleBuddyAllocator;
@@ -184,7 +184,7 @@ namespace bsm
 ////////////////////////////////////////////////////////////////////////////
 
 
-namespace bsm
+namespace bs
 {
   struct SimpleBuddyAllocator
   {
@@ -305,7 +305,7 @@ namespace bsm
   bool debug_block_index_matches_level( SimpleBuddyAllocator* allocator, u64 blockIndex, s32 level )
   {
     u64 const controlIndex = (u64( 1 ) << (1 + allocator->maxLevel - level));
-    return blockIndex < controlIndex&& blockIndex >= (controlIndex >> 1);
+    return blockIndex < controlIndex && blockIndex >= (controlIndex >> 1);
   }
 
   void* allocate( SimpleBuddyAllocator* allocator, s64 size )

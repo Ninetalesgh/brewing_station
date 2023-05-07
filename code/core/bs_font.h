@@ -3,7 +3,7 @@
 #include <core/bs_texture.h>
 #include <common/bs_common.h>
 
-namespace bsm
+namespace bs
 {
   struct Font;
 
@@ -69,13 +69,13 @@ namespace bsm
 ///////////////////////////////////////////////////////////////////////////
 
 #include <platform/bs_platform.h>
-#include <module/bs_filesystem.h>
+#include <core/bs_filesystem.h>
 #include <common/bs_color.h>
 #include <common/bs_bitmap.h>
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "internal/stb_truetype.h"
 
-namespace bsm
+namespace bs
 {
   struct Font
   {
@@ -102,7 +102,7 @@ namespace bsm
       }
       else
       {
-        bsm::free( bsp::platform->default.allocator, ttfFile->data );
+        bs::free( bsp::platform->default.allocator, ttfFile->data );
         font = nullptr;
         BREAK;
       }
@@ -116,13 +116,13 @@ namespace bsm
     if ( stbtt_GetFontOffsetForIndex( (u8 const*) ttfData, 0 ) == 0 )
     {
       u32 allocSize = sizeof( Font );
-      u8* allocation = (u8*) bsm::allocate( bsp::platform->default.allocator, allocSize );
+      u8* allocation = (u8*) bs::allocate( bsp::platform->default.allocator, allocSize );
       memset( allocation, 0, allocSize );
       font = (Font*) allocation;
 
       if ( !stbtt_InitFont( &font->fontInfo, (u8 const*) ttfData, 0 ) )
       {
-        bsm::free( bsp::platform->default.allocator, allocation );
+        bs::free( bsp::platform->default.allocator, allocation );
         font = nullptr;
         BREAK;
       }
@@ -141,10 +141,10 @@ namespace bsm
     {
       if ( font->fontInfo.data )
       {
-        bsm::free( bsp::platform->default.allocator, font->fontInfo.data );
+        bs::free( bsp::platform->default.allocator, font->fontInfo.data );
       }
 
-      bsm::free( bsp::platform->default.allocator, font );
+      bs::free( bsp::platform->default.allocator, font );
     }
   }
 
@@ -163,7 +163,7 @@ namespace bsm
     GlyphTable* resultGlyphTable = nullptr;
     {
       s32 allocSize = sizeof( GlyphTable ) + sizeof( Glyph ) * glyphCount;
-      u8* allocation = (u8*) bsm::allocate( bsp::platform->default.allocator, allocSize );
+      u8* allocation = (u8*) bs::allocate( bsp::platform->default.allocator, allocSize );
       memset( allocation, 0, allocSize );
       resultGlyphTable = (GlyphTable*) allocation;
       rects = (Glyph*) (allocation + sizeof( GlyphTable ));
@@ -201,7 +201,7 @@ namespace bsm
     #define LUL
     bs::Bitmap* sheetBMP = nullptr;
     {
-      u8* allocation = (u8*) bsm::allocate( bsp::platform->default.allocator, sizeof( bs::Bitmap ) + sizeof( u32 ) * sheetDims.x * sheetDims.y );
+      u8* allocation = (u8*) bs::allocate( bsp::platform->default.allocator, sizeof( bs::Bitmap ) + sizeof( u32 ) * sheetDims.x * sheetDims.y );
       sheetBMP = (bs::Bitmap*) allocation;
       sheetBMP->width = sheetDims.x;
       sheetBMP->height = sheetDims.y;
@@ -228,7 +228,7 @@ namespace bsm
           }
         }
 
-        bsm::free( bsp::platform->default.allocator, rawGlyphData );
+        bs::free( bsp::platform->default.allocator, rawGlyphData );
       }
     }
 
@@ -245,7 +245,7 @@ namespace bsm
     resultGlyphTable->width =      sheetBMP->width;
     resultGlyphTable->height =     sheetBMP->height;
 
-    bsm::free( bsp::platform->default.allocator, sheetBMP );
+    bs::free( bsp::platform->default.allocator, sheetBMP );
 
     return resultGlyphTable;
 
@@ -261,7 +261,7 @@ namespace bsm
       }
       if ( table->glyphs )
       {
-        bsm::free( bsp::platform->default.allocator, table->glyphs );
+        bs::free( bsp::platform->default.allocator, table->glyphs );
       }
     }
   }
@@ -309,7 +309,7 @@ namespace bsm
 
         if ( gbm.w && gbm.h )
         {
-          u8* allocation = (u8*) bsm::allocate( bsp::platform->default.allocator, sizeof( RawGlyphData ) + gbm.w * gbm.h );
+          u8* allocation = (u8*) bs::allocate( bsp::platform->default.allocator, sizeof( RawGlyphData ) + gbm.w * gbm.h );
           glyph = (RawGlyphData*) allocation;
           gbm.pixels = allocation + sizeof( RawGlyphData );
           glyph->data = gbm.pixels;
@@ -325,7 +325,7 @@ namespace bsm
             stbtt_vertex* vertices = nullptr;
             s32 num_verts = stbtt_GetGlyphShape( fontInfo, glyphIndex, &vertices );
             stbtt_Rasterize( &gbm, flatnessInPixels, vertices, num_verts, scale_x, scale_y, shift_x, shift_y, ix0, iy0, 1, fontInfo->userdata );
-            bsm::free( bsp::platform->default.allocator, vertices );
+            bs::free( bsp::platform->default.allocator, vertices );
           }
           else
           {

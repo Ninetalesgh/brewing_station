@@ -3,7 +3,7 @@
 #include <common/bs_common.h>
 
 
-namespace bsm
+namespace bs
 {
   enum class FileType: u64
   {
@@ -60,10 +60,10 @@ namespace bsm
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
-#include <module/bs_allocator.h>
+#include <core/bs_allocator.h>
 #include <core/bsthread.h>
 
-namespace bsm
+namespace bs
 {
   struct FileSystem
   {
@@ -80,7 +80,7 @@ namespace bsm
 
   FileSystem* create_filesystem()
   {
-    FileSystem* fs = (FileSystem*) bsm::allocate_to_zero( bsp::platform->default.allocator, sizeof( FileSystem ) );
+    FileSystem* fs = (FileSystem*) bs::allocate_to_zero( bsp::platform->default.allocator, sizeof( FileSystem ) );
     fs->writer = fs->mountedPaths;
     fs->mountedPathsCount = 0;
     fs->loadedFilesCount = 0;
@@ -95,7 +95,7 @@ namespace bsm
       FileSystem* part = fs;
       fs = fs->next;
       //TODO unload loaded files
-      bsm::free( bsp::platform->default.allocator, part );
+      bs::free( bsp::platform->default.allocator, part );
     }
   }
 
@@ -307,7 +307,7 @@ namespace bsm
       return nullptr;
     }
 
-    void* data = bsm::allocate( bsp::platform->default.allocator, size );
+    void* data = bs::allocate( bsp::platform->default.allocator, size );
     if ( data )
     {
       if ( bsp::platform->load_file_part( actualPath, 0, data, (u32) size ) )
@@ -321,7 +321,7 @@ namespace bsm
       }
       else
       {
-        bsm::free( bsp::platform->default.allocator, data );
+        bs::free( bsp::platform->default.allocator, data );
       }
     }
 
@@ -337,7 +337,7 @@ namespace bsm
     {
       if ( file->data && file->type != FileType::PCA )
       {
-        bsm::free( bsp::platform->default.allocator, file->data );
+        bs::free( bsp::platform->default.allocator, file->data );
       }
 
       interlocked_decrement( (s32 volatile*) &fs->loadedFilesCount );

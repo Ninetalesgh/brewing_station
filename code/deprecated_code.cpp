@@ -2749,7 +2749,7 @@ DEPRECATED
 
 #include "win32_global.h"
 
-//#include <module/bs_debuglog.h>
+//#include <core/bs_debuglog.h>
 #include <core/bsfile.h>
 #include <common/bs_string.h>
 #include <common/bs_common.h>
