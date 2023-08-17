@@ -126,6 +126,8 @@ using GLintptr = intptr_t;
 
 #define GL_ACTIVE_UNIFORMS                0x8B86
 #define GL_ACTIVE_UNIFORM_MAX_LENGTH      0x8B87
+#define GL_ACTIVE_ATTRIBUTES              0x8B89
+#define GL_ACTIVE_ATTRIBUTE_MAX_LENGTH    0x8B8A
 
 #define GL_DEBUG_OUTPUT                   0x92E0
 #define GL_DEBUG_OUTPUT_SYNCHRONOUS       0x8242
