@@ -14,6 +14,7 @@ namespace color
   constexpr u32 PURPLE     = 0xffff00ff;
   constexpr u32 YELLOW     = 0xffffff00;
 
+
   constexpr u32 MASK_ALPHA = 0xff000000;
   constexpr u32 MASK_RED   = 0x00ff0000;
   constexpr u32 MASK_GREEN = 0x0000ff00;

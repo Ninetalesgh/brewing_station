@@ -259,8 +259,8 @@ void brewing_station_main()
   {
     win32::WindowInitParameter parameter {};
     parameter.windowName = L"tmp_window_name";
-    parameter.width = 1024;//DEFAULT_WINDOW_SIZE.x;
-    parameter.height = 780;//DEFAULT_WINDOW_SIZE.y;
+    parameter.width = DEFAULT_WINDOW_SIZE.x;
+    parameter.height = DEFAULT_WINDOW_SIZE.y;
     parameter.x = 900;//-parameter.width - 200;
     parameter.y = 0;//200;
     parameter.wndClass.cbSize        = sizeof( WNDCLASSEX );

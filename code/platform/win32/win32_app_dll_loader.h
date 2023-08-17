@@ -89,12 +89,15 @@ namespace win32
 
             if ( successfulLoad )
             {
+              log_info( "[DLL RELOAD] Requesting application pause." );
               dll_reload_threads_action( &thread::request_pause );
 
               currentDllIndex = currentDllIndex ? 0 : 1;
               lastWriteTime = findData.ftLastWriteTime;
 
               dll_reload_threads_action( &thread::wait_for_thread_to_pause );
+              log_info( "[DLL RELOAD] Switching application library." );
+
               FreeLibrary( currentApp.dll );
               currentApp = newApp;
 
@@ -106,7 +109,11 @@ namespace win32
               // TODO: maybe this not here? 
               currentApp.on_load( &global::appData, &global::platformCallbacks, exePath );
 
+              static s32 reloadCount = 0;
+              log_info( "[DLL RELOAD] Successfully loaded application instance ", reloadCount++ );
+
               dll_reload_threads_action( &thread::request_unpause );
+              log_info( "[DLL RELOAD] Requesting application unpause." );
             }
             else
             {

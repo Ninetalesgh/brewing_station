@@ -8,6 +8,7 @@
 #include <core/bs_mesh.h>
 #include <core/bsinput.h>
 #include <core/bstask.h>
+#define DEFAULT_WINDOW_SIZE int2( 1024, 780 )
 
 namespace bs
 {

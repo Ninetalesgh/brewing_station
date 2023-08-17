@@ -14,12 +14,17 @@ struct AppUserData
 
 AppUserData* app;
 
-#define DEFAULT_WINDOW_SIZE int2( 1024, 780 )
 static bs::input::State* inputPtr;
 int const windowWidth = DEFAULT_WINDOW_SIZE.x;
 int const windowHeight = DEFAULT_WINDOW_SIZE.y - 40;
 
-
+void start();
+void update();
+u32 is_key_held( u32 key );
+void plot( int2 pos, u32 color );
+void draw_rect( int2 begin, int2 end, u32 color );
+void draw_circle( int2 pos, float radius, u32 color );
+void clear( u32 clearColor );
 
 
 INLINE u32 is_key_held( u32 key )
@@ -78,3 +83,34 @@ void draw_line( int2 begin, int2 end, u32 color )
 {
   //TODO
 }
+
+
+
+namespace bs
+{
+  void app_on_load( bsp::AppData* appData, bsp::PlatformCallbacks* platform )
+  {
+    if ( appData->userData == nullptr )
+    {
+      appData->userData = (AppUserData*) allocate( platform->default.allocator, sizeof( AppUserData ) );
+      app = (AppUserData*) appData->userData;
+      app->bmp.pixel = (u32*) allocate( platform->default.allocator, sizeof( u32 ) * windowWidth * windowHeight );
+      app->bmp.height = windowHeight;
+      app->bmp.width = windowWidth;
+    }
+
+    app = (AppUserData*) appData->userData;
+    inputPtr = &appData->input;
+
+    start();
+  }
+
+  void app_tick( bsp::AppData* appData, bsp::PlatformCallbacks* platform )
+  {
+    update();
+    // graphics::RenderGroup rg = graphics::render_group_from_custom_bitmap( &app->bmp );
+  //  platform::render( nullptr, &rg, nullptr );
+    platform->render_custom_bitmap( &app->bmp );
+    clear( color::BLACK );
+  }
+};
