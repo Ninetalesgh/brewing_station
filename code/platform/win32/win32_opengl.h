@@ -405,7 +405,6 @@ namespace opengl
     char const* sourceString = nullptr;
     char const* typeString = nullptr;
     char const* severityString = nullptr;
-    BREAK;
 
     switch ( source )
     {
@@ -702,13 +701,65 @@ namespace opengl
     glUniformMatrix4fv( location, 1, GL_FALSE, (const GLfloat*) data );
   }
 
-
   struct DrawCall
   {
     bs::Mesh* meshes;
     u32 meshCount;
     bs::ShaderProgramID programID;
   };
+
+  void render_custom_bitmap( bs::Bitmap* bmp )
+  {
+    int2 screenSize = ::global::mainWindow.size;
+
+    bs::TextureData texData {};
+    texData.pixel = bmp->pixel;
+    texData.width = bmp->width;
+    texData.height = bmp->height;
+    texData.format = bs::TextureFormat::RGBA8;
+
+    bs::TextureID id = allocate_texture( &texData );
+
+    glEnable( GL_TEXTURE_2D );
+    glBindTexture( GL_TEXTURE_2D, id );
+    glMatrixMode( GL_TEXTURE );
+    glLoadIdentity();
+    glMatrixMode( GL_MODELVIEW );
+    glLoadIdentity();
+    glMatrixMode( GL_PROJECTION );
+    glLoadIdentity();
+    glOrtho( 0.f, screenSize.x, screenSize.y, 0.f, 0.f, 10.f );
+
+    glEnable( GL_BLEND );
+    glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+
+    glBegin( GL_TRIANGLES );
+
+    float2 min = { -1, -1 };
+    float2 max = { (float) bmp->width, (float) bmp->height };
+    glTexCoord2f( 0.0f, 1.0f );
+    glVertex2f( min.x, max.y );
+
+    glTexCoord2f( 1.0f, 1.0f );
+    glVertex2f( max.x, max.y );
+
+    glTexCoord2f( 1.0f, 0.0f );
+    glVertex2f( max.x, min.y );
+
+    glTexCoord2f( 0.0f, 1.0f );
+    glVertex2f( min.x, max.y );
+
+    glTexCoord2f( 1.0f, 0.0f );
+    glVertex2f( max.x, min.y );
+
+    glTexCoord2f( 0.0f, 0.0f );
+    glVertex2f( min.x, min.y );
+
+    glEnd();
+    glBindTexture( GL_TEXTURE_2D, 0 );
+
+    free_texture( id );
+  }
 
   void draw( bs::Mesh* mesh, bs::Camera* camera, bs::ShaderProgramID programID, bs::TextureID textureID )
   {

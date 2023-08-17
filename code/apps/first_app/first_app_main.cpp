@@ -83,6 +83,7 @@ namespace bs
     update();
     // graphics::RenderGroup rg = graphics::render_group_from_custom_bitmap( &app->bmp );
   //  platform::render( nullptr, &rg, nullptr );
+    platform->render_custom_bitmap( &app->bmp );
     clear( color::BLACK );
   }
 };

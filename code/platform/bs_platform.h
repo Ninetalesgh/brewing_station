@@ -1,6 +1,7 @@
 #pragma once
 
 #include <common/bs_common.h>
+#include <common/bs_bitmap.h>
 
 #include <core/bs_debuglog.h>
 #include <core/bs_texture.h>
@@ -69,6 +70,8 @@ namespace bsp
 
   using allocate_texture_fn = bs::TextureID( bs::TextureData const* );
   using free_texture_fn = void( bs::TextureID );
+
+  using render_custom_bitmap_fn = void( bs::Bitmap* bmp );
 
   //mark sections with #h, #vs and #fs.
   //example file content:
@@ -142,6 +145,7 @@ namespace bsp
     allocate_texture_fn* allocate_texture;
     free_texture_fn* free_texture;
     create_shader_program_fn* create_shader_program;
+    render_custom_bitmap_fn* render_custom_bitmap;
 
     //system
     shutdown_fn* shutdown;

@@ -265,7 +265,7 @@ void register_callbacks( bsp::PlatformCallbacks* platform )
   platform->allocate_texture = &opengl::allocate_texture;
   platform->free_texture = &opengl::free_texture;
   platform->create_shader_program = &opengl::create_shader_program;
-
+  platform->render_custom_bitmap = &opengl::render_custom_bitmap;
   //system
   platform->shutdown = &win32_shutdown;
 }
