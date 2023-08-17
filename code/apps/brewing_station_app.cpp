@@ -1,14 +1,15 @@
 #define BREWING_STATION_APP
 
 //#define BUILD_TESTAPP
-//#define BUILD_FIRST_APP
-
-#define BUILD_BSANIM_APP
+#define BUILD_FIRST_APP
+//#define BUILD_BSANIM_APP
 //#define BUILD_ASSETPRECOMPILER_APP
 
 
 #if defined(BUILD_BSANIM_APP)
 #include "bsanim_app/bsanim_app_main.cpp"
+#elif defined(BUILD_FIRST_APP)
+#include "first_app/first_app_main.cpp"
 #elif defined(BUILD_ASSETPRECOMPILER_APP)
 #include "assetprecompiler/assetprecompiler_main.cpp"
 #endif
@@ -68,12 +69,12 @@ namespace bsp
       platform->default.glyphTable = bs::create_glyph_table_for_utf8_characters( platform->default.font, chars );
     }
 
-    bs::app_on_load( appData );
+    bs::app_on_load( appData, platformCallbacks );
   }
 
   void app_tick_internal( APP_TICK_PARAMETERS )
   {
-    bs::app_tick( appData );
+    bs::app_tick( appData, platformCallbacks );
   }
 
   PlatformCallbacks* platform;

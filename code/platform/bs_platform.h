@@ -31,7 +31,7 @@ namespace bsp
   using get_file_info_fn = bool( char const* filePath, u64* out_fileSize );
   using load_file_part_fn = bool( char const* filePath, u64 readOffset, void* targetBuffer, u32 bufferSize );
 
-  enum class WriteFileFlags: u32
+  enum class WriteFileFlags : u32
   {
     OVERWRITE_OR_CREATE_NEW = 0x0,
     APPEND_OR_FAIL = 0x1,
@@ -93,7 +93,7 @@ namespace bsp
 //  void update_uniform_buffer( UniformBufferID buffer, s64 offset, s64 size, void* data )
 
 
-  enum class DrawCallSelection: u32
+  enum class DrawCallSelection : u32
   {
     MESHES_UI
   };
@@ -177,7 +177,7 @@ namespace bsp
   using app_on_load_fn = void( APP_ON_LOAD_PARAMETERS );
   extern "C" app_on_load_fn app_on_load_internal;
 
-  #define APP_TICK_PARAMETERS bsp::AppData* appData
+  #define APP_TICK_PARAMETERS bsp::AppData* appData, bsp::PlatformCallbacks* platformCallbacks
   using app_tick_fn = void( APP_TICK_PARAMETERS );
   extern "C" app_tick_fn app_tick_internal;
 

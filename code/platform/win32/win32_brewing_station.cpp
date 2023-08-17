@@ -130,7 +130,7 @@ void brewing_station_loop()
     {
       PROFILE_SCOPE( debug_CyclesForAppTick );
 
-      global::appDll.tick( &global::appData );
+      global::appDll.tick( &global::appData, &global::platformCallbacks );
     }
 
     //TODO sound here ? 
@@ -261,8 +261,8 @@ void brewing_station_main()
     parameter.windowName = L"tmp_window_name";
     parameter.width = 1024;//DEFAULT_WINDOW_SIZE.x;
     parameter.height = 780;//DEFAULT_WINDOW_SIZE.y;
-    parameter.x = -parameter.width - 200;
-    parameter.y = 200;
+    parameter.x = 900;//-parameter.width - 200;
+    parameter.y = 0;//200;
     parameter.wndClass.cbSize        = sizeof( WNDCLASSEX );
     parameter.wndClass.style         = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
     parameter.wndClass.lpfnWndProc   = brewing_station_main_window_callback;

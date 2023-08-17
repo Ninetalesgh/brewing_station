@@ -59,3 +59,30 @@ void update()
 
 
 
+namespace bs
+{
+  void app_on_load( bsp::AppData* appData, bsp::PlatformCallbacks* platform )
+  {
+    if ( appData->userData == nullptr )
+    {
+      appData->userData = (AppUserData*) allocate( platform->default.allocator, sizeof( AppUserData ) );
+      app = (AppUserData*) appData->userData;
+      app->bmp.pixel = (u32*) allocate( platform->default.allocator, sizeof( u32 ) * windowWidth * windowHeight );
+      app->bmp.height = windowHeight;
+      app->bmp.width = windowWidth;
+    }
+
+    app = (AppUserData*) appData->userData;
+    inputPtr = &appData->input;
+
+    start();
+  }
+
+  void app_tick( bsp::AppData* appData, bsp::PlatformCallbacks* platform )
+  {
+    update();
+    // graphics::RenderGroup rg = graphics::render_group_from_custom_bitmap( &app->bmp );
+  //  platform::render( nullptr, &rg, nullptr );
+    clear( color::BLACK );
+  }
+};
