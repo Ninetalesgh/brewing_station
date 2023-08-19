@@ -6,9 +6,11 @@
 #include "common/bs_bitmap.h"
 #include "common/bs_color.h"
 #include "core/allocator/bs_thread_safe_linear_allocator.h"
+#include "barbie.h"
 
 struct AppUserData
 {
+  float rotator = 0;
   bs::Bitmap bmp;
 };
 
@@ -84,6 +86,77 @@ void draw_line( int2 begin, int2 end, u32 color )
   //TODO
 }
 
+void draw_pokeball( s32 radius, int2 pos )
+{
+  s32 begin = -radius;
+  s32 end =  radius;
+  int2 squarebegin = { pos.x - radius, pos.y - radius / 10 };
+  int2 squareend = { pos.x + radius, pos.y + radius / 10 };
+
+  for ( s32 y = begin; y < end; ++y )
+    for ( s32 x = begin; x < end; ++x )
+    {
+      if ( x * x + y * y < radius * radius )
+      {
+        int2 tmpPos = pos + int2 { x, y };
+        plot( tmpPos, color::interpolate( float( x + radius ) / float( 2.0f * radius ), color::PINK, color::WHITE ) );
+      }
+    }
+  for ( s32 y = begin; y < end / end; ++y )
+    for ( s32 x = begin; x < end; ++x )
+    {
+      if ( x * x + y * y < radius * radius )
+      {
+        int2 tmpPos = pos - int2 { x, y };
+        plot( tmpPos, color::WHITE );
+      }
+    }
+  // for(s32 y = begin; y < end / end; ++y )
+  //  for ( s32 x = begin; x < end; ++x )
+  // {
+  //   if ( x * x + y * y < radius * radius )
+  //   {
+  //     int2 tmpPos = pos - int2 { x, y };
+  //     plot( tmpPos, color::BLACK );
+  //   }
+  // }
+  for ( s32 y = squarebegin.y; y < squareend.y; ++y )
+    for ( s32 x = squarebegin.x; x < squareend.x; ++x )
+    {
+      int2 tmpPos = { x, y };
+      plot( tmpPos, color::BLACK );
+    }
+  for ( s32 y = begin; y < end; ++y )
+    for ( s32 x = begin; x < end; ++x )
+    {
+      if ( x * x + y * y < radius / 4 * radius / 4 )
+      {
+        int2 tmpPos = pos - int2 { x, y };
+        plot( tmpPos, color::BLACK );
+      }
+    }
+  for ( s32 y = begin; y < end; ++y )
+    for ( s32 x = begin; x < end; ++x )
+    {
+      if ( x * x + y * y < radius / 6 * radius / 6 )
+      {
+        int2 tmpPos = pos - int2 { x, y };
+        plot( tmpPos, color::WHITE );
+      }
+    }
+
+}
+
+
+
+
+
+
+
+
+
+
+
 
 
 namespace bs
@@ -94,6 +167,7 @@ namespace bs
     {
       appData->userData = (AppUserData*) allocate( platform->default.allocator, sizeof( AppUserData ) );
       app = (AppUserData*) appData->userData;
+      *app = AppUserData();
       app->bmp.pixel = (u32*) allocate( platform->default.allocator, sizeof( u32 ) * windowWidth * windowHeight );
       app->bmp.height = windowHeight;
       app->bmp.width = windowWidth;
