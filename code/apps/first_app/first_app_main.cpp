@@ -15,11 +15,22 @@ void start()
 
 //float gravity = 9.8f;
 
+#pragma warning(disable : 4702)
+void test_stuff()
+{
+  draw_line( { 0, 0 }, { 500,500 }, color::WHITE );
+  draw_line( { 0, 500 }, { 500,0 }, color::PINK );
+
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////
 //LINES
 void update()
 {
   using namespace bs::input;
+
+  test_stuff();
+  return;
 
   // for ( int i = 10; i < 300; ++i )
   // {
@@ -43,7 +54,7 @@ void update()
       for ( s32 x = begin.x; x < end.x; ++x )
       {
         int2 pos = { x, y };
-        plot( pos, color::TEAL );
+        plot( pos, color::interpolate( 0.5f * ((sinf( app->rotator ) + 1.0f)), color::PURPLE, color::TEAL ) );
       }
   }
   {
@@ -54,7 +65,7 @@ void update()
       for ( s32 x = begin.x; x < end.x; ++x )
       {
         int2 pos = { x, y };
-        plot( pos, color::PURPLE );
+        plot( pos, color::interpolate( 0.5f * ((sinf( app->rotator ) + 1.0f)), color::BABYPINK, color::HOTPINK ) );
       }
   }
   {
@@ -86,17 +97,18 @@ void update()
     //     }
     // }
 
-  {
-    int2 begin { 0, 0 };
-    int2 end { windowWidth, windowHeight };
+//BACKGROUND
+  // {
+  //   int2 begin { 0, 0 };
+  //   int2 end { windowWidth, windowHeight };
 
 
-    for ( s32 y = begin.y; y < end.y; ++y )
-      for ( s32 x = begin.x; x < end.x; ++x )
-      {
-        plot( { x,y }, color::interpolate( float( x ) / float( windowWidth ), color::BABYPINK, color::LIGHTBLUE ) );
-      }
-  }
+  //   for ( s32 y = begin.y; y < end.y; ++y )
+  //     for ( s32 x = begin.x; x < end.x; ++x )
+  //     {
+  //       plot( { x,y }, color::interpolate( float( x ) / float( windowWidth ), color::BABYPINK, color::LIGHTBLUE ) );
+  //     }
+  // }
 
 
   ////////////////////////////////////////////////////////////////////////////////////
@@ -251,18 +263,18 @@ void update()
   ///////////////////////////////////////////////////////////////////////////////////////
 //POKEBALL FUNCTION
   {
-    s32 radius = 30;
-    int2 pos = { 100,100 };
+    s32 radius = 60;
+    int2 pos = { 780,600 };
     draw_pokeball( radius, pos );
   }
   {
-    s32 radius = 100;
-    int2 pos = { 500, 200 };
+    s32 radius = 80;
+    int2 pos = { 700, 150 };
     draw_pokeball( radius, pos );
   }
   {
-    s32 radius = 350;
-    int2 pos = { 200,600 };
+    s32 radius = 150;
+    int2 pos = { 200,550 };
     draw_pokeball( radius, pos );
   }
   ///////////////////////////////////////////////////////////////////////////////////////

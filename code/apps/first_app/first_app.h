@@ -84,6 +84,38 @@ INLINE void draw_circle( int2 pos, float radius, u32 color )
 void draw_line( int2 begin, int2 end, u32 color )
 {
   //TODO
+  float dy = float( end.y - begin.y ) / float( end.x - begin.x );
+
+  // if (fabsf(dy) > 1.0f)
+  // {
+  //   //switch to dx
+  // }
+  // else
+  // {
+  //   if ()
+  // }
+  // float const beginy = min( begin.y, end.y );
+  // float dx = 1.0f;
+  // if ( dy > 1.0f )
+  // {
+  //   dx = 1.0f / dy;
+  //   dy = 1.0f;
+  // }
+
+  float y = float( begin.y );
+
+  {
+    for ( s32 x = begin.x; x < end.x; ++x )
+    {
+      plot( { x, s32( y ) }, color );
+      y += dy;
+    }
+  }
+}
+
+void draw_pokeball_optimized( s32 radius, int2 pos )
+{
+  //TODO
 }
 
 void draw_pokeball( s32 radius, int2 pos )
