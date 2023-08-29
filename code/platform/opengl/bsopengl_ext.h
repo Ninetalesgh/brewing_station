@@ -57,6 +57,8 @@ using GLintptr = intptr_t;
 #define GL_SAMPLER_2D_SHADOW              0x8B62
 
 #define GL_RGBA8                          0x8058
+#define GL_SRGB                           0x8C40
+#define GL_SRGB_ALPHA                     0x8C42
 #define GL_SRGB8_ALPHA8                   0x8C43
 #define GL_FRAMEBUFFER_SRGB               0x8DB9
 

@@ -58,6 +58,14 @@ namespace bs
     assert( imageFile->size <= INT_MAX );
     result.pixel = (u32*) stbi_load_from_memory( (u8*) imageFile->data, s32( imageFile->size ), &result.width, &result.height, &channelsPerSample, bytesPerChannel );
     unload_file( imageFile );
+
+    u32 const* end = result.pixel + result.width * result.height;
+    u32* writer = result.pixel;
+    while ( writer < end )
+    {
+      *writer = color::srgba_to_rgba( *writer );
+      ++writer;
+    }
     return result;
   }
 

@@ -22,6 +22,8 @@ namespace color
 
   //INLINE u32 rgba_to_bgra( u32 color ) { return (MASK_BLUE & (color << 16)) | (MASK_GREEN & color) | (MASK_RED & (color >> 16)) | (MASK_ALPHA & color); }
 
+
+
   //TODO alpha channel placement is confusing
   INLINE u32 rgba( u8 r, u8 g, u8 b, u8 a ) { return (u32) (a << 24) | (u32) (b << 16) | (u32) (g << 8) | r; }
   INLINE u32 rgb( u8 r, u8 g, u8 b ) { return (u32) (b << 16) | (u32) (g << 8) | r; }
@@ -34,6 +36,17 @@ namespace color
   INLINE float4 float4_from_rgba( u32 color ) { return float4 { (float) get_red( color ),(float) get_green( color ),(float) get_blue( color ),(float) get_alpha( color ) } / 255.0f; }
 
   INLINE float get_alpha_float( u32 color ) { return float( (color & MASK_ALPHA) >> 24 ) / 255.0f; }
+
+  INLINE u32 srgba_to_rgba( u32 color )
+  {
+    float4 v = float4_from_rgba( color );
+
+    u8 r = u8( 255.0f * v.r * v.r );
+    u8 g = u8( 255.0f * v.g * v.g );
+    u8 b = u8( 255.0f * v.b * v.b );
+    u8 a = u8( 255.0f * v.a );
+    return (u32) (a << 24) | (u32) (b << 16) | (u32) (g << 8) | r;
+  }
 
   INLINE u32 interpolate( float t, u32 colorA, u32 colorB )
   {
