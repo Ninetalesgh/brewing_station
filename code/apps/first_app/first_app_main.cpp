@@ -5,12 +5,15 @@ float deltaTime = 1.0f / 60.0f;
 //int2 circlePos;
 //float2 circleSpeed;
 //float circleRadius;
+
+bs::Bitmap test;
 void start()
 {
   //circlePos = { windowWidth / 2, windowHeight / 2 + 50 };
  // circleSpeed = { 0, 0 };
  // circleRadius = 50.f;
 
+  test = bs::load_image( "pic.png" );
 }
 
 //float gravity = 9.8f;
@@ -20,6 +23,8 @@ void test_stuff()
 {
   draw_line( { 0, 0 }, { 500,500 }, color::WHITE );
   draw_line( { 0, 500 }, { 500,0 }, color::PINK );
+
+  draw_bitmap( { 0,0 }, test );
 
 }
 

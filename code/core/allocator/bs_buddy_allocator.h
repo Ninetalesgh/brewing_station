@@ -542,6 +542,7 @@ namespace bs
 
   void free( BuddyAllocator* allocator, void* allocation, s64 size )
   {
+    if ( !allocation ) { return; }
     s32 level = get_level_for_size( allocator, size );
     u64 blockIndex = get_block_index_for_address_and_level( allocator, (char*) allocation, level );
 
@@ -566,6 +567,7 @@ namespace bs
 
   void free( BuddyAllocator* allocator, void* allocation )
   {
+    if ( !allocation ) { return; }
     s32 level = find_level_of_address_for_deallocation( allocator, (char*) allocation );
     u64 blockIndex = get_block_index_for_address_and_level( allocator, (char*) allocation, level );
 

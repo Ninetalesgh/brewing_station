@@ -33,7 +33,7 @@ namespace bsp
   using get_file_info_fn = bool( char const* filePath, u64* out_fileSize );
   using load_file_part_fn = bool( char const* filePath, u64 readOffset, void* targetBuffer, u32 bufferSize );
 
-  enum class WriteFileFlags : u32
+  enum class WriteFileFlags: u32
   {
     OVERWRITE_OR_CREATE_NEW = 0x0,
     APPEND_OR_FAIL = 0x1,
@@ -97,7 +97,7 @@ namespace bsp
 //  void update_uniform_buffer( UniformBufferID buffer, s64 offset, s64 size, void* data )
 
 
-  enum class DrawCallSelection : u32
+  enum class DrawCallSelection: u32
   {
     MESHES_UI
   };

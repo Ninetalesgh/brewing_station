@@ -5,7 +5,8 @@
 #include "core/bsinput.h"
 #include "common/bs_bitmap.h"
 #include "common/bs_color.h"
-#include "core/allocator/bs_thread_safe_linear_allocator.h"
+#include "core/bs_allocator.h"
+#include "first_app_image.h"
 #include "barbie.h"
 
 struct AppUserData
@@ -112,6 +113,32 @@ void draw_line( int2 begin, int2 end, u32 color )
     }
   }
 }
+
+void draw_bitmap( int2 pos, bs::Bitmap const& bmp )
+{
+  u32 const targetWidth = app->bmp.width;
+
+  int2 begin = max( pos, int2 { 0, 0 } );
+  int2 end = min( pos + bmp.dimensions, DEFAULT_WINDOW_SIZE );
+
+  bs::Bitmap& target = app->bmp;
+
+  s32 row = 0;
+  for ( s32 y = begin.y; y < end.y; ++y )
+  {
+    u32* write = &(((u32*) target.pixel)[begin.x + y * target.width]);
+    u32* read = &(((u32*) bmp.pixel)[row++ * bmp.width]);
+
+    for ( s32 x = begin.x; x < end.x; ++x )
+    {
+      *write = *read;
+      ++write;
+      ++read;
+    }
+  }
+
+}
+
 
 void draw_pokeball_optimized( s32 radius, int2 pos )
 {
