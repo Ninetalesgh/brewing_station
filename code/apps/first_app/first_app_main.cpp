@@ -34,8 +34,12 @@ void update()
 {
   using namespace bs::input;
 
-  test_stuff();
-  return;
+  draw_rect( { 0,0 }, { 150,150 }, color::RED );
+  draw_rect( { 150,0 }, { 300,150 }, color::GREEN );
+  draw_rect( { 300,0 }, { 450,150 }, color::BLUE );
+
+  // test_stuff();
+  //return;
 
   // for ( int i = 10; i < 300; ++i )
   // {

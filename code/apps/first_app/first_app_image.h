@@ -57,21 +57,7 @@ namespace bs
     constexpr s32 bytesPerChannel = 4;
     assert( imageFile->size <= INT_MAX );
     result.pixel = (u32*) stbi_load_from_memory( (u8*) imageFile->data, s32( imageFile->size ), &result.width, &result.height, &channelsPerSample, bytesPerChannel );
-
     unload_file( imageFile );
-    // if ( result.pixel )
-    // {
-    //   u32* writer = result.pixel;
-    //   for ( s32 x = 0; x < result.width; ++x )
-    //   {
-    //     for ( s32 y = 0; y < result.height;++y )
-    //     {
-    //       *writer = color::RGBAtoBGRA( *writer );
-    //       ++writer;
-    //     }
-    //   }
-    // }
-
     return result;
   }
 
