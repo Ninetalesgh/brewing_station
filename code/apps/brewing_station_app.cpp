@@ -1,7 +1,8 @@
 #define BREWING_STATION_APP
 
 //#define BUILD_TESTAPP
-#define BUILD_FIRST_APP
+//#define BUILD_FIRST_APP
+#define BUILD_TIMBER
 //#define BUILD_BSANIM_APP
 //#define BUILD_ASSETPRECOMPILER_APP
 
@@ -12,6 +13,8 @@
 #include "first_app/first_app_main.cpp"
 #elif defined(BUILD_ASSETPRECOMPILER_APP)
 #include "assetprecompiler/assetprecompiler_main.cpp"
+#elif defined(BUILD_TIMBER)
+#include "timber/timber.cpp"
 #endif
 
 
