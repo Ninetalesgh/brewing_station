@@ -21,6 +21,12 @@ static bs::input::State* inputPtr;
 int const windowWidth = DEFAULT_WINDOW_SIZE.x;
 int const windowHeight = DEFAULT_WINDOW_SIZE.y - 40;
 
+struct Sprite
+{
+  bs::Bitmap image;
+  int2 position;
+};
+
 void start();
 void update();
 u32 is_key_held( u32 key );
@@ -139,6 +145,10 @@ void draw_bitmap( int2 pos, bs::Bitmap const& bmp )
 
 }
 
+void draw_sprite( Sprite const& sprite )
+{
+  draw_bitmap( sprite.position, sprite.image );
+}
 
 void draw_pokeball_optimized( s32 radius, int2 pos )
 {

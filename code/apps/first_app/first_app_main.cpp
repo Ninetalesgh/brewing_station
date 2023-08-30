@@ -13,7 +13,7 @@ void start()
  // circleSpeed = { 0, 0 };
  // circleRadius = 50.f;
 
-  test = bs::load_image( "pic.png" );
+  test = bs::load_image( "picture.jpeg" );
 }
 
 //float gravity = 9.8f;
