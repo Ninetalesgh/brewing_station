@@ -5,21 +5,41 @@ float deltaTime = 1.0f / 60.0f;
 //int2 circlePos;
 //float2 circleSpeed;
 //float circleRadius;
+
+bs::Bitmap test;
 void start()
 {
   //circlePos = { windowWidth / 2, windowHeight / 2 + 50 };
  // circleSpeed = { 0, 0 };
  // circleRadius = 50.f;
 
+  test = bs::load_image( "picture.jpeg" );
 }
 
 //float gravity = 9.8f;
+
+#pragma warning(disable : 4702)
+void test_stuff()
+{
+  draw_line( { 0, 0 }, { 500,500 }, color::WHITE );
+  draw_line( { 0, 500 }, { 500,0 }, color::PINK );
+
+  draw_bitmap( { 0,0 }, test );
+
+}
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 //LINES
 void update()
 {
   using namespace bs::input;
+
+  draw_rect( { 0,0 }, { 150,150 }, color::RED );
+  draw_rect( { 150,0 }, { 300,150 }, color::GREEN );
+  draw_rect( { 300,0 }, { 450,150 }, color::BLUE );
+
+  // test_stuff();
+  //return;
 
   // for ( int i = 10; i < 300; ++i )
   // {
@@ -43,7 +63,7 @@ void update()
       for ( s32 x = begin.x; x < end.x; ++x )
       {
         int2 pos = { x, y };
-        plot( pos, color::TEAL );
+        plot( pos, color::interpolate( 0.5f * ((sinf( app->rotator ) + 1.0f)), color::PURPLE, color::TEAL ) );
       }
   }
   {
@@ -54,7 +74,7 @@ void update()
       for ( s32 x = begin.x; x < end.x; ++x )
       {
         int2 pos = { x, y };
-        plot( pos, color::PURPLE );
+        plot( pos, color::interpolate( 0.5f * ((sinf( app->rotator ) + 1.0f)), color::BABYPINK, color::HOTPINK ) );
       }
   }
   {
@@ -86,17 +106,18 @@ void update()
     //     }
     // }
 
-  {
-    int2 begin { 0, 0 };
-    int2 end { windowWidth, windowHeight };
+//BACKGROUND
+  // {
+  //   int2 begin { 0, 0 };
+  //   int2 end { windowWidth, windowHeight };
 
 
-    for ( s32 y = begin.y; y < end.y; ++y )
-      for ( s32 x = begin.x; x < end.x; ++x )
-      {
-        plot( { x,y }, color::interpolate( float( x ) / float( windowWidth ), color::BABYPINK, color::LIGHTBLUE ) );
-      }
-  }
+  //   for ( s32 y = begin.y; y < end.y; ++y )
+  //     for ( s32 x = begin.x; x < end.x; ++x )
+  //     {
+  //       plot( { x,y }, color::interpolate( float( x ) / float( windowWidth ), color::BABYPINK, color::LIGHTBLUE ) );
+  //     }
+  // }
 
 
   ////////////////////////////////////////////////////////////////////////////////////
@@ -251,18 +272,18 @@ void update()
   ///////////////////////////////////////////////////////////////////////////////////////
 //POKEBALL FUNCTION
   {
-    s32 radius = 30;
-    int2 pos = { 100,100 };
+    s32 radius = 60;
+    int2 pos = { 780,600 };
     draw_pokeball( radius, pos );
   }
   {
-    s32 radius = 100;
-    int2 pos = { 500, 200 };
+    s32 radius = 80;
+    int2 pos = { 700, 150 };
     draw_pokeball( radius, pos );
   }
   {
-    s32 radius = 350;
-    int2 pos = { 200,600 };
+    s32 radius = 150;
+    int2 pos = { 200,550 };
     draw_pokeball( radius, pos );
   }
   ///////////////////////////////////////////////////////////////////////////////////////

@@ -4,45 +4,6 @@
 #define STBI_NO_STDIO
 #define STBI_MAX_DIMENSIONS (1 << 16)
 
-#include <common/memory.h>
-namespace stb_image
-{
-  static memory::Arena* BS_STB_MEMORY_ARENA;
-
-  void init_memory_arena( memory::Arena* arena )
-  {
-    BS_STB_MEMORY_ARENA = arena;
-  }
-
-  void deinit_memory_arena()
-  {
-    BS_STB_MEMORY_ARENA = nullptr;
-  }
-
-  void* bs_alloc( size_t size )
-  {
-    return (void*) BS_STB_MEMORY_ARENA->alloc( (s64) size );
-  }
-
-  void bs_free( void* data )
-  {
-    BS_STB_MEMORY_ARENA->free( (char*) data );
-  }
-
-  void* bs_realloc( void* data, size_t newSize )
-  {
-    s64 size = BS_STB_MEMORY_ARENA->get_entry_size( (char*) data );
-    char* result = (char*) BS_STB_MEMORY_ARENA->alloc( (s64) newSize );
-    memory::copy( result, (char*) data, size );
-    BS_STB_MEMORY_ARENA->free( (char*) data );
-    return (void*) result;
-  }
-}
-
-#define STBI_MALLOC(sz)           stb_image::bs_alloc(sz)
-#define STBI_REALLOC(p,newsz)     stb_image::bs_realloc(p,newsz)
-#define STBI_FREE(p)              stb_image::bs_free(p)
-
 #endif 
 
 /* stb_image - v2.26 - public domain image loader - http://nothings.org/stb
@@ -4265,7 +4226,7 @@ static int stbi__parse_uncompressed_block( stbi__zbuf* a )
   int len, nlen, k;
   if ( a->num_bits & 7 )
     stbi__zreceive( a, a->num_bits & 7 ); // discard
- // drain the bit-packed data into header
+  // drain the bit-packed data into header
   k = 0;
   while ( a->num_bits > 0 ) {
     header[k++] = (stbi_uc) (a->code_buffer & 255); // suppress MSVC run-time check
@@ -5424,7 +5385,7 @@ static void* stbi__bmp_load( stbi__context* s, int* x, int* y, int* comp, int re
   else
     target = s->img_n; // if they want monochrome, we'll post-convert
 
- // sanity-check size
+  // sanity-check size
   if ( !stbi__mad3sizes_valid( target, s->img_x, s->img_y, 0 ) )
     return stbi__errpuc( "too large", "Corrupt BMP" );
 

@@ -5,7 +5,8 @@
 #include "core/bsinput.h"
 #include "common/bs_bitmap.h"
 #include "common/bs_color.h"
-#include "core/allocator/bs_thread_safe_linear_allocator.h"
+#include "core/bs_allocator.h"
+#include "first_app_image.h"
 #include "barbie.h"
 
 struct AppUserData
@@ -19,6 +20,12 @@ AppUserData* app;
 static bs::input::State* inputPtr;
 int const windowWidth = DEFAULT_WINDOW_SIZE.x;
 int const windowHeight = DEFAULT_WINDOW_SIZE.y - 40;
+
+struct Sprite
+{
+  bs::Bitmap image;
+  int2 position;
+};
 
 void start();
 void update();
@@ -82,6 +89,68 @@ INLINE void draw_circle( int2 pos, float radius, u32 color )
 }
 
 void draw_line( int2 begin, int2 end, u32 color )
+{
+  //TODO
+  float dy = float( end.y - begin.y ) / float( end.x - begin.x );
+
+  // if (fabsf(dy) > 1.0f)
+  // {
+  //   //switch to dx
+  // }
+  // else
+  // {
+  //   if ()
+  // }
+  // float const beginy = min( begin.y, end.y );
+  // float dx = 1.0f;
+  // if ( dy > 1.0f )
+  // {
+  //   dx = 1.0f / dy;
+  //   dy = 1.0f;
+  // }
+
+  float y = float( begin.y );
+
+  {
+    for ( s32 x = begin.x; x < end.x; ++x )
+    {
+      plot( { x, s32( y ) }, color );
+      y += dy;
+    }
+  }
+}
+
+void draw_bitmap( int2 pos, bs::Bitmap const& bmp )
+{
+  u32 const targetWidth = app->bmp.width;
+
+  int2 begin = max( pos, int2 { 0, 0 } );
+  int2 end = min( pos + bmp.dimensions, DEFAULT_WINDOW_SIZE );
+
+  bs::Bitmap& target = app->bmp;
+
+  s32 row = 0;
+  for ( s32 y = begin.y; y < end.y; ++y )
+  {
+    u32* write = &(((u32*) target.pixel)[begin.x + y * target.width]);
+    u32* read = &(((u32*) bmp.pixel)[row++ * bmp.width]);
+
+    for ( s32 x = begin.x; x < end.x; ++x )
+    {
+      *write = *read;
+      ++write;
+      ++read;
+    }
+  }
+
+}
+
+void draw_sprite( Sprite const& sprite )
+{
+  draw_bitmap( sprite.position, sprite.image );
+}
+
+void draw_pokeball_optimized( s32 radius, int2 pos )
 {
   //TODO
 }

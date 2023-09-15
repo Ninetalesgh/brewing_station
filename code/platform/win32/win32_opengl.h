@@ -480,7 +480,7 @@ namespace opengl
     GLuint textureHandle = 0;
     glGenTextures( 1, &textureHandle );
     glBindTexture( GL_TEXTURE_2D, textureHandle );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, textureData->width, textureData->height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, pixel );
+    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, textureData->width, textureData->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixel );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
